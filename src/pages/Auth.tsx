@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import { AuthMode } from '@/components/auth/AuthMode';
 import { AuthLogin } from '@/components/auth/AuthLogin';
 import { AuthFirstName } from '@/components/auth/AuthFirstName';
@@ -9,7 +10,6 @@ import { AuthPassword } from '@/components/auth/AuthPassword';
 import { AuthLoading } from '@/components/auth/AuthLoading';
 import { AuthVerification } from '@/components/auth/AuthVerification';
 import { AuthForgotPassword } from '@/components/auth/AuthForgotPassword';
-import { AuthResetPassword } from '@/components/auth/AuthResetPassword';
 
 type AuthMode = 'selection' | 'login' | 'signup' | 'forgotPassword' | 'resetPassword';
 type SignupStep = 'firstName' | 'credentials' | 'password' | 'loading' | 'verification';
@@ -70,10 +70,23 @@ export default function Auth() {
 
       {/* Reset Password Flow */}
       {mode === 'resetPassword' && (
-        <AuthResetPassword
-          email={resetEmail}
-          onSuccess={() => setMode('login')}
-        />
+        <div className="text-center space-y-6">
+          <h2 className="text-2xl font-bold text-foreground">Verifique seu E-mail</h2>
+          <p className="text-muted-foreground">
+            Enviamos um link de recuperação para
+          </p>
+          <p className="font-semibold text-foreground">{resetEmail}</p>
+          <p className="text-sm text-muted-foreground">
+            Clique no link recebido no e-mail para criar uma nova senha
+          </p>
+          <Button
+            variant="outline"
+            className="w-full h-14 text-lg rounded-2xl"
+            onClick={() => setMode('login')}
+          >
+            Voltar para Login
+          </Button>
+        </div>
       )}
 
       {/* Signup Flow */}

@@ -21,17 +21,17 @@ export const AuthForgotPassword = ({ initialEmail, onBack, onCodeSent }: AuthFor
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/`,
       });
 
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success('Código enviado para seu e-mail!');
+        toast.success('Link de recuperação enviado para seu e-mail! Verifique sua caixa de entrada.');
         onCodeSent(email);
       }
     } catch (error) {
-      toast.error('Erro ao enviar código');
+      toast.error('Erro ao enviar link de recuperação');
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export const AuthForgotPassword = ({ initialEmail, onBack, onCodeSent }: AuthFor
         </Button>
         <h2 className="text-3xl font-bold text-foreground">Recuperar Senha</h2>
         <p className="text-muted-foreground">
-          Digite seu e-mail e enviaremos um código para redefinir sua senha
+          Digite seu e-mail e enviaremos um link para redefinir sua senha
         </p>
       </div>
 
@@ -76,7 +76,7 @@ export const AuthForgotPassword = ({ initialEmail, onBack, onCodeSent }: AuthFor
           className="w-full h-14 text-lg rounded-2xl"
           disabled={!email || loading}
         >
-          {loading ? 'Enviando...' : 'Enviar Código'}
+          {loading ? 'Enviando...' : 'Enviar Link'}
         </Button>
       </form>
     </div>
