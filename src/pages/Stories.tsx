@@ -3,10 +3,10 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Plus, Play } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { StoryViewer } from '@/components/story/StoryViewer';
 
 interface Story {
   id: string;
@@ -25,6 +25,7 @@ export default function Stories() {
   const { user } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [viewingStory, setViewingStory] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -130,10 +131,11 @@ export default function Stories() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {stories.map((story) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+            {stories.map((story, index) => (
               <div
                 key={story.id}
+                onClick={() => setViewingStory(index)}
                 className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted cursor-pointer group"
               >
                 {story.media_type === 'image' ? (
@@ -177,6 +179,15 @@ export default function Stories() {
           </div>
         )}
       </div>
+
+      {viewingStory !== null && (
+        <StoryViewer
+          stories={stories}
+          initialIndex={viewingStory}
+          onClose={() => setViewingStory(null)}
+          onDelete={loadStories}
+        />
+      )}
     </MainLayout>
   );
 }
