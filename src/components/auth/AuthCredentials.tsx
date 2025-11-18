@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AuthCredentialsProps {
   onNext: (credential: string, username: string) => void;
@@ -15,11 +17,23 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const isValid = credential.trim() && username.trim();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isValid) {
-      onNext(credential.trim(), username.trim());
+    if (!isValid) return;
+
+    // Check if username already exists
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username.trim().toLowerCase())
+      .single();
+
+    if (existingUser) {
+      toast.error('Este nome de usuário já está em uso');
+      return;
     }
+
+    onNext(credential.trim(), username.trim().toLowerCase());
   };
 
   return (

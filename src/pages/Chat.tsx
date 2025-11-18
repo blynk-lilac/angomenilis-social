@@ -185,9 +185,9 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-chat-bg">
+    <div className="h-screen flex flex-col bg-chat-bg overflow-hidden">
       {/* Header - Fixed */}
-      <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
+      <header className="flex-shrink-0 sticky top-0 z-50 bg-card border-b border-border px-4 py-3 safe-area-top">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -230,7 +230,7 @@ export default function Chat() {
       </header>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-3">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
           return (
@@ -248,9 +248,9 @@ export default function Chat() {
       {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
-        className="sticky bottom-0 bg-card border-t border-border p-4"
+        className="flex-shrink-0 sticky bottom-0 bg-card border-t border-border p-4 safe-area-bottom"
       >
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center max-w-4xl mx-auto">
           <MediaPicker onMediaSelect={handleMediaSelect} />
           <Input
             value={newMessage}

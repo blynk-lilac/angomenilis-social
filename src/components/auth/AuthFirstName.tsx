@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AuthFirstNameProps {
   onNext: (firstName: string) => void;
@@ -11,11 +13,24 @@ interface AuthFirstNameProps {
 export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
   const [firstName, setFirstName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (firstName.trim()) {
-      onNext(firstName.trim());
+    const trimmedName = firstName.trim();
+    if (!trimmedName) return;
+
+    // Check if first name already exists
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .ilike('first_name', trimmedName)
+      .single();
+
+    if (existingUser) {
+      toast.error('Este nome já está em uso. Escolha outro nome.');
+      return;
     }
+
+    onNext(trimmedName);
   };
 
   return (
