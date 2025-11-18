@@ -1,17 +1,24 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthMode } from '@/components/auth/AuthMode';
+import { AuthLogin } from '@/components/auth/AuthLogin';
 import { AuthFirstName } from '@/components/auth/AuthFirstName';
 import { AuthCredentials } from '@/components/auth/AuthCredentials';
 import { AuthPassword } from '@/components/auth/AuthPassword';
 import { AuthLoading } from '@/components/auth/AuthLoading';
 import { AuthVerification } from '@/components/auth/AuthVerification';
+import { AuthForgotPassword } from '@/components/auth/AuthForgotPassword';
+import { AuthResetPassword } from '@/components/auth/AuthResetPassword';
 
-type AuthStep = 'firstName' | 'credentials' | 'password' | 'loading' | 'verification';
+type AuthMode = 'selection' | 'login' | 'signup' | 'forgotPassword' | 'resetPassword';
+type SignupStep = 'firstName' | 'credentials' | 'password' | 'loading' | 'verification';
 
 export default function Auth() {
   const { user, loading } = useAuth();
-  const [step, setStep] = useState<AuthStep>('firstName');
+  const [mode, setMode] = useState<AuthMode>('selection');
+  const [signupStep, setSignupStep] = useState<SignupStep>('firstName');
+  const [resetEmail, setResetEmail] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     credential: '',
@@ -33,48 +40,89 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      {step === 'firstName' && (
-        <AuthFirstName
-          onNext={(firstName) => {
-            updateFormData({ firstName });
-            setStep('credentials');
+      {/* Mode Selection */}
+      {mode === 'selection' && (
+        <AuthMode onSelectMode={(selectedMode) => setMode(selectedMode)} />
+      )}
+
+      {/* Login Flow */}
+      {mode === 'login' && (
+        <AuthLogin
+          onBack={() => setMode('selection')}
+          onForgotPassword={(email) => {
+            setResetEmail(email);
+            setMode('forgotPassword');
           }}
         />
       )}
-      
-      {step === 'credentials' && (
-        <AuthCredentials
-          onNext={(credential, username) => {
-            updateFormData({ credential, username });
-            setStep('password');
+
+      {/* Forgot Password Flow */}
+      {mode === 'forgotPassword' && (
+        <AuthForgotPassword
+          initialEmail={resetEmail}
+          onBack={() => setMode('login')}
+          onCodeSent={(email) => {
+            setResetEmail(email);
+            setMode('resetPassword');
           }}
-          onBack={() => setStep('firstName')}
         />
       )}
-      
-      {step === 'password' && (
-        <AuthPassword
-          firstName={formData.firstName}
-          credential={formData.credential}
-          username={formData.username}
-          onNext={(password) => {
-            updateFormData({ password });
-            setStep('loading');
-          }}
-          onBack={() => setStep('credentials')}
+
+      {/* Reset Password Flow */}
+      {mode === 'resetPassword' && (
+        <AuthResetPassword
+          email={resetEmail}
+          onSuccess={() => setMode('login')}
         />
       )}
-      
-      {step === 'loading' && (
-        <AuthLoading
-          onComplete={() => setStep('verification')}
-        />
-      )}
-      
-      {step === 'verification' && (
-        <AuthVerification
-          email={formData.credential}
-        />
+
+      {/* Signup Flow */}
+      {mode === 'signup' && (
+        <>
+          {signupStep === 'firstName' && (
+            <AuthFirstName
+              onNext={(firstName) => {
+                updateFormData({ firstName });
+                setSignupStep('credentials');
+              }}
+            />
+          )}
+          
+          {signupStep === 'credentials' && (
+            <AuthCredentials
+              onNext={(credential, username) => {
+                updateFormData({ credential, username });
+                setSignupStep('password');
+              }}
+              onBack={() => setSignupStep('firstName')}
+            />
+          )}
+          
+          {signupStep === 'password' && (
+            <AuthPassword
+              firstName={formData.firstName}
+              credential={formData.credential}
+              username={formData.username}
+              onNext={(password) => {
+                updateFormData({ password });
+                setSignupStep('loading');
+              }}
+              onBack={() => setSignupStep('credentials')}
+            />
+          )}
+          
+          {signupStep === 'loading' && (
+            <AuthLoading
+              onComplete={() => setSignupStep('verification')}
+            />
+          )}
+          
+          {signupStep === 'verification' && (
+            <AuthVerification
+              email={formData.credential}
+            />
+          )}
+        </>
       )}
     </div>
   );
