@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      calls: {
+        Row: {
+          call_type: string
+          caller_id: string
+          ended_at: string | null
+          id: string
+          receiver_id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          ended_at?: string | null
+          id?: string
+          receiver_id: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          ended_at?: string | null
+          id?: string
+          receiver_id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friend_requests: {
         Row: {
           created_at: string | null
@@ -89,11 +134,130 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          duration: number | null
+          group_id: string
+          id: string
+          media_url: string | null
+          message_type: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          duration?: number | null
+          group_id: string
+          id?: string
+          media_url?: string | null
+          message_type?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          duration?: number | null
+          group_id?: string
+          id?: string
+          media_url?: string | null
+          message_type?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
           created_at: string | null
+          duration: number | null
           id: string
+          media_url: string | null
+          message_type: string | null
           read: boolean | null
           receiver_id: string
           sender_id: string
@@ -101,7 +265,10 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          duration?: number | null
           id?: string
+          media_url?: string | null
+          message_type?: string | null
           read?: boolean | null
           receiver_id: string
           sender_id: string
@@ -109,7 +276,10 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          duration?: number | null
           id?: string
+          media_url?: string | null
+          message_type?: string | null
           read?: boolean | null
           receiver_id?: string
           sender_id?: string

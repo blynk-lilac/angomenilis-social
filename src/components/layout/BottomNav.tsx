@@ -1,10 +1,11 @@
 import { NavLink } from '@/components/NavLink';
-import { MessageCircle, Users, Image, Settings } from 'lucide-react';
+import { MessageCircle, Users, Image, Settings, UsersRound } from 'lucide-react';
 
 export const BottomNav = () => {
   const navItems = [
     { to: '/', icon: MessageCircle, label: 'Mensagens' },
     { to: '/stories', icon: Image, label: 'Stories' },
+    { to: '/grupos', icon: UsersRound, label: 'Grupos' },
     { to: '/friends', icon: Users, label: 'Amigos' },
     { to: '/settings', icon: Settings, label: 'Definições' },
   ];

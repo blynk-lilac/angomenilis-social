@@ -11,7 +11,10 @@ import Stories from "./pages/Stories";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import Groups from "./pages/Groups";
+import GroupChat from "./pages/GroupChat";
 import NotFound from "./pages/NotFound";
+import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +32,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
+
+  // Request notification permission when user is authenticated
+  requestNotificationPermission();
   
   return <>{children}</>;
 };
@@ -87,6 +93,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupos"
+              element={
+                <ProtectedRoute>
+                  <Groups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId"
+              element={
+                <ProtectedRoute>
+                  <GroupChat />
                 </ProtectedRoute>
               }
             />
