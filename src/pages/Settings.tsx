@@ -3,10 +3,9 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Camera } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { LogOut, Camera, ChevronRight, Lock, User, Mail, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,11 +15,8 @@ export default function Settings() {
   const [profile, setProfile] = useState({
     first_name: '',
     username: '',
-    email: '',
-    phone: '',
     avatar_url: '',
   });
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,7 +29,7 @@ export default function Settings() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('first_name, username, avatar_url')
       .eq('id', user.id)
       .single();
 
@@ -41,8 +37,6 @@ export default function Settings() {
       setProfile({
         first_name: data.first_name || '',
         username: data.username || '',
-        email: data.email || '',
-        phone: data.phone || '',
         avatar_url: data.avatar_url || '',
       });
     }
@@ -81,40 +75,34 @@ export default function Settings() {
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: profile.first_name,
-          username: profile.username,
-          email: profile.email,
-          phone: profile.phone,
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      toast.success('Perfil atualizado!');
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
 
+  const menuItems = [
+    {
+      title: 'Palavra-passe e segurança',
+      subtitle: 'Gere as tuas palavras-passe, as preferências de acesso e os métodos de recuperação.',
+      items: [
+        { label: 'Alterar palavra-passe', icon: Lock, path: '/settings/change-password' },
+        { label: 'Editar perfil', icon: User, path: '/settings/edit-profile' },
+      ]
+    },
+    {
+      title: 'Verificações de segurança',
+      subtitle: 'Revê os problemas de segurança efetuando verificações nas apps, nos dispositivos e nos e-mails enviados.',
+      items: [
+        { label: 'Informações de contato', icon: Mail, path: '/settings/contact-info' },
+        { label: 'Verificação de Segurança', icon: Shield, path: '/settings/security' },
+      ]
+    }
+  ];
+
   return (
     <MainLayout title="Definições">
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-4 max-w-2xl mx-auto pb-20">
         {/* Avatar Section */}
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
@@ -138,75 +126,52 @@ export default function Settings() {
               />
             </label>
           </div>
-          <p className="mt-4 text-muted-foreground">@{profile.username}</p>
+          <h2 className="mt-4 text-xl font-bold">{profile.first_name}</h2>
+          <p className="text-muted-foreground">@{profile.username}</p>
         </div>
 
-        {/* Profile Form */}
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="first_name">Nome</Label>
-            <Input
-              id="first_name"
-              value={profile.first_name}
-              onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">Nome de Usuário</Label>
-            <Input
-              id="username"
-              value={profile.username}
-              onChange={(e) => setProfile(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s+/g, '') }))}
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
-              type="email"
-              value={profile.email}
-              onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Telefone</Label>
-            <Input
-              id="phone"
-              value={profile.phone}
-              onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-              className="h-12 rounded-xl"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-12 rounded-xl"
-            disabled={loading}
-          >
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
-          </Button>
-        </form>
+        {/* Settings Menu */}
+        <div className="space-y-8">
+          {menuItems.map((section, idx) => (
+            <div key={idx} className="space-y-4">
+              <div>
+                <h3 className="text-lg font-bold mb-1">{section.title}</h3>
+                <p className="text-sm text-muted-foreground">{section.subtitle}</p>
+              </div>
+              
+              <div className="bg-card rounded-xl border border-border overflow-hidden">
+                {section.items.map((item, itemIdx) => (
+                  <button
+                    key={itemIdx}
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Logout Button */}
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className="w-full h-12 rounded-xl mt-6"
+          className="w-full h-12 rounded-xl mt-8"
         >
           <LogOut className="mr-2 h-5 w-5" />
           Sair
         </Button>
 
         {/* Profile Link */}
-        <div className="mt-8 p-4 bg-muted rounded-xl">
+        <div className="mt-6 p-4 bg-muted/50 rounded-xl">
           <p className="text-sm text-muted-foreground mb-2">Seu link de perfil:</p>
-          <p className="font-mono text-sm text-primary">
+          <p className="font-mono text-sm text-primary break-all">
             angomenilis.netlify.app/perfil/{profile.username}
           </p>
         </div>

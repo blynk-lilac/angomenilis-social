@@ -185,35 +185,35 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-chat-bg overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header - Fixed */}
-      <header className="flex-shrink-0 sticky top-0 z-50 bg-card border-b border-border px-4 py-3 safe-area-top">
+      <header className="flex-shrink-0 sticky top-0 z-50 bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm border-b border-border/50 px-4 py-3 safe-area-top">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/')}
-            className="rounded-full"
+            className="rounded-full hover:bg-background/80"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-11 w-11 ring-2 ring-primary/20">
             <AvatarImage src={friend.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
               {friend.first_name[0]}
             </AvatarFallback>
           </Avatar>
           
-          <div className="flex-1">
-            <p className="font-semibold text-foreground">{friend.first_name}</p>
-            <p className="text-xs text-muted-foreground">@{friend.username}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-foreground truncate">{friend.first_name}</p>
+            <p className="text-xs text-muted-foreground truncate">@{friend.username}</p>
           </div>
 
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
             onClick={() => startCall('voice')}
           >
             <Phone className="h-5 w-5" />
@@ -221,7 +221,7 @@ export default function Chat() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
             onClick={() => startCall('video')}
           >
             <Video className="h-5 w-5" />
@@ -230,7 +230,7 @@ export default function Chat() {
       </header>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-3 bg-gradient-to-b from-background to-muted/20">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
           return (
@@ -248,23 +248,23 @@ export default function Chat() {
       {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
-        className="flex-shrink-0 sticky bottom-0 bg-card border-t border-border p-4 safe-area-bottom"
+        className="flex-shrink-0 sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border p-3 safe-area-bottom"
       >
         <div className="flex gap-2 items-center max-w-4xl mx-auto">
           <MediaPicker onMediaSelect={handleMediaSelect} />
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Escrever mensagem..."
-            className="flex-1 h-12 rounded-full border-2 pr-4"
+            placeholder="Mensagem..."
+            className="flex-1 h-11 rounded-full border-border/50 bg-background/50 focus-visible:ring-primary"
           />
           <Button
             type="submit"
             size="icon"
-            className="rounded-full h-12 w-12 flex-shrink-0"
+            className="rounded-full h-11 w-11 flex-shrink-0 shadow-lg hover:shadow-primary/50 transition-shadow"
             disabled={!newMessage.trim()}
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </form>

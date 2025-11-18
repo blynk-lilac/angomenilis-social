@@ -11,6 +11,10 @@ import Chat from "./pages/Chat";
 import Stories from "./pages/Stories";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
+import ChangePassword from "./pages/settings/ChangePassword";
+import EditProfile from "./pages/settings/EditProfile";
+import ContactInfo from "./pages/settings/ContactInfo";
+import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
@@ -87,6 +91,38 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/change-password"
+              element={
+                <ProtectedRoute>
+                  <ChangePassword />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/edit-profile"
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/contact-info"
+              element={
+                <ProtectedRoute>
+                  <ContactInfo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/security"
+              element={
+                <ProtectedRoute>
+                  <Security />
                 </ProtectedRoute>
               }
             />
