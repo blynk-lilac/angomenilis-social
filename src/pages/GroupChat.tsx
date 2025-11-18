@@ -5,48 +5,47 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Send, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
-import CallInterface from '@/components/call/CallInterface';
-import { showNotification } from '@/utils/pushNotifications';
 
 interface Message {
   id: string;
   content: string;
   sender_id: string;
-  receiver_id: string;
   created_at: string;
   message_type?: string;
   media_url?: string;
   duration?: number;
+  profiles: {
+    first_name: string;
+    avatar_url: string | null;
+  };
 }
 
-interface Profile {
+interface Group {
   id: string;
-  username: string;
-  first_name: string;
+  name: string;
   avatar_url: string | null;
 }
 
-export default function Chat() {
-  const { friendId } = useParams();
+export default function GroupChat() {
+  const { groupId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [friend, setFriend] = useState<Profile | null>(null);
+  const [group, setGroup] = useState<Group | null>(null);
   const [newMessage, setNewMessage] = useState('');
-  const [activeCall, setActiveCall] = useState<{ id: string; type: 'voice' | 'video' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (friendId) {
-      loadFriend();
+    if (groupId) {
+      loadGroup();
       loadMessages();
       subscribeToMessages();
     }
-  }, [friendId]);
+  }, [groupId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -56,60 +55,52 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadFriend = async () => {
+  const loadGroup = async () => {
     const { data } = await supabase
-      .from('profiles')
+      .from('groups')
       .select('*')
-      .eq('id', friendId)
+      .eq('id', groupId)
       .single();
     
-    if (data) setFriend(data);
+    if (data) setGroup(data);
   };
 
   const loadMessages = async () => {
-    if (!user || !friendId) return;
+    if (!groupId) return;
 
     const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${user.id})`)
+      .from('group_messages')
+      .select('*, profiles(first_name, avatar_url)')
+      .eq('group_id', groupId)
       .order('created_at', { ascending: true });
 
-    if (data) setMessages(data);
-
-    // Mark messages as read
-    await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('receiver_id', user.id)
-      .eq('sender_id', friendId);
+    if (data) setMessages(data as Message[]);
   };
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel('chat-messages')
+      .channel('group-chat-messages')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'group_messages',
+          filter: `group_id=eq.${groupId}`,
         },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          if (
-            (newMsg.sender_id === user?.id && newMsg.receiver_id === friendId) ||
-            (newMsg.sender_id === friendId && newMsg.receiver_id === user?.id)
-          ) {
-            setMessages(prev => [...prev, newMsg]);
-            
-            // Show notification if message is from friend
-            if (newMsg.sender_id === friendId && document.hidden) {
-              showNotification('Nova mensagem', {
-                body: newMsg.content || 'Mídia recebida',
-              });
-            }
-          }
+        async (payload) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name, avatar_url')
+            .eq('id', payload.new.sender_id)
+            .single();
+
+          const newMsg = {
+            ...payload.new,
+            profiles: profile,
+          } as Message;
+
+          setMessages(prev => [...prev, newMsg]);
         }
       )
       .subscribe();
@@ -121,26 +112,24 @@ export default function Chat() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || !friendId) return;
+    if (!newMessage.trim() || !user || !groupId) return;
 
-    const { error } = await supabase.from('messages').insert({
+    await supabase.from('group_messages').insert({
+      group_id: groupId,
       sender_id: user.id,
-      receiver_id: friendId,
       content: newMessage.trim(),
       message_type: 'text',
     });
 
-    if (!error) {
-      setNewMessage('');
-    }
+    setNewMessage('');
   };
 
   const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
-    if (!user || !friendId) return;
+    if (!user || !groupId) return;
 
-    await supabase.from('messages').insert({
+    await supabase.from('group_messages').insert({
+      group_id: groupId,
       sender_id: user.id,
-      receiver_id: friendId,
       content: '',
       message_type: type,
       media_url: url,
@@ -148,35 +137,7 @@ export default function Chat() {
     });
   };
 
-  const startCall = async (type: 'voice' | 'video') => {
-    if (!user || !friendId) return;
-
-    const { data, error } = await supabase
-      .from('calls')
-      .insert({
-        caller_id: user.id,
-        receiver_id: friendId,
-        call_type: type,
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      setActiveCall({ id: data.id, type });
-    }
-  };
-
-  if (activeCall) {
-    return (
-      <CallInterface
-        callId={activeCall.id}
-        isVideo={activeCall.type === 'video'}
-        onEnd={() => setActiveCall(null)}
-      />
-    );
-  }
-
-  if (!friend) {
+  if (!group) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-muted-foreground">Carregando...</p>
@@ -186,66 +147,57 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex flex-col bg-chat-bg">
-      {/* Header - Fixed */}
       <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/grupos')}
             className="rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
           <Avatar className="h-10 w-10">
-            <AvatarImage src={friend.avatar_url || undefined} />
+            <AvatarImage src={group.avatar_url || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground">
-              {friend.first_name[0]}
+              <Users className="h-5 w-5" />
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
-            <p className="font-semibold text-foreground">{friend.first_name}</p>
-            <p className="text-xs text-muted-foreground">@{friend.username}</p>
+            <p className="font-semibold text-foreground">{group.name}</p>
           </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            onClick={() => startCall('voice')}
-          >
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            onClick={() => startCall('video')}
-          >
-            <Video className="h-5 w-5" />
-          </Button>
         </div>
       </header>
 
-      {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
           return (
-            <div
-              key={message.id}
-              className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-            >
-              <MessageBubble message={message} isSent={isSent} />
+            <div key={message.id}>
+              {!isSent && (
+                <div className="flex items-center gap-2 mb-1">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={message.profiles.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {message.profiles.first_name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground">
+                    {message.profiles.first_name}
+                  </span>
+                </div>
+              )}
+              <div className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
+                <MessageBubble message={message} isSent={isSent} />
+              </div>
             </div>
           );
         })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
         className="sticky bottom-0 bg-card border-t border-border p-4"
