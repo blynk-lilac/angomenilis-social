@@ -53,7 +53,7 @@ export default function MessageBubble({ message, isSent }: MessageBubbleProps) {
 
   return (
     <div
-      className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+      className={`max-w-[70%] rounded-2xl px-3 py-1.5 ${
         isSent
           ? 'bg-chat-sent text-foreground rounded-br-sm'
           : 'bg-chat-received text-foreground rounded-bl-sm'
@@ -63,7 +63,7 @@ export default function MessageBubble({ message, isSent }: MessageBubbleProps) {
       {message.content && (
         <p className="text-sm break-words">{message.content}</p>
       )}
-      <p className="text-xs text-muted-foreground mt-1">
+      <p className="text-[10px] text-muted-foreground/70 mt-0.5">
         {format(new Date(message.created_at), 'HH:mm')}
       </p>
     </div>
