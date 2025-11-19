@@ -128,6 +128,30 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      {/* Navigation - Left Arrow */}
+      {currentIndex > 0 && (
+        <button
+          onClick={handlePrevious}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110 animate-fade-in"
+        >
+          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
+      {/* Navigation - Right Arrow */}
+      {currentIndex < stories.length - 1 && (
+        <button
+          onClick={handleNext}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110 animate-fade-in"
+        >
+          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+      
       {/* Progress bars */}
       <div className="absolute top-0 left-0 right-0 flex gap-1 p-2 z-10">
         {stories.map((_, idx) => (
