@@ -29,6 +29,8 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
 
   const initCall = async () => {
     try {
+      console.log('Iniciando chamada...', { callId, isVideo });
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: isVideo,
@@ -43,6 +45,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
         ],
       };
 
@@ -54,6 +57,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
       });
 
       peerConnection.ontrack = (event) => {
+        console.log('Recebendo stream remoto');
         if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
@@ -61,19 +65,31 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
 
       peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
+          console.log('ICE candidate:', event.candidate);
           await supabase
             .from('calls')
-            .update({
-              status: 'ongoing'
-            })
+            .update({ status: 'ongoing' })
             .eq('id', callId);
+
+          if (channelRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'signal',
+              payload: { type: 'ice-candidate', candidate: event.candidate },
+            });
+          }
         }
       };
 
-      // Subscribe to signaling channel
+      peerConnection.onconnectionstatechange = () => {
+        console.log('Connection state:', peerConnection.connectionState);
+      };
+
       const channel = supabase
         .channel(`call-${callId}`)
         .on('broadcast', { event: 'signal' }, async ({ payload }) => {
+          console.log('Sinal recebido:', payload.type);
+          
           if (payload.type === 'offer') {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer));
             const answer = await peerConnection.createAnswer();
@@ -90,14 +106,16 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
             await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
           }
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Canal de sinalização:', status);
+        });
 
       channelRef.current = channel;
 
-      // Create and send offer
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       
+      console.log('Enviando offer');
       channel.send({
         type: 'broadcast',
         event: 'signal',
@@ -105,7 +123,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
       });
 
     } catch (error) {
-      console.error('Error initializing call:', error);
+      console.error('Erro ao inicializar chamada:', error);
       onEnd();
     }
   };
@@ -133,7 +151,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
   };
 
   const toggleVideo = () => {
-    if (localStreamRef.current && isVideo) {
+    if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
@@ -158,28 +176,34 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       <div className="flex-1 relative">
+        {/* Remote Video - Full screen */}
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover bg-secondary"
         />
+        
+        {/* Local Video - Picture in Picture */}
         {isVideo && (
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute bottom-4 right-4 w-32 h-48 object-cover rounded-lg border-2 border-border"
-          />
+          <div className="absolute bottom-6 right-6 w-40 h-56 rounded-2xl overflow-hidden border-2 border-primary shadow-2xl animate-scale-in">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover mirror"
+            />
+          </div>
         )}
       </div>
 
-      <div className="p-6 bg-card border-t border-border flex justify-center gap-4">
+      {/* Controls */}
+      <div className="p-6 bg-card/95 backdrop-blur-sm border-t border-border flex justify-center gap-4 safe-area-bottom">
         <Button
           variant={isMuted ? 'destructive' : 'secondary'}
           size="icon"
-          className="h-14 w-14 rounded-full"
+          className="h-16 w-16 rounded-full transition-all hover:scale-110"
           onClick={toggleMute}
         >
           {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
@@ -189,7 +213,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
           <Button
             variant={isVideoOff ? 'destructive' : 'secondary'}
             size="icon"
-            className="h-14 w-14 rounded-full"
+            className="h-16 w-16 rounded-full transition-all hover:scale-110"
             onClick={toggleVideo}
           >
             {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
@@ -199,10 +223,10 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
         <Button
           variant="destructive"
           size="icon"
-          className="h-14 w-14 rounded-full"
+          className="h-20 w-20 rounded-full transition-all hover:scale-110"
           onClick={endCall}
         >
-          <PhoneOff className="h-6 w-6" />
+          <PhoneOff className="h-8 w-8" />
         </Button>
       </div>
     </div>

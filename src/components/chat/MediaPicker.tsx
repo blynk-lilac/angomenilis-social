@@ -18,17 +18,20 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
 
   const uploadFile = async (file: File, folder: string) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
     const filePath = `${folder}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('stories')
+      .from('chat-media')
       .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
 
     const { data } = supabase.storage
-      .from('stories')
+      .from('chat-media')
       .getPublicUrl(filePath);
 
     return data.publicUrl;
@@ -39,11 +42,19 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
     if (!file) return;
 
     try {
-      const url = await uploadFile(file, 'chat-images');
+      toast({
+        title: 'Enviando imagem...',
+      });
+      const url = await uploadFile(file, 'images');
       onMediaSelect(url, 'image');
+      toast({
+        title: 'Imagem enviada!',
+      });
     } catch (error) {
+      console.error('Image upload error:', error);
       toast({
         title: 'Erro ao enviar imagem',
+        description: 'Tente novamente',
         variant: 'destructive',
       });
     }
@@ -54,11 +65,19 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
     if (!file) return;
 
     try {
-      const url = await uploadFile(file, 'chat-videos');
+      toast({
+        title: 'Enviando vídeo...',
+      });
+      const url = await uploadFile(file, 'videos');
       onMediaSelect(url, 'video');
+      toast({
+        title: 'Vídeo enviado!',
+      });
     } catch (error) {
+      console.error('Video upload error:', error);
       toast({
         title: 'Erro ao enviar vídeo',
+        description: 'Tente novamente',
         variant: 'destructive',
       });
     }
@@ -77,14 +96,22 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
 
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], 'audio.webm', { type: 'audio/webm' });
+        const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
         
         try {
-          const url = await uploadFile(file, 'chat-audios');
+          toast({
+            title: 'Enviando áudio...',
+          });
+          const url = await uploadFile(file, 'audios');
           onMediaSelect(url, 'audio', recordingTime);
+          toast({
+            title: 'Áudio enviado!',
+          });
         } catch (error) {
+          console.error('Audio upload error:', error);
           toast({
             title: 'Erro ao enviar áudio',
+            description: 'Tente novamente',
             variant: 'destructive',
           });
         }
@@ -100,8 +127,10 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } catch (error) {
+      console.error('Microphone access error:', error);
       toast({
         title: 'Erro ao acessar microfone',
+        description: 'Permita o acesso ao microfone',
         variant: 'destructive',
       });
     }
