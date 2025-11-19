@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Users } from 'lucide-react';
+import { ArrowLeft, Send, Users, Phone, Lock, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
@@ -148,25 +148,50 @@ export default function GroupChat() {
   return (
     <div className="h-screen flex flex-col bg-chat-bg">
       <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/grupos')}
-            className="rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/grupos')}
+              className="rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            
+            <Avatar 
+              className="h-10 w-10 cursor-pointer"
+              onClick={() => navigate(`/grupo/${groupId}/configuracoes`)}
+            >
+              <AvatarImage src={group.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                <Users className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+            
+            <div 
+              className="flex-1 cursor-pointer"
+              onClick={() => navigate(`/grupo/${groupId}/configuracoes`)}
+            >
+              <p className="font-semibold text-foreground">{group.name}</p>
+            </div>
+          </div>
           
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={group.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              <Users className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1">
-            <p className="font-semibold text-foreground">{group.name}</p>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Phone className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Lock className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="rounded-full"
+              onClick={() => navigate(`/grupo/${groupId}/configuracoes`)}
+            >
+              <MoreVertical className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </header>
