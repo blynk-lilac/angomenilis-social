@@ -29,6 +29,8 @@ import GroupPermissions from './pages/group-settings/Permissions';
 import Channels from './pages/Channels';
 import CreateChannel from './pages/CreateChannel';
 import ChannelView from './pages/ChannelView';
+import Calls from './pages/Calls';
+import CallInterface from './pages/CallInterface';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -247,6 +249,24 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ChannelView />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Call Routes */}
+            <Route
+              path="/chamadas"
+              element={
+                <ProtectedRoute>
+                  <Calls />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chamada/:userId"
+              element={
+                <ProtectedRoute>
+                  <CallInterface />
                 </ProtectedRoute>
               }
             />

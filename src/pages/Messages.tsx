@@ -4,9 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Search, Archive } from 'lucide-react';
 
 interface Friend {
   id: string;
@@ -114,45 +117,102 @@ export default function Messages() {
   }
 
   return (
-    <MainLayout title="Mensagens">
-      <ScrollArea className="h-[calc(100vh-8rem)]">
-        <div className="divide-y divide-border">
-          {friends.map((friend) => (
-            <button
-              key={friend.id}
-              onClick={() => navigate(`/chat/${friend.id}`)}
-              className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
-            >
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={friend.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {friend.first_name[0]}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 text-left">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-foreground">{friend.first_name}</p>
+    <MainLayout title="Angomenilis">
+      <div className="flex flex-col h-full bg-background">
+        {/* Search Bar */}
+        <div className="p-4 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Perguntar à Meta AI ou pesquisar"
+              className="pl-10 bg-muted/50 border-none rounded-full h-10"
+            />
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="px-4 pb-3 flex gap-2 overflow-x-auto">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full whitespace-nowrap"
+          >
+            Todas
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full whitespace-nowrap"
+          >
+            Não lidas
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full whitespace-nowrap"
+          >
+            Favoritos
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full whitespace-nowrap"
+          >
+            Grupos
+          </Button>
+        </div>
+
+        {/* Archived */}
+        <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-muted rounded-full">
+              <Archive className="h-5 w-5 text-primary" />
+            </div>
+            <span className="font-medium">Arquivadas</span>
+          </div>
+          <div className="text-sm text-muted-foreground">1</div>
+        </button>
+
+        <ScrollArea className="flex-1">
+          <div>
+            {friends.map((friend) => (
+              <button
+                key={friend.id}
+                onClick={() => navigate(`/chat/${friend.id}`)}
+                className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
+              >
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={friend.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {friend.first_name[0]}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-foreground">{friend.first_name}</p>
+                    {friend.lastMessage && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
+                          locale: ptBR,
+                          addSuffix: true
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">@{friend.username}</p>
                   {friend.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
-                        locale: ptBR,
-                        addSuffix: true
-                      })}
-                    </span>
+                    <p className={`text-sm truncate ${!friend.lastMessage.read ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                      {friend.lastMessage.content}
+                    </p>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">@{friend.username}</p>
-                {friend.lastMessage && (
-                  <p className={`text-sm truncate ${!friend.lastMessage.read ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                    {friend.lastMessage.content}
-                  </p>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
     </MainLayout>
   );
 }
