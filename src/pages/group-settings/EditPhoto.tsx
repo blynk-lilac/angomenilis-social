@@ -37,6 +37,16 @@ export default function EditPhoto() {
 
     const file = e.target.files[0];
     
+    // Validar tamanho do arquivo (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Arquivo inválido',
@@ -50,13 +60,21 @@ export default function EditPhoto() {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `group-${groupId}-${Date.now()}.${fileExt}`;
+      const fileName = `groups/${groupId}-${Date.now()}.${fileExt}`;
       
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      // Deletar foto antiga se existir
+      if (avatarUrl) {
+        const oldFileName = avatarUrl.split('/').pop();
+        if (oldFileName) {
+          await supabase.storage.from('avatars').remove([`groups/${oldFileName}`]);
+        }
+      }
+      
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { 
-          upsert: true,
-          contentType: file.type 
+          cacheControl: '3600',
+          upsert: false
         });
 
       if (uploadError) throw uploadError;
@@ -76,10 +94,13 @@ export default function EditPhoto() {
       toast({
         title: 'Foto atualizada!',
       });
-      navigate(`/grupo/${groupId}/configuracoes`);
+      
+      setTimeout(() => {
+        navigate(`/grupo/${groupId}/configuracoes`);
+      }, 500);
     } catch (error: any) {
       toast({
-        title: 'Erro',
+        title: 'Erro ao fazer upload',
         description: error.message,
         variant: 'destructive',
       });
