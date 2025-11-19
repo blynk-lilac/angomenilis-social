@@ -48,47 +48,43 @@ export default function EditPhoto() {
 
     setUploading(true);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${groupId}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `group-${groupId}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
 
-    if (uploadError) {
-      toast({
-        title: 'Erro ao fazer upload',
-        description: uploadError.message,
-        variant: 'destructive',
-      });
-      setUploading(false);
-      return;
-    }
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+      const { error: updateError } = await supabase
+        .from('groups')
+        .update({ avatar_url: publicUrl })
+        .eq('id', groupId);
 
-    const { error: updateError } = await supabase
-      .from('groups')
-      .update({ avatar_url: publicUrl })
-      .eq('id', groupId);
+      if (updateError) throw updateError;
 
-    setUploading(false);
-
-    if (updateError) {
-      toast({
-        title: 'Erro ao atualizar',
-        description: updateError.message,
-        variant: 'destructive',
-      });
-    } else {
       setAvatarUrl(publicUrl);
       toast({
         title: 'Foto atualizada!',
       });
       navigate(`/grupo/${groupId}/configuracoes`);
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
