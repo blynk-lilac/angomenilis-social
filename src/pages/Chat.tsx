@@ -231,22 +231,57 @@ export default function Chat() {
       clearTimeout(typingTimeoutRef.current);
     }
 
+    const messageText = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - mostra mensagem imediatamente
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: messageText,
+      sender_id: user.id,
+      receiver_id: friendId,
+      created_at: new Date().toISOString(),
+      message_type: 'text',
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+
+    // Envia para o servidor
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: friendId,
-      content: newMessage.trim(),
+      content: messageText,
       message_type: 'text',
     });
 
-    if (!error) {
-      setNewMessage('');
+    if (error) {
+      // Remove mensagem se falhar
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      console.error('Error sending message:', error);
     }
   };
 
   const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
     if (!user || !friendId) return;
 
-    await supabase.from('messages').insert({
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - mostra mídia imediatamente
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: '',
+      sender_id: user.id,
+      receiver_id: friendId,
+      created_at: new Date().toISOString(),
+      message_type: type,
+      media_url: url,
+      duration,
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: friendId,
       content: '',
@@ -254,6 +289,11 @@ export default function Chat() {
       media_url: url,
       duration,
     });
+
+    if (error) {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      console.error('Error sending media:', error);
+    }
   };
 
   const startCall = async (type: 'voice' | 'video') => {

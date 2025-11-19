@@ -114,20 +114,63 @@ export default function GroupChat() {
     e.preventDefault();
     if (!newMessage.trim() || !user || !groupId) return;
 
-    await supabase.from('group_messages').insert({
+    const messageText = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - mostra mensagem imediatamente
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: messageText,
+      sender_id: user.id,
+      created_at: new Date().toISOString(),
+      message_type: 'text',
+      profiles: {
+        first_name: 'Você',
+        avatar_url: null,
+      }
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+
+    // Envia para o servidor
+    const { error } = await supabase.from('group_messages').insert({
       group_id: groupId,
       sender_id: user.id,
-      content: newMessage.trim(),
+      content: messageText,
       message_type: 'text',
     });
 
-    setNewMessage('');
+    if (error) {
+      // Remove mensagem se falhar
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
     if (!user || !groupId) return;
 
-    await supabase.from('group_messages').insert({
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - mostra mídia imediatamente
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: '',
+      sender_id: user.id,
+      created_at: new Date().toISOString(),
+      message_type: type,
+      media_url: url,
+      duration,
+      profiles: {
+        first_name: 'Você',
+        avatar_url: null,
+      }
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    const { error } = await supabase.from('group_messages').insert({
       group_id: groupId,
       sender_id: user.id,
       content: '',
@@ -135,6 +178,11 @@ export default function GroupChat() {
       media_url: url,
       duration,
     });
+
+    if (error) {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      console.error('Error sending media:', error);
+    }
   };
 
   if (!group) {
