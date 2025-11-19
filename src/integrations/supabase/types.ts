@@ -59,6 +59,138 @@ export type Database = {
           },
         ]
       }
+      channel_admins: {
+        Row: {
+          added_at: string | null
+          channel_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          channel_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          channel_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_admins_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_followers: {
+        Row: {
+          channel_id: string
+          followed_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          followed_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          followed_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_followers_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_messages: {
+        Row: {
+          channel_id: string
+          content: string
+          created_at: string | null
+          duration: number | null
+          id: string
+          media_url: string | null
+          message_type: string | null
+          sender_id: string
+        }
+        Insert: {
+          channel_id: string
+          content: string
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          media_url?: string | null
+          message_type?: string | null
+          sender_id: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          media_url?: string | null
+          message_type?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          follower_count: number | null
+          id: string
+          is_public: boolean | null
+          name: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          follower_count?: number | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          follower_count?: number | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       chat_settings: {
         Row: {
           chat_partner_id: string
@@ -458,6 +590,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_channel_admin: {
+        Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_channel_follower: {
+        Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_group_creator: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean

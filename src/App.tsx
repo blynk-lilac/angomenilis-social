@@ -26,6 +26,9 @@ import EditName from './pages/group-settings/EditName';
 import EditPhoto from './pages/group-settings/EditPhoto';
 import Nicknames from './pages/group-settings/Nicknames';
 import GroupPermissions from './pages/group-settings/Permissions';
+import Channels from './pages/Channels';
+import CreateChannel from './pages/CreateChannel';
+import ChannelView from './pages/ChannelView';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -221,6 +224,33 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Channel Routes */}
+            <Route
+              path="/canais"
+              element={
+                <ProtectedRoute>
+                  <Channels />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/canais/criar"
+              element={
+                <ProtectedRoute>
+                  <CreateChannel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/canal/:channelId"
+              element={
+                <ProtectedRoute>
+                  <ChannelView />
+                </ProtectedRoute>
+              }
+            />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

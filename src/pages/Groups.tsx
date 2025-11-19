@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Group {
   id: string;
@@ -168,7 +168,7 @@ export default function Groups() {
 
   return (
     <MainLayout title="Grupos">
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full relative">
         <header className="sticky top-0 z-10 bg-card border-b border-border px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Grupos</h1>
@@ -243,6 +243,17 @@ export default function Groups() {
               </div>
             </button>
           ))}
+        </div>
+
+        {/* Floating Action Button */}
+        <div className="fixed bottom-20 right-4 z-10">
+          <Button
+            onClick={() => navigate('/canais')}
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
         </div>
       </div>
     </MainLayout>
