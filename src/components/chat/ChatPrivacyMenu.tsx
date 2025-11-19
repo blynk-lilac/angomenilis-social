@@ -89,6 +89,11 @@ export default function ChatPrivacyMenu({ chatPartnerId, chatPartnerName }: Chat
       toast({
         title: 'Configurações atualizadas',
       });
+      
+      // Trigger reload of settings in Chat component
+      window.dispatchEvent(new CustomEvent('chatSettingsUpdated', { 
+        detail: { chatPartnerId } 
+      }));
     }
   };
 
