@@ -46,10 +46,25 @@ export default function Settings() {
     if (!e.target.files || !e.target.files[0] || !user) return;
 
     const file = e.target.files[0];
+    
+    // Validar tamanho (50MB)
+    if (file.size > 52428800) {
+      toast.error('Arquivo muito grande! Máximo 50MB');
+      return;
+    }
+    
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem');
+      return;
+    }
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/avatar.${fileExt}`;
 
     try {
+      toast('Enviando foto...', { duration: 2000 });
+      
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
@@ -114,9 +129,9 @@ export default function Settings() {
             </Avatar>
             <label
               htmlFor="avatar-upload"
-              className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors"
+              className="absolute bottom-0 right-0 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-all hover:scale-110 shadow-lg animate-scale-in"
             >
-              <Camera className="h-5 w-5" />
+              <Camera className="h-6 w-6" />
               <Input
                 id="avatar-upload"
                 type="file"
@@ -128,6 +143,7 @@ export default function Settings() {
           </div>
           <h2 className="mt-4 text-xl font-bold">{profile.first_name}</h2>
           <p className="text-muted-foreground">@{profile.username}</p>
+          <p className="text-xs text-muted-foreground mt-1">Tamanho máximo: 50MB</p>
         </div>
 
         {/* Settings Menu */}
