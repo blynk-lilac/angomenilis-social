@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, UserPlus, Bell, Users, Edit, Image, Type, Shield, LogOut, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Users, Edit, LogOut, AlertTriangle, ChevronRight, 
+  UserPlus, BellOff, Image as ImageIcon, MessageSquare 
+} from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Group {
   id: string;
@@ -16,31 +19,18 @@ interface Group {
   created_by: string;
 }
 
-interface Member {
-  id: string;
-  user_id: string;
-  profiles: {
-    first_name: string;
-    username: string;
-    avatar_url: string | null;
-  };
-}
-
 export default function GroupSettings() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [group, setGroup] = useState<Group | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [showMembers, setShowMembers] = useState(false);
-  const [showEditName, setShowEditName] = useState(false);
-  const [newName, setNewName] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     if (groupId) {
       loadGroup();
-      loadMembers();
+      loadMuteSettings();
     }
   }, [groupId]);
 
@@ -51,77 +41,43 @@ export default function GroupSettings() {
       .eq('id', groupId)
       .single();
     
-    if (data) {
-      setGroup(data);
-      setNewName(data.name);
-    }
+    if (data) setGroup(data);
   };
 
-  const loadMembers = async () => {
+  const loadMuteSettings = async () => {
+    if (!user || !groupId) return;
+    
     const { data } = await supabase
       .from('group_members')
-      .select('id, user_id, profiles(first_name, username, avatar_url)')
-      .eq('group_id', groupId);
+      .select('is_muted')
+      .eq('group_id', groupId)
+      .eq('user_id', user.id)
+      .single();
     
-    if (data) setMembers(data as Member[]);
+    if (data) setIsMuted(data.is_muted || false);
   };
 
-  const updateGroupName = async () => {
-    if (!newName.trim() || !groupId) return;
-
+  const toggleMute = async () => {
+    if (!user || !groupId) return;
+    
+    const newMutedState = !isMuted;
     const { error } = await supabase
-      .from('groups')
-      .update({ name: newName.trim() })
-      .eq('id', groupId);
-
+      .from('group_members')
+      .update({ is_muted: newMutedState })
+      .eq('group_id', groupId)
+      .eq('user_id', user.id);
+    
     if (error) {
       toast({
-        title: 'Erro ao atualizar nome',
+        title: 'Erro ao atualizar',
+        description: 'Não foi possível alterar as notificações',
         variant: 'destructive',
       });
     } else {
-      toast({ title: 'Nome atualizado' });
-      setShowEditName(false);
-      loadGroup();
-    }
-  };
-
-  const updateGroupAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !groupId) return;
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${groupId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file);
-
-    if (uploadError) {
+      setIsMuted(newMutedState);
       toast({
-        title: 'Erro ao fazer upload',
-        variant: 'destructive',
+        title: newMutedState ? 'Grupo silenciado' : 'Grupo reativado',
       });
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    const { error: updateError } = await supabase
-      .from('groups')
-      .update({ avatar_url: publicUrl })
-      .eq('id', groupId);
-
-    if (updateError) {
-      toast({
-        title: 'Erro ao atualizar foto',
-        variant: 'destructive',
-      });
-    } else {
-      toast({ title: 'Foto atualizada' });
-      loadGroup();
     }
   };
 
@@ -145,178 +101,136 @@ export default function GroupSettings() {
     }
   };
 
-  if (!group) return null;
-
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-card border-b border-border px-4 py-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/grupo/${groupId}`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
-
-      {/* Content */}
+    <MainLayout title="Configurações do Grupo">
       <div className="flex-1 overflow-y-auto">
-        {/* Group Info */}
-        <div className="flex flex-col items-center py-8 px-4 border-b border-border">
-          <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={group.avatar_url || undefined} />
-            <AvatarFallback className="text-2xl">
-              <Users className="h-12 w-12" />
-            </AvatarFallback>
-          </Avatar>
-          <h1 className="text-2xl font-bold mb-2">{group.name}</h1>
-          
-          <div className="flex gap-12 mt-6">
-            <button className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                <UserPlus className="h-6 w-6" />
-              </div>
-              <span className="text-sm">Adicionar</span>
-            </button>
-            <button className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                <Bell className="h-6 w-6" />
-              </div>
-              <span className="text-sm">Silenciar</span>
-            </button>
+        <div className="p-4 space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={group?.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                <Users className="h-12 w-12" />
+              </AvatarFallback>
+            </Avatar>
+            <h2 className="text-xl font-semibold">{group?.name}</h2>
           </div>
-        </div>
 
-        {/* Actions Section */}
-        <div className="py-4">
-          <h2 className="text-sm font-semibold text-muted-foreground px-4 mb-2">Ações</h2>
-          
-          <button
-            onClick={() => setShowMembers(true)}
-            className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Users className="h-5 w-5" />
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/adicionar-membros`)}
+              >
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  <span>Adicionar membros</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
-            <span>Ver membros</span>
-          </button>
-        </div>
 
-        {/* Personalization Section */}
-        <div className="py-4 border-t border-border">
-          <h2 className="text-sm font-semibold text-muted-foreground px-4 mb-2">Personalização</h2>
-          
-          <button
-            onClick={() => setShowEditName(true)}
-            className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Edit className="h-5 w-5" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-2">
+                  <BellOff className="h-5 w-5" />
+                  <span>Silenciar notificações</span>
+                </div>
+                <Switch checked={isMuted} onCheckedChange={toggleMute} />
+              </div>
             </div>
-            <span>Alterar nome do grupo</span>
-          </button>
 
-          <label className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors cursor-pointer">
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Image className="h-5 w-5" />
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground px-2">Ações</h3>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/membros`)}
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  <span>Ver membros</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
-            <span>Alterar foto do grupo</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={updateGroupAvatar}
-            />
-          </label>
 
-          <button className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors">
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Type className="h-5 w-5" />
-            </div>
-            <span>Alcunhas</span>
-          </button>
-        </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground px-2">Personalização</h3>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/editar-nome`)}
+              >
+                <div className="flex items-center gap-2">
+                  <Edit className="h-5 w-5" />
+                  <span>Alterar nome do grupo</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/editar-foto`)}
+              >
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  <span>Alterar foto do grupo</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
 
-        {/* Privacy and Support Section */}
-        <div className="py-4 border-t border-border">
-          <h2 className="text-sm font-semibold text-muted-foreground px-4 mb-2">Privacidade e suporte</h2>
-          
-          <button className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors">
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <Shield className="h-5 w-5" />
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/alcunhas`)}
+              >
+                <div className="flex items-center gap-2">
+                  <Edit className="h-5 w-5" />
+                  <span>Alcunhas</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
-            <span>Permissões de mensagens</span>
-          </button>
 
-          <button
-            onClick={leaveGroup}
-            className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <LogOut className="h-5 w-5" />
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground px-2">Privacidade e suporte</h3>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/grupo/${groupId}/permissoes`)}
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  <span>Permissões de mensagens</span>
+                </div>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
-            <span>Sair do grupo</span>
-          </button>
 
-          <button
-            onClick={() => navigate(`/denunciar/grupo/${groupId}`)}
-            className="w-full flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5" />
+            <div className="space-y-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                className="w-full justify-start text-destructive hover:text-destructive"
+                onClick={leaveGroup}
+              >
+                <LogOut className="h-5 w-5 mr-2" />
+                Sair do grupo
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-destructive hover:text-destructive"
+                onClick={() => navigate(`/denunciar/grupo/${groupId}`)}
+              >
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                Denunciar
+              </Button>
             </div>
-            <div className="flex flex-col items-start">
-              <span>Denunciar</span>
-              <span className="text-xs text-muted-foreground">Enviar feedback e denunciar conversa</span>
-            </div>
-          </button>
+          </div>
         </div>
       </div>
-
-      {/* Members Dialog */}
-      <Dialog open={showMembers} onOpenChange={setShowMembers}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Membros do grupo ({members.length})</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center gap-3 p-2">
-                <Avatar>
-                  <AvatarImage src={member.profiles.avatar_url || undefined} />
-                  <AvatarFallback>{member.profiles.first_name[0]}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{member.profiles.first_name}</p>
-                  <p className="text-sm text-muted-foreground">@{member.profiles.username}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Name Dialog */}
-      <Dialog open={showEditName} onOpenChange={setShowEditName}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Alterar nome do grupo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Nome do grupo"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <Button onClick={updateGroupName} className="w-full">
-              Salvar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </MainLayout>
   );
 }

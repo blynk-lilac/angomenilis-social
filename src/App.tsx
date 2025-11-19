@@ -18,8 +18,14 @@ import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
-import GroupSettings from "./pages/GroupSettings";
-import Report from "./pages/Report";
+import GroupSettings from './pages/GroupSettings';
+import Report from './pages/Report';
+import AddMembers from './pages/group-settings/AddMembers';
+import ViewMembers from './pages/group-settings/ViewMembers';
+import EditName from './pages/group-settings/EditName';
+import EditPhoto from './pages/group-settings/EditPhoto';
+import Nicknames from './pages/group-settings/Nicknames';
+import GroupPermissions from './pages/group-settings/Permissions';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -40,7 +46,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Request notification permission when user is authenticated
   requestNotificationPermission();
   
   return <>{children}</>;
@@ -129,7 +134,7 @@ const App = () => (
               }
             />
             <Route
-              path="/perfil/:username"
+              path="/profile/:userId"
               element={
                 <ProtectedRoute>
                   <Profile />
@@ -157,6 +162,54 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <GroupSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/adicionar-membros"
+              element={
+                <ProtectedRoute>
+                  <AddMembers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/membros"
+              element={
+                <ProtectedRoute>
+                  <ViewMembers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/editar-nome"
+              element={
+                <ProtectedRoute>
+                  <EditName />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/editar-foto"
+              element={
+                <ProtectedRoute>
+                  <EditPhoto />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/alcunhas"
+              element={
+                <ProtectedRoute>
+                  <Nicknames />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/permissoes"
+              element={
+                <ProtectedRoute>
+                  <GroupPermissions />
                 </ProtectedRoute>
               }
             />
