@@ -2,9 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
+
+.animate-shake {
+  animation: shake 0.5s;
+}
 
 @layer base {
   :root {

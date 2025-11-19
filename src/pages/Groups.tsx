@@ -102,54 +102,68 @@ export default function Groups() {
   };
 
   const createGroup = async () => {
-    if (!groupName.trim() || selectedFriends.length === 0 || !user) return;
+    if (!groupName.trim() || selectedFriends.length === 0 || !user) {
+      toast({
+        title: 'Preencha todos os campos',
+        description: 'Insira um nome e selecione pelo menos um amigo',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    const { data: group, error: groupError } = await supabase
-      .from('groups')
-      .insert({
-        name: groupName,
-        created_by: user.id,
-      })
-      .select()
-      .single();
+    try {
+      const { data: group, error: groupError } = await supabase
+        .from('groups')
+        .insert({
+          name: groupName.trim(),
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
-    if (groupError || !group) {
+      if (groupError) {
+        console.error('Group creation error:', groupError);
+        throw groupError;
+      }
+
+      if (!group) {
+        throw new Error('Grupo não foi criado');
+      }
+
+      // Add creator as member
+      const members = [
+        { group_id: group.id, user_id: user.id },
+        ...selectedFriends.map(friendId => ({
+          group_id: group.id,
+          user_id: friendId,
+        })),
+      ];
+
+      const { error: membersError } = await supabase
+        .from('group_members')
+        .insert(members);
+
+      if (membersError) {
+        console.error('Members insertion error:', membersError);
+        throw membersError;
+      }
+
+      toast({
+        title: 'Grupo criado com sucesso!',
+      });
+
+      setGroupName('');
+      setSelectedFriends([]);
+      setIsDialogOpen(false);
+      await loadGroups();
+    } catch (error: any) {
+      console.error('Error creating group:', error);
       toast({
         title: 'Erro ao criar grupo',
+        description: error.message || 'Tente novamente',
         variant: 'destructive',
       });
-      return;
     }
-
-    // Add creator as member
-    const members = [
-      { group_id: group.id, user_id: user.id },
-      ...selectedFriends.map(friendId => ({
-        group_id: group.id,
-        user_id: friendId,
-      })),
-    ];
-
-    const { error: membersError } = await supabase
-      .from('group_members')
-      .insert(members);
-
-    if (membersError) {
-      toast({
-        title: 'Erro ao adicionar membros',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Grupo criado com sucesso!',
-    });
-
-    setGroupName('');
-    setSelectedFriends([]);
-    setIsDialogOpen(false);
-    loadGroups();
   };
 
   return (

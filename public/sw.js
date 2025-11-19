@@ -1,3 +1,12 @@
+// Prevent screenshot detection and enhance security
+self.addEventListener('install', function(event) {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', function(event) {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', function(event) {
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'Nova mensagem';
@@ -7,6 +16,7 @@ self.addEventListener('push', function(event) {
     badge: '/favicon.png',
     vibrate: [200, 100, 200],
     data: data.url || '/',
+    requireInteraction: true,
   };
 
   event.waitUntil(

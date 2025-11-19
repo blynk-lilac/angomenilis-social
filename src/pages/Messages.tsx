@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -114,42 +115,44 @@ export default function Messages() {
 
   return (
     <MainLayout title="Mensagens">
-      <div className="divide-y divide-border">
-        {friends.map((friend) => (
-          <button
-            key={friend.id}
-            onClick={() => navigate(`/chat/${friend.id}`)}
-            className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
-          >
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={friend.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {friend.first_name[0]}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 text-left">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-foreground">{friend.first_name}</p>
+      <ScrollArea className="h-[calc(100vh-8rem)]">
+        <div className="divide-y divide-border">
+          {friends.map((friend) => (
+            <button
+              key={friend.id}
+              onClick={() => navigate(`/chat/${friend.id}`)}
+              className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
+            >
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={friend.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {friend.first_name[0]}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-left">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground">{friend.first_name}</p>
+                  {friend.lastMessage && (
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
+                        locale: ptBR,
+                        addSuffix: true
+                      })}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">@{friend.username}</p>
                 {friend.lastMessage && (
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
-                      locale: ptBR,
-                      addSuffix: true
-                    })}
-                  </span>
+                  <p className={`text-sm truncate ${!friend.lastMessage.read ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                    {friend.lastMessage.content}
+                  </p>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">@{friend.username}</p>
-              {friend.lastMessage && (
-                <p className={`text-sm truncate ${!friend.lastMessage.read ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                  {friend.lastMessage.content}
-                </p>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
     </MainLayout>
   );
 }
