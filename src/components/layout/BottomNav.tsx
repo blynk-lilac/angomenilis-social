@@ -1,13 +1,12 @@
 import { NavLink } from '@/components/NavLink';
-import { Home, Search, PlusSquare, Play, User } from 'lucide-react';
+import { MessageCircle, Phone, Users, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
   const navItems = [
-    { to: '/', icon: Home, label: 'Home' },
-    { to: '/friends', icon: Search, label: 'Pesquisar' },
-    { to: '/grupos', icon: PlusSquare, label: 'Criar' },
-    { to: '/stories', icon: Play, label: 'Stories' },
-    { to: '/settings', icon: User, label: 'Perfil' },
+    { to: '/', icon: MessageCircle, label: 'Conversas' },
+    { to: '/stories', icon: Users, label: 'Atualizações' },
+    { to: '/grupos', icon: Users, label: 'Comunidades' },
+    { to: '/chamadas', icon: Phone, label: 'Chamadas' },
   ];
 
   return (
@@ -21,8 +20,8 @@ export const BottomNav = () => {
             className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-colors"
             activeClassName="text-primary font-medium"
           >
-            <Icon className="h-6 w-6" />
-            <span className="text-xs mt-1">{label}</span>
+            <Icon className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">{label}</span>
           </NavLink>
         ))}
       </div>
