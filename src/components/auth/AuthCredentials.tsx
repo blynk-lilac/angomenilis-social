@@ -19,13 +19,41 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) return;
+    
+    // Validações de entrada
+    const trimmedCredential = credential.trim();
+    const trimmedUsername = username.trim().toLowerCase();
+    
+    if (!trimmedCredential || !trimmedUsername) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    
+    // Validar formato de email se for email
+    if (isEmail(trimmedCredential)) {
+      if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedCredential)) {
+        toast.error('Digite um e-mail válido');
+        return;
+      }
+    } else {
+      // Validar formato de telefone
+      if (!/^\+?[1-9]\d{1,14}$/.test(trimmedCredential)) {
+        toast.error('Digite um número de telefone válido com código do país (+244...)');
+        return;
+      }
+    }
+    
+    // Validar username (apenas letras, números e underscore, 3-20 caracteres)
+    if (!/^[a-z0-9_]{3,20}$/.test(trimmedUsername)) {
+      toast.error('Nome de usuário deve ter 3-20 caracteres (apenas letras, números e _)');
+      return;
+    }
 
-    // Check if username already exists
+    // Verificar se username já existe
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('username')
-      .eq('username', username.trim().toLowerCase())
+      .eq('username', trimmedUsername)
       .single();
 
     if (existingUser) {
@@ -33,7 +61,7 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
       return;
     }
 
-    onNext(credential.trim(), username.trim().toLowerCase());
+    onNext(trimmedCredential, trimmedUsername);
   };
 
   return (

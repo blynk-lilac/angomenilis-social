@@ -21,26 +21,40 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação de entrada
+    if (!credential.trim()) {
+      toast.error('Digite seu e-mail ou telefone');
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: isEmail ? credential : undefined,
-        phone: !isEmail ? credential : undefined,
+        email: isEmail ? credential.trim() : undefined,
+        phone: !isEmail ? credential.trim() : undefined,
         password,
       });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           toast.error('E-mail/telefone ou senha incorretos');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Confirme seu e-mail antes de fazer login');
         } else {
-          toast.error(error.message);
+          toast.error('Erro ao fazer login. Tente novamente.');
         }
       } else {
         toast.success('Login realizado com sucesso!');
       }
     } catch (error) {
-      toast.error('Erro ao fazer login');
+      toast.error('Erro ao fazer login. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }

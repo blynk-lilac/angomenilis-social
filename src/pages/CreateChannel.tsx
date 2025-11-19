@@ -25,6 +25,16 @@ export default function CreateChannel() {
 
     const file = e.target.files[0];
     
+    // Validar tamanho do arquivo (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Arquivo inválido',
@@ -36,30 +46,36 @@ export default function CreateChannel() {
 
     setUploading(true);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `channel-${user.id}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `channels/channel-${user.id}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { 
+          cacheControl: '3600',
+          upsert: false 
+        });
 
-    if (uploadError) {
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setAvatarUrl(publicUrl);
+      toast({
+        title: 'Imagem carregada!',
+      });
+    } catch (error: any) {
       toast({
         title: 'Erro ao fazer upload',
-        description: uploadError.message,
+        description: error.message,
         variant: 'destructive',
       });
+    } finally {
       setUploading(false);
-      return;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    setAvatarUrl(publicUrl);
-    setUploading(false);
   };
 
   const createChannel = async () => {

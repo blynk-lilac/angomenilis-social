@@ -22,8 +22,20 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação de senha forte
     if (password.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    
+    if (!/[A-Za-z]/.test(password)) {
+      toast.error('A senha deve conter pelo menos uma letra');
+      return;
+    }
+    
+    if (!/[0-9]/.test(password)) {
+      toast.error('A senha deve conter pelo menos um número');
       return;
     }
 
@@ -45,13 +57,18 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
       });
 
       if (error) {
-        toast.error(error.message);
+        if (error.message.includes('already registered')) {
+          toast.error('Este e-mail/telefone já está cadastrado');
+        } else {
+          toast.error('Erro ao criar conta. Tente novamente.');
+        }
         setLoading(false);
       } else {
+        toast.success('Conta criada com sucesso!');
         onNext(password);
       }
     } catch (error) {
-      toast.error('Erro ao criar conta');
+      toast.error('Erro ao criar conta. Verifique sua conexão.');
       setLoading(false);
     }
   };
@@ -82,7 +99,7 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo de 6 caracteres"
+              placeholder="Mínimo 6 caracteres, com letras e números"
               className="h-14 text-lg rounded-2xl border-2 pr-12"
               required
               autoFocus
@@ -91,11 +108,14 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            A senha deve conter letras e números
+          </p>
         </div>
 
         <Button

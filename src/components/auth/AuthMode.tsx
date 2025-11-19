@@ -7,19 +7,21 @@ interface AuthModeProps {
 
 export const AuthMode = ({ onSelectMode }: AuthModeProps) => {
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-md space-y-8 animate-bounce-in">
       <div className="text-center space-y-4">
-        <img src={logo} alt="Angomenilis" className="h-24 w-24 mx-auto" />
-        <h1 className="text-4xl font-bold text-foreground">Angomenilis</h1>
-        <p className="text-muted-foreground text-lg">
+        <img src={logo} alt="Angomenilis" className="h-24 w-24 mx-auto animate-glow rounded-full" />
+        <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+          Angomenilis
+        </h1>
+        <p className="text-muted-foreground text-lg animate-fade-in">
           Conecte-se com seus amigos e compartilhe momentos
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 animate-slide-up">
         <Button
           onClick={() => onSelectMode('login')}
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           size="lg"
         >
           Entrar
@@ -28,14 +30,14 @@ export const AuthMode = ({ onSelectMode }: AuthModeProps) => {
         <Button
           onClick={() => onSelectMode('signup')}
           variant="outline"
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
           size="lg"
         >
           Criar Conta
         </Button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground animate-fade-in">
         Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade
       </p>
     </div>
