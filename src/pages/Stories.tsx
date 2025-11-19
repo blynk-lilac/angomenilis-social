@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Play } from 'lucide-react';
+import { Plus, Play, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { StoryViewer } from '@/components/story/StoryViewer';
@@ -26,6 +26,7 @@ export default function Stories() {
   const [stories, setStories] = useState<Story[]>([]);
   const [uploading, setUploading] = useState(false);
   const [activeUserStories, setActiveUserStories] = useState<Story[] | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -92,9 +93,29 @@ export default function Stories() {
     }
   };
 
+  // Filter stories by search query
+  const filteredStories = stories.filter(story => 
+    story.profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    story.profile.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <MainLayout title="Stories">
       <div className="p-4">
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Pesquisa"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-muted/50 border-none rounded-xl h-12"
+            />
+          </div>
+        </div>
+
         {/* Add Story Button */}
         <div className="mb-6">
           <label htmlFor="story-upload">
@@ -121,7 +142,7 @@ export default function Stories() {
         </div>
 
         {/* Stories Grid agrupadas por usuário */}
-        {stories.length === 0 ? (
+        {filteredStories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-96 text-center">
             <p className="text-muted-foreground">
               Nenhuma story disponível
@@ -133,7 +154,7 @@ export default function Stories() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
             {Object.values(
-              stories.reduce((acc: Record<string, Story[]>, story) => {
+              filteredStories.reduce((acc: Record<string, Story[]>, story) => {
                 if (!acc[story.user_id]) acc[story.user_id] = [];
                 acc[story.user_id].push(story);
                 return acc;

@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, UserCheck, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { UserPlus, UserCheck, Clock, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Profile {
@@ -29,6 +30,7 @@ export default function Friends() {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<string[]>([]);
   const [friends, setFriends] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -135,9 +137,29 @@ export default function Friends() {
     loadFriendRequests();
   };
 
+  // Filter users by search query
+  const filteredUsers = allUsers.filter(profile => 
+    profile.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    profile.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <MainLayout title="Amigos">
       <div className="p-3">
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Pesquisa"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-muted/50 border-none rounded-xl h-12"
+            />
+          </div>
+        </div>
+
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-3">
             <TabsTrigger value="all">Todos</TabsTrigger>
@@ -148,7 +170,7 @@ export default function Friends() {
 
           <TabsContent value="all" className="mt-0">
             <div className="space-y-2">
-              {allUsers.map((profile) => {
+              {filteredUsers.map((profile) => {
                 const isFriend = friends.includes(profile.id);
                 const requestSent = sentRequests.includes(profile.id);
 
