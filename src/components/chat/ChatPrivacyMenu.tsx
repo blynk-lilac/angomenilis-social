@@ -73,11 +73,14 @@ export default function ChatPrivacyMenu({ chatPartnerId, chatPartnerName }: Chat
     
     const { error } = await supabase
       .from('chat_settings')
-      .upsert({
-        user_id: user.id,
-        chat_partner_id: chatPartnerId,
-        ...newSettings,
-      });
+      .upsert(
+        {
+          user_id: user.id,
+          chat_partner_id: chatPartnerId,
+          ...newSettings,
+        },
+        { onConflict: 'user_id,chat_partner_id' }
+      );
 
     if (error) {
       toast({
