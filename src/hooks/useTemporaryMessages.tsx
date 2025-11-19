@@ -9,7 +9,7 @@ interface TemporaryMessagesConfig {
 
 export const useTemporaryMessages = ({ chatPartnerId, userId, duration }: TemporaryMessagesConfig) => {
   useEffect(() => {
-    if (duration === 'disabled') return;
+    if (!chatPartnerId || !userId || duration === 'disabled') return;
 
     const getDurationMs = () => {
       switch (duration) {

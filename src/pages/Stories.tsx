@@ -25,7 +25,7 @@ export default function Stories() {
   const { user } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [viewingStory, setViewingStory] = useState<number | null>(null);
+  const [activeUserStories, setActiveUserStories] = useState<Story[] | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -120,7 +120,7 @@ export default function Stories() {
           </label>
         </div>
 
-        {/* Stories Grid */}
+        {/* Stories Grid agrupadas por usuário */}
         {stories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-96 text-center">
             <p className="text-muted-foreground">
@@ -132,59 +132,68 @@ export default function Stories() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
-            {stories.map((story, index) => (
-              <div
-                key={story.id}
-                onClick={() => setViewingStory(index)}
-                className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted cursor-pointer group"
-              >
-                {story.media_type === 'image' ? (
-                  <img
-                    src={story.media_url}
-                    alt="Story"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="relative w-full h-full">
-                    <video
-                      src={story.media_url}
+            {Object.values(
+              stories.reduce((acc: Record<string, Story[]>, story) => {
+                if (!acc[story.user_id]) acc[story.user_id] = [];
+                acc[story.user_id].push(story);
+                return acc;
+              }, {})
+            ).map((userStories) => {
+              const [first] = userStories;
+              return (
+                <div
+                  key={first.user_id}
+                  onClick={() => setActiveUserStories(userStories)}
+                  className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted cursor-pointer group"
+                >
+                  {first.media_type === 'image' ? (
+                    <img
+                      src={first.media_url}
+                      alt="Story"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                      <Play className="h-12 w-12 text-white" />
+                  ) : (
+                    <div className="relative w-full h-full">
+                      <video
+                        src={first.media_url}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                        <Play className="h-12 w-12 text-white" />
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8 border-2 border-white">
-                      <AvatarImage src={story.profile.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {story.profile.first_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-white text-sm font-semibold">
-                        {story.profile.first_name}
-                      </p>
-                      <p className="text-white/80 text-xs">
-                        @{story.profile.username}
-                      </p>
+                  )}
+                  
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8 border-2 border-white">
+                        <AvatarImage src={first.profile.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {first.profile.first_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-white text-sm font-semibold">
+                          {first.profile.first_name}
+                        </p>
+                        <p className="text-white/80 text-xs">
+                          @{first.profile.username}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {viewingStory !== null && (
+      {activeUserStories && (
         <StoryViewer
-          stories={stories}
-          initialIndex={viewingStory}
-          onClose={() => setViewingStory(null)}
+          stories={activeUserStories}
+          initialIndex={0}
+          onClose={() => setActiveUserStories(null)}
           onDelete={loadStories}
         />
       )}

@@ -60,14 +60,15 @@ export default function Settings() {
     }
     
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/avatar.${fileExt}`;
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const fileName = `${user.id}/avatar-${uniqueSuffix}.${fileExt}`;
 
     try {
       toast('Enviando foto...', { duration: 2000 });
       
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
