@@ -18,6 +18,8 @@ import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
+import GroupSettings from "./pages/GroupSettings";
+import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -147,6 +149,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <GroupChat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grupo/:groupId/configuracoes"
+              element={
+                <ProtectedRoute>
+                  <GroupSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/denunciar/:type/:id"
+              element={
+                <ProtectedRoute>
+                  <Report />
                 </ProtectedRoute>
               }
             />
