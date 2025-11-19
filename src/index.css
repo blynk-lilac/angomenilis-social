@@ -116,6 +116,11 @@ All colors MUST be HSL.
     padding-right: env(safe-area-inset-right);
   }
 
+  /* Mirror effect for selfie camera */
+  .mirror {
+    transform: scaleX(-1);
+  }
+
   /* Animations */
   @keyframes fade-in {
     from {
