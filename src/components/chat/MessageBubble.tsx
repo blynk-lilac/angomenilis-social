@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Play } from 'lucide-react';
+import { Play, ImageOff } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: {
@@ -12,10 +12,23 @@ interface MessageBubbleProps {
     duration?: number;
   };
   isSent: boolean;
+  hideMedia?: boolean;
 }
 
-export default function MessageBubble({ message, isSent }: MessageBubbleProps) {
+export default function MessageBubble({ message, isSent, hideMedia = false }: MessageBubbleProps) {
   const renderMedia = () => {
+    // If media visibility is disabled, show placeholder
+    if (hideMedia && (message.message_type === 'image' || message.message_type === 'video')) {
+      return (
+        <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl mb-2">
+          <ImageOff className="h-5 w-5 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            Mídia oculta por configurações de privacidade
+          </div>
+        </div>
+      );
+    }
+
     if (message.message_type === 'image' && message.media_url) {
       return (
         <img

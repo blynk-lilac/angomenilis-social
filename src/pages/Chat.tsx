@@ -16,6 +16,7 @@ import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
+import { useTemporaryMessages } from '@/hooks/useTemporaryMessages';
 
 interface Message {
   id: string;
@@ -53,6 +54,13 @@ export default function Chat() {
   
   // Enable screenshot protection
   useScreenshotProtection(true);
+  
+  // Enable temporary messages if configured
+  useTemporaryMessages({
+    chatPartnerId: friendId || '',
+    userId: user?.id || '',
+    duration: chatSettings?.temporary_messages_duration || 'disabled',
+  });
 
   useEffect(() => {
     if (friendId) {
@@ -60,8 +68,49 @@ export default function Chat() {
       loadChatSettings();
       loadMessages();
       subscribeToMessages();
+      subscribeToChatSettings();
     }
   }, [friendId]);
+
+  useEffect(() => {
+    // Listen for settings updates from ChatPrivacyMenu
+    const handleSettingsUpdate = () => {
+      loadChatSettings();
+    };
+
+    window.addEventListener('chatSettingsUpdated', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('chatSettingsUpdated', handleSettingsUpdate);
+    };
+  }, [friendId]);
+
+  const subscribeToChatSettings = () => {
+    if (!user || !friendId) return;
+
+    const channel = supabase
+      .channel('chat-settings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          if (newData && newData.chat_partner_id === friendId) {
+            loadChatSettings();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const loadChatSettings = async () => {
     if (!user || !friendId) return;
@@ -231,6 +280,7 @@ export default function Chat() {
       <ChatPinProtection
         correctPin={chatSettings.pin_code}
         chatPartnerName={friend?.first_name || 'Usuário'}
+        chatPartnerId={friendId || ''}
         onUnlock={() => setIsUnlocked(true)}
       />
     );
@@ -327,12 +377,17 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 bg-chat-bg">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
+          const hideMedia = chatSettings && !chatSettings.media_visibility;
           return (
             <div
               key={message.id}
               className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
-              <MessageBubble message={message} isSent={isSent} />
+              <MessageBubble 
+                message={message} 
+                isSent={isSent}
+                hideMedia={hideMedia}
+              />
             </div>
           );
         })}
