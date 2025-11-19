@@ -174,19 +174,25 @@ export type Database = {
         Row: {
           group_id: string
           id: string
+          is_muted: boolean | null
           joined_at: string | null
+          nickname: string | null
           user_id: string
         }
         Insert: {
           group_id: string
           id?: string
+          is_muted?: boolean | null
           joined_at?: string | null
+          nickname?: string | null
           user_id: string
         }
         Update: {
           group_id?: string
           id?: string
+          is_muted?: boolean | null
           joined_at?: string | null
+          nickname?: string | null
           user_id?: string
         }
         Relationships: [
@@ -256,6 +262,8 @@ export type Database = {
       }
       groups: {
         Row: {
+          all_members_can_edit_info: boolean | null
+          all_members_can_send: boolean | null
           avatar_url: string | null
           created_at: string | null
           created_by: string
@@ -263,6 +271,8 @@ export type Database = {
           name: string
         }
         Insert: {
+          all_members_can_edit_info?: boolean | null
+          all_members_can_send?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
           created_by: string
@@ -270,6 +280,8 @@ export type Database = {
           name: string
         }
         Update: {
+          all_members_can_edit_info?: boolean | null
+          all_members_can_send?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
           created_by?: string
