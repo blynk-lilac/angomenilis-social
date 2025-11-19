@@ -57,12 +57,15 @@ export default function PinRecoveryDialog({
 
     const { error } = await supabase
       .from('chat_settings')
-      .upsert({
-        user_id: user.id,
-        chat_partner_id: chatPartnerId,
-        pin_code: newPin,
-        is_locked: true,
-      });
+      .upsert(
+        {
+          user_id: user.id,
+          chat_partner_id: chatPartnerId,
+          pin_code: newPin,
+          is_locked: true,
+        },
+        { onConflict: 'user_id,chat_partner_id' }
+      );
 
     if (error) {
       toast({
