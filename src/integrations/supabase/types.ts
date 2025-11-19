@@ -59,6 +59,42 @@ export type Database = {
           },
         ]
       }
+      chat_settings: {
+        Row: {
+          chat_partner_id: string
+          created_at: string | null
+          id: string
+          is_locked: boolean | null
+          media_visibility: boolean | null
+          pin_code: string | null
+          temporary_messages_duration: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_partner_id: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          media_visibility?: boolean | null
+          pin_code?: string | null
+          temporary_messages_duration?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_partner_id?: string
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          media_visibility?: boolean | null
+          pin_code?: string | null
+          temporary_messages_duration?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       friend_requests: {
         Row: {
           created_at: string | null

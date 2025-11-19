@@ -10,9 +10,12 @@ import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
+import ChatPrivacyMenu from '@/components/chat/ChatPrivacyMenu';
+import ChatPinProtection from '@/components/chat/ChatPinProtection';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
 
 interface Message {
   id: string;
@@ -40,19 +43,47 @@ export default function Chat() {
   const [friend, setFriend] = useState<Profile | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [activeCall, setActiveCall] = useState<{ id: string; type: 'voice' | 'video' } | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [chatSettings, setChatSettings] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { isOnline } = useUserPresence(friendId);
   const { typingUsers, setTyping } = useTypingIndicator(friendId || '');
+  
+  // Enable screenshot protection
+  useScreenshotProtection(true);
 
   useEffect(() => {
     if (friendId) {
       loadFriend();
+      loadChatSettings();
       loadMessages();
       subscribeToMessages();
     }
   }, [friendId]);
+
+  const loadChatSettings = async () => {
+    if (!user || !friendId) return;
+
+    const { data } = await supabase
+      .from('chat_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('chat_partner_id', friendId)
+      .single();
+
+    if (data) {
+      setChatSettings(data);
+      if (data.is_locked && !isUnlocked) {
+        setIsUnlocked(false);
+      } else {
+        setIsUnlocked(true);
+      }
+    } else {
+      setIsUnlocked(true);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -194,6 +225,17 @@ export default function Chat() {
     }
   };
 
+  // Show PIN protection if chat is locked
+  if (chatSettings?.is_locked && !isUnlocked && chatSettings?.pin_code) {
+    return (
+      <ChatPinProtection
+        correctPin={chatSettings.pin_code}
+        chatPartnerName={friend?.first_name || 'Usuário'}
+        onUnlock={() => setIsUnlocked(true)}
+      />
+    );
+  }
+
   if (activeCall) {
     return (
       <CallInterface
@@ -272,6 +314,12 @@ export default function Chat() {
           >
             <Video className="h-5 w-5" />
           </Button>
+          {friendId && friend && (
+            <ChatPrivacyMenu 
+              chatPartnerId={friendId} 
+              chatPartnerName={friend.first_name}
+            />
+          )}
         </div>
       </header>
 

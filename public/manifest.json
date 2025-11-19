@@ -8,6 +8,9 @@
   "theme_color": "#14B8A6",
   "orientation": "portrait",
   "gcm_sender_id": "103953800507",
+  "scope": "/",
+  "categories": ["social", "messaging"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/favicon.png",
