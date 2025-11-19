@@ -11,6 +11,8 @@ import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
 import { showNotification } from '@/utils/pushNotifications';
+import { useUserPresence } from '@/hooks/useUserPresence';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 
 interface Message {
   id: string;
@@ -39,6 +41,10 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [activeCall, setActiveCall] = useState<{ id: string; type: 'voice' | 'video' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { isOnline } = useUserPresence(friendId);
+  const { typingUsers, setTyping } = useTypingIndicator(friendId || '');
 
   useEffect(() => {
     if (friendId) {
@@ -119,9 +125,31 @@ export default function Chat() {
     };
   };
 
+  const handleTyping = (value: string) => {
+    setNewMessage(value);
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    if (value.trim()) {
+      setTyping(true);
+      typingTimeoutRef.current = setTimeout(() => {
+        setTyping(false);
+      }, 2000);
+    } else {
+      setTyping(false);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || !friendId) return;
+
+    setTyping(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
@@ -184,59 +212,77 @@ export default function Chat() {
     );
   }
 
+  const isTyping = typingUsers.size > 0;
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header - Fixed */}
-      <header className="flex-shrink-0 sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border px-3 py-2 safe-area-top">
-        <div className="flex items-center gap-2">
+      <header className="flex-shrink-0 sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 safe-area-top">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/')}
-            className="h-8 w-8 rounded-full"
+            className="h-10 w-10 rounded-full"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={friend.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-              {friend.first_name[0]}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-11 w-11">
+              <AvatarImage src={friend.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-base">
+                {friend.first_name[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-card ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          </div>
           
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-foreground truncate">{friend.first_name}</p>
-            <p className="text-xs text-muted-foreground truncate">@{friend.username}</p>
+            <p className="font-semibold text-base text-foreground truncate">{friend.first_name}</p>
+            {isTyping ? (
+              <div className="flex items-center gap-1 text-xs text-primary">
+                <span>Escrevendo</span>
+                <div className="flex gap-0.5">
+                  <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground truncate">
+                {isOnline ? 'Online' : 'Offline'}
+              </p>
+            )}
           </div>
 
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-10 w-10 rounded-full"
             onClick={() => startCall('voice')}
           >
-            <Phone className="h-4 w-4" />
+            <Phone className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-10 w-10 rounded-full"
             onClick={() => startCall('video')}
           >
-            <Video className="h-4 w-4" />
+            <Video className="h-5 w-5" />
           </Button>
         </div>
       </header>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-2 bg-background">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 bg-chat-bg">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
           return (
             <div
               key={message.id}
-              className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
               <MessageBubble message={message} isSent={isSent} />
             </div>
@@ -248,23 +294,23 @@ export default function Chat() {
       {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
-        className="flex-shrink-0 sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-3 py-2 safe-area-bottom"
+        className="flex-shrink-0 sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom"
       >
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-3 items-center">
           <MediaPicker onMediaSelect={handleMediaSelect} />
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => handleTyping(e.target.value)}
             placeholder="Mensagem..."
-            className="flex-1 h-9 text-sm rounded-full border-border/50 bg-background/50 focus-visible:ring-primary"
+            className="flex-1 h-11 text-base rounded-full border-border/50 bg-background/50 focus-visible:ring-primary"
           />
           <Button
             type="submit"
             size="icon"
-            className="rounded-full h-9 w-9 flex-shrink-0"
+            className="rounded-full h-11 w-11 flex-shrink-0"
             disabled={!newMessage.trim()}
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5" />
           </Button>
         </div>
       </form>
