@@ -334,9 +334,9 @@ export default function Chat() {
   const isTyping = typingUsers.size > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-background">
       {/* Header - Fixed */}
-      <header className="flex-shrink-0 sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 safe-area-top">
+      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-4 py-3 safe-area-top">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -429,7 +429,7 @@ export default function Chat() {
       {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
-        className="flex-shrink-0 sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom"
+        className="flex-shrink-0 bg-card border-t border-border px-4 py-3 safe-area-bottom"
       >
         <div className="flex gap-3 items-center">
           <MediaPicker onMediaSelect={handleMediaSelect} />
