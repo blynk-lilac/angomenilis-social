@@ -9,12 +9,12 @@ import { MoreHorizontal, Trash, Flag } from 'lucide-react';
 
 interface PostMenuProps {
   postId: string;
-  isOwnPost: boolean;
+  isOwner: boolean;
   onDelete?: () => void;
   onReport?: () => void;
 }
 
-export default function PostMenu({ postId, isOwnPost, onDelete, onReport }: PostMenuProps) {
+export default function PostMenu({ postId, isOwner, onDelete, onReport }: PostMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -23,13 +23,13 @@ export default function PostMenu({ postId, isOwnPost, onDelete, onReport }: Post
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {isOwnPost && onDelete && (
+        {isOwner && onDelete && (
           <DropdownMenuItem onClick={onDelete} className="text-destructive">
             <Trash className="h-4 w-4 mr-2" />
             Eliminar
           </DropdownMenuItem>
         )}
-        {!isOwnPost && onReport && (
+        {!isOwner && onReport && (
           <DropdownMenuItem onClick={onReport}>
             <Flag className="h-4 w-4 mr-2" />
             Denunciar

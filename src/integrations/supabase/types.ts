@@ -259,6 +259,97 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string | null
+          id: string
+          parent_comment_id: string | null
+          post_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          post_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          post_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -530,6 +621,44 @@ export type Database = {
           },
         ]
       }
+      live_streams: {
+        Row: {
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          user_id: string
+          viewer_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          user_id: string
+          viewer_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          user_id?: string
+          viewer_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_streams_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -729,33 +858,51 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          badge_type: string | null
+          banner_url: string | null
+          bio: string | null
           created_at: string | null
           email: string | null
           first_name: string
+          full_name: string | null
           id: string
+          is_public: boolean | null
           phone: string | null
           updated_at: string | null
           username: string
+          verified: boolean | null
         }
         Insert: {
           avatar_url?: string | null
+          badge_type?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           first_name: string
+          full_name?: string | null
           id: string
+          is_public?: boolean | null
           phone?: string | null
           updated_at?: string | null
           username: string
+          verified?: boolean | null
         }
         Update: {
           avatar_url?: string | null
+          badge_type?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string
+          full_name?: string | null
           id?: string
+          is_public?: boolean | null
           phone?: string | null
           updated_at?: string | null
           username?: string
+          verified?: boolean | null
         }
         Relationships: []
       }

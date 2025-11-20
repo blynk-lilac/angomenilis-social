@@ -2,14 +2,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus } from 'lucide-react';
 
 interface StoriesBarProps {
-  onCreateClick?: () => void;
+  onCreateStory?: () => void;
 }
 
-export default function StoriesBar({ onCreateClick }: StoriesBarProps) {
+export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
   return (
     <div className="flex gap-3 overflow-x-auto p-4 bg-card border-b border-border scrollbar-hide">
       <button 
-        onClick={onCreateClick}
+        onClick={onCreateStory}
         className="flex flex-col items-center gap-2 flex-shrink-0"
       >
         <div className="relative">
