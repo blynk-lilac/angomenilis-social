@@ -15,10 +15,6 @@ import {
   Gift,
   Bookmark,
   Clock,
-  Store,
-  Flag,
-  Users2,
-  Radio,
   Settings,
   HelpCircle,
   FileText,
@@ -83,15 +79,6 @@ export default function SideMenu() {
         { icon: MessageCircle, label: "Mensagens", path: "/messages", bgColor: "bg-pink-100 dark:bg-pink-900/20" },
         { icon: Video, label: "Vídeos", path: "/videos", bgColor: "bg-purple-100 dark:bg-purple-900/20" },
         { icon: BadgeCheck, label: "Verificação", path: "/verification", bgColor: "bg-green-100 dark:bg-green-900/20" },
-      ]
-    },
-    {
-      title: "Comunidade",
-      items: [
-        { icon: Users2, label: "Grupos", path: "/groups", bgColor: "bg-blue-100 dark:bg-blue-900/20" },
-        { icon: Radio, label: "Streaming Ao Vivo", path: "/live", bgColor: "bg-red-100 dark:bg-red-900/20" },
-        { icon: Store, label: "Marketplace", path: "#", bgColor: "bg-green-100 dark:bg-green-900/20" },
-        { icon: Flag, label: "Páginas", path: "#", bgColor: "bg-orange-100 dark:bg-orange-900/20" },
       ]
     },
     {
