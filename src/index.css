@@ -8,7 +8,7 @@
   75% { transform: translateX(10px); }
 }
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Messenger-inspired design system. All colors, gradients, fonts, etc defined here. 
 All colors MUST be HSL.
 */
 
@@ -18,98 +18,114 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* WhatsApp-inspired design */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 13%;
+    /* Messenger colors - Light mode */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card-foreground: 220 13% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover-foreground: 220 13% 9%;
 
-    --primary: 142 70% 49%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 142 70% 59%;
+    --primary-glow: 221 83% 63%;
+    --primary-light: 221 83% 95%;
 
-    --secondary: 142 70% 95%;
-    --secondary-foreground: 142 70% 25%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 9%;
 
-    --muted: 142 16% 93%;
-    --muted-foreground: 0 0% 46%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 142 70% 49%;
+    --accent: 271 91% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 142 16% 88%;
-    --input: 142 16% 88%;
-    --ring: 142 70% 49%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    --chat-bg: 230 22% 93%;
-    --chat-bubble-sent: 142 70% 95%;
-    --chat-bubble-received: 0 0% 100%;
-    --online-indicator: 142 70% 49%;
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 70% 49%), hsl(142 70% 59%));
-    --gradient-card: linear-gradient(to bottom, hsl(0 0% 100%), hsl(0 0% 98%));
+    --chat-bg: 0 0% 98%;
+    --chat-bubble-sent: 221 83% 53%;
+    --chat-bubble-sent-foreground: 0 0% 100%;
+    --chat-bubble-received: 220 14% 96%;
+    --chat-bubble-received-foreground: 220 13% 9%;
+    --chat-input-bg: 0 0% 100%;
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-glow: 0 0 20px hsl(142 70% 59% / 0.3);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 16px 0 rgba(0, 0, 0, 0.12);
+    --shadow-messenger: 0 2px 12px rgba(0, 132, 255, 0.15);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 13% 9%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 13% 9%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
+    --background: 220 13% 9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 95%;
+    --card: 220 13% 11%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 220 13% 11%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 142 70% 49%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 142 70% 59%;
+    --primary-glow: 221 83% 63%;
+    --primary-light: 221 83% 20%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 65%;
 
-    --accent: 142 70% 49%;
+    --accent: 271 91% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 142 70% 49%;
+    --border: 220 13% 18%;
+    --input: 220 13% 18%;
+    --ring: 221 83% 53%;
 
-    --chat-bg: 0 0% 8%;
-    --chat-bubble-sent: 142 70% 20%;
-    --chat-bubble-received: 0 0% 15%;
-    --online-indicator: 142 70% 49%;
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 70% 49%), hsl(142 70% 59%));
-    --gradient-card: linear-gradient(to bottom, hsl(0 0% 11%), hsl(0 0% 8%));
+    --chat-bg: 220 13% 9%;
+    --chat-bubble-sent: 221 83% 45%;
+    --chat-bubble-sent-foreground: 0 0% 100%;
+    --chat-bubble-received: 220 13% 15%;
+    --chat-bubble-received-foreground: 0 0% 98%;
+    --chat-input-bg: 220 13% 11%;
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-    --shadow-glow: 0 0 20px hsl(142 70% 59% / 0.5);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 16px 0 rgba(0, 0, 0, 0.5);
+    --shadow-messenger: 0 2px 12px rgba(0, 132, 255, 0.3);
+
+    --sidebar-background: 220 13% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 13% 18%;
+    --sidebar-ring: 221 83% 53%;
   }
 }
 
@@ -119,12 +135,15 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Mirror effect for local video */
@@ -150,177 +169,231 @@ All colors MUST be HSL.
   }
 }
 
-@layer utilities {
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top);
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
-  .safe-area-left {
-    padding-left: env(safe-area-inset-left);
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
   }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
-  .safe-area-right {
-    padding-right: env(safe-area-inset-right);
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
   }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
-  /* Mirror effect for selfie camera */
-  .mirror {
-    transform: scaleX(-1);
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  /* Animations */
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
   }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+  }
+}
 
-  @keyframes slide-in-right {
-    from {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
   }
-  
-  @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+  100% {
+    background-position: 1000px 0;
   }
-  
-  @keyframes bounce-in {
-    0% {
-      opacity: 0;
-      transform: scale(0.3);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-    70% {
-      transform: scale(0.9);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  
-  @keyframes slide-up {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes glow {
-    0%, 100% {
-      box-shadow: 0 0 20px hsl(var(--primary-glow) / 0.3);
-    }
-    50% {
-      box-shadow: 0 0 30px hsl(var(--primary-glow) / 0.6);
-    }
-  }
+}
 
-  .animate-fade-in {
-    animation: fade-in 0.4s ease-out;
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
   }
-  
-  .animate-scale-in {
-    animation: scale-in 0.3s ease-out;
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
   }
-  
-  .animate-bounce-in {
-    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
-  
-  .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
-  }
-  
-  .animate-glow {
-    animation: glow 2s ease-in-out infinite;
-  }
+}
 
-  @keyframes slide-in-left {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
 
-  @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
-    }
-    50% {
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
-    }
-  }
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
 
-  .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-  }
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
 
-  .animate-slide-in-right {
-    animation: slide-in-right 0.3s ease-out;
-  }
+.animate-glow {
+  animation: glow 2s infinite;
+}
 
-  .animate-slide-in-left {
-    animation: slide-in-left 0.3s ease-out;
-  }
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 1000px 100%;
+}
 
-  .animate-scale-in {
-    animation: scale-in 0.2s ease-out;
-  }
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
 
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
+/* Messenger gradient */
+.gradient-messenger {
+  background: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(271, 91%, 65%) 100%);
+}
 
-  /* Hover effects */
-  .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
+.dark .gradient-messenger {
+  background: linear-gradient(135deg, hsl(221, 83%, 45%) 0%, hsl(271, 91%, 55%) 100%);
+}
 
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
+/* Glass effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-effect {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-messenger);
+}
+
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Messenger button */
+.btn-messenger {
+  background: linear-gradient(135deg, hsl(221, 83%, 53%), hsl(271, 91%, 65%));
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.btn-messenger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+}
+
+.btn-messenger:active {
+  transform: translateY(0);
+}
+
+/* Avatar with status */
+.avatar-online {
+  position: relative;
+}
+
+.avatar-online::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border: 2.5px solid hsl(var(--card));
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Safe area support */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
