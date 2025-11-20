@@ -118,7 +118,7 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
     };
 
     touchTimerRef.current = setTimeout(() => {
-      // Show reaction picker after 2 seconds
+      // Show reaction picker instantly
       const rect = messageRef.current?.getBoundingClientRect();
       if (rect) {
         setPickerPosition({
@@ -132,7 +132,7 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
           navigator.vibrate(50);
         }
       }
-    }, 2000);
+    }, 500);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
