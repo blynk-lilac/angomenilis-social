@@ -205,7 +205,7 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
         <img
           src={message.media_url}
           alt="Imagem"
-          className="max-w-sm rounded-xl mb-2 hover:scale-[1.02] transition-transform cursor-pointer"
+          className="max-w-[200px] max-h-[200px] object-cover rounded-xl mb-2 hover:scale-[1.02] transition-transform cursor-pointer"
         />
       );
     }
@@ -215,7 +215,7 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
         <video
           src={message.media_url}
           controls
-          className="max-w-sm rounded-xl mb-2"
+          className="max-w-[200px] max-h-[200px] rounded-xl mb-2"
         />
       );
     }
