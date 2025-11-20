@@ -159,8 +159,8 @@ export default function GroupChat() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-chat-bg">
-      <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
+    <div className="fixed inset-0 flex flex-col bg-chat-bg">
+      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
@@ -238,7 +238,7 @@ export default function GroupChat() {
 
       <form
         onSubmit={sendMessage}
-        className="sticky bottom-0 bg-card border-t border-border p-4"
+        className="flex-shrink-0 bg-card border-t border-border p-4"
       >
         <div className="flex gap-2 items-center">
           <MediaPicker onMediaSelect={handleMediaSelect} />
