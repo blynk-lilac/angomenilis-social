@@ -742,6 +742,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -826,6 +859,7 @@ export type Database = {
           media_url: string | null
           updated_at: string | null
           user_id: string
+          visibility: string | null
         }
         Insert: {
           content: string
@@ -835,6 +869,7 @@ export type Database = {
           media_url?: string | null
           updated_at?: string | null
           user_id: string
+          visibility?: string | null
         }
         Update: {
           content?: string
@@ -844,6 +879,7 @@ export type Database = {
           media_url?: string | null
           updated_at?: string | null
           user_id?: string
+          visibility?: string | null
         }
         Relationships: [
           {
@@ -903,6 +939,42 @@ export type Database = {
           updated_at?: string | null
           username?: string
           verified?: boolean | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          id: string
+          reason: string
+          reported_content_id: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string | null
+          id?: string
+          reason: string
+          reported_content_id: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reported_content_id?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -976,6 +1048,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
