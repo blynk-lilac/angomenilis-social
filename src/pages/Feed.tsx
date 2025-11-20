@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageSquare, Share2, MoreHorizontal, Globe, Users, Radio } from "lucide-react";
+import { Heart, MessageSquare, Share2, Globe, Users, Radio } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import { MainNav } from "@/components/MainNav";
@@ -14,7 +14,6 @@ import CreateStory from "@/components/CreateStory";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
-import PostMenu from "@/components/PostMenu";
 import { Separator } from "@/components/ui/separator";
 
 interface LiveStream {
@@ -415,42 +414,34 @@ export default function Feed() {
               <Card key={post.id} className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
                 {/* Header do Post */}
                 <div className="p-4 pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-11 w-11 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all">
-                        <AvatarImage src={post.profiles?.avatar_url} />
-                        <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
-                          {post.profiles?.username?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-11 w-11 ring-2 ring-border hover:ring-primary/30 transition-all">
+                      <AvatarImage src={post.profiles?.avatar_url} />
+                      <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
+                        {post.profiles?.username?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-[15px] truncate text-foreground">
-                            {post.profiles?.full_name || post.profiles?.username}
-                          </span>
-                          {post.profiles?.verified && (
-                            <VerificationBadge badgeType={post.profiles?.badge_type} className="w-4 h-4 flex-shrink-0" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                          <span>
-                            {formatDistanceToNow(new Date(post.created_at), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
-                          </span>
-                          <span>•</span>
-                          <Globe className="h-3 w-3" />
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-[15px] truncate text-foreground">
+                          {post.profiles?.full_name || post.profiles?.username}
+                        </span>
+                        {post.profiles?.verified && (
+                          <VerificationBadge badgeType={post.profiles?.badge_type} className="w-4 h-4 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                        <span>
+                          {formatDistanceToNow(new Date(post.created_at), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </span>
+                        <span>•</span>
+                        <Globe className="h-3 w-3" />
                       </div>
                     </div>
-
-                    <PostMenu 
-                      postId={post.id}
-                      isOwner={post.user_id === currentUserId}
-                      onDelete={loadPosts}
-                    />
                   </div>
 
                   {/* Conteúdo do Post */}
