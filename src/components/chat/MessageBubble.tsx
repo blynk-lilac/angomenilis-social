@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Play, ImageOff } from 'lucide-react';
 import { ReactionPicker } from './ReactionPicker';
@@ -26,10 +27,14 @@ interface MessageBubbleProps {
   isSent: boolean;
   hideMedia?: boolean;
   isGroupMessage?: boolean | 'channel';
+  contextType?: 'chat' | 'group' | 'channel';
+  contextId?: string;
+  onDeleteLocal?: (id: string) => void;
 }
 
-export default function MessageBubble({ message, isSent, hideMedia = false, isGroupMessage = false }: MessageBubbleProps) {
+export default function MessageBubble({ message, isSent, hideMedia = false, isGroupMessage = false, contextType = 'chat', contextId, onDeleteLocal }: MessageBubbleProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 });
   const [reactions, setReactions] = useState<Reaction[]>([]);
@@ -237,6 +242,55 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
 
   const isMediaOnly = (message.message_type === 'image' || message.message_type === 'video') && !message.content;
 
+  const handleCopy = async () => {
+    try {
+      const textToCopy = message.content || message.media_url || '';
+      if (!textToCopy) return;
+      await navigator.clipboard.writeText(textToCopy);
+      toast.success('Mensagem copiada');
+    } catch (error) {
+      console.error('Erro ao copiar mensagem:', error);
+      toast.error('Não foi possível copiar a mensagem');
+    }
+  };
+
+  const handleForward = async () => {
+    const textToShare = message.content || message.media_url || '';
+    if (!textToShare) return;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: textToShare });
+      } else {
+        await navigator.clipboard.writeText(textToShare);
+        toast.success('Mensagem copiada para reenviar');
+      }
+    } catch (error) {
+      console.error('Erro ao reenviar mensagem:', error);
+    }
+  };
+
+  const handleReply = async () => {
+    if (!message.content) return;
+    try {
+      await navigator.clipboard.writeText(message.content);
+      toast.success('Texto copiado para responder');
+    } catch (error) {
+      console.error('Erro ao preparar resposta:', error);
+    }
+  };
+
+  const handleReport = () => {
+    if (!contextId) return;
+    const typeParam = contextType === 'group' ? 'grupo' : 'chat';
+    navigate(`/denunciar/${typeParam}/${contextId}`);
+  };
+
+  const handleDelete = () => {
+    onDeleteLocal?.(message.id);
+    toast.success('Mensagem eliminada para você');
+  };
+
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -298,6 +352,11 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
           onClose={() => setShowReactionPicker(false)}
           position={pickerPosition}
           currentReaction={myReaction || undefined}
+          onCopy={handleCopy}
+          onForward={handleForward}
+          onReply={handleReply}
+          onReport={handleReport}
+          onDelete={handleDelete}
         />
       )}
     </>

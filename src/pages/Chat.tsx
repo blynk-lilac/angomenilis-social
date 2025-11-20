@@ -64,13 +64,18 @@ export default function Chat() {
   });
 
   useEffect(() => {
-    if (friendId) {
-      loadFriend();
-      loadChatSettings();
-      loadMessages();
-      subscribeToMessages();
-      subscribeToChatSettings();
-    }
+    if (!friendId) return;
+
+    loadFriend();
+    loadChatSettings();
+    loadMessages();
+    const messagesCleanup = subscribeToMessages();
+    const settingsCleanup = subscribeToChatSettings();
+
+    return () => {
+      messagesCleanup && messagesCleanup();
+      settingsCleanup && settingsCleanup();
+    };
   }, [friendId]);
 
   useEffect(() => {
@@ -229,7 +234,7 @@ export default function Chat() {
 
     const messageText = newMessage.trim();
     
-    // Prevent duplicate messages
+    // Evita envios duplicados rápidos
     if (sendingMessages.has(messageText)) {
       return;
     }
@@ -239,25 +244,10 @@ export default function Chat() {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    const tempId = `temp-${Date.now()}`;
-    
-    // Mark message as being sent
     setSendingMessages(prev => new Set(prev).add(messageText));
-    
-    // Optimistic update - mostra mensagem imediatamente
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: messageText,
-      sender_id: user.id,
-      receiver_id: friendId,
-      created_at: new Date().toISOString(),
-      message_type: 'text',
-    };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
 
-    // Envia para o servidor
+    // Envia diretamente para o servidor (realtime vai mostrar a mensagem)
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: friendId,
@@ -265,7 +255,6 @@ export default function Chat() {
       message_type: 'text',
     });
 
-    // Remove from sending set
     setSendingMessages(prev => {
       const newSet = new Set(prev);
       newSet.delete(messageText);
@@ -273,30 +262,12 @@ export default function Chat() {
     });
 
     if (error) {
-      // Remove mensagem se falhar
-      setMessages(prev => prev.filter(m => m.id !== tempId));
       console.error('Error sending message:', error);
     }
   };
 
   const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
     if (!user || !friendId) return;
-
-    const tempId = `temp-${Date.now()}`;
-    
-    // Optimistic update - mostra mídia imediatamente
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: '',
-      sender_id: user.id,
-      receiver_id: friendId,
-      created_at: new Date().toISOString(),
-      message_type: type,
-      media_url: url,
-      duration,
-    };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
 
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
@@ -308,7 +279,6 @@ export default function Chat() {
     });
 
     if (error) {
-      setMessages(prev => prev.filter(m => m.id !== tempId));
       console.error('Error sending media:', error);
     }
   };
@@ -440,10 +410,15 @@ export default function Chat() {
               key={message.id}
               className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
             >
-              <MessageBubble 
-                message={message} 
+              <MessageBubble
+                message={message}
                 isSent={isSent}
                 hideMedia={hideMedia}
+                contextType="chat"
+                contextId={friendId || ''}
+                onDeleteLocal={(id) =>
+                  setMessages((prev) => prev.filter((m) => m.id !== id))
+                }
               />
             </div>
           );

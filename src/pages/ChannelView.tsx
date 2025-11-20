@@ -272,6 +272,11 @@ export default function ChannelView() {
                   message={message}
                   isSent={message.sender_id === user?.id}
                   isGroupMessage="channel"
+                  contextType="channel"
+                  contextId={channelId || ''}
+                  onDeleteLocal={(id) =>
+                    setMessages((prev) => prev.filter((m) => m.id !== id))
+                  }
                 />
               </div>
             </div>

@@ -40,11 +40,15 @@ export default function GroupChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (groupId) {
-      loadGroup();
-      loadMessages();
-      subscribeToMessages();
-    }
+    if (!groupId) return;
+
+    loadGroup();
+    loadMessages();
+    const cleanup = subscribeToMessages();
+
+    return () => {
+      cleanup && cleanup();
+    };
   }, [groupId]);
 
   useEffect(() => {
@@ -115,25 +119,8 @@ export default function GroupChat() {
     if (!newMessage.trim() || !user || !groupId) return;
 
     const messageText = newMessage.trim();
-    const tempId = `temp-${Date.now()}`;
-    
-    // Optimistic update - mostra mensagem imediatamente
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: messageText,
-      sender_id: user.id,
-      created_at: new Date().toISOString(),
-      message_type: 'text',
-      profiles: {
-        first_name: 'Você',
-        avatar_url: null,
-      }
-    };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
 
-    // Envia para o servidor
     const { error } = await supabase.from('group_messages').insert({
       group_id: groupId,
       sender_id: user.id,
@@ -142,8 +129,6 @@ export default function GroupChat() {
     });
 
     if (error) {
-      // Remove mensagem se falhar
-      setMessages(prev => prev.filter(m => m.id !== tempId));
       console.error('Error sending message:', error);
     }
   };
@@ -151,25 +136,6 @@ export default function GroupChat() {
   const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
     if (!user || !groupId) return;
 
-    const tempId = `temp-${Date.now()}`;
-    
-    // Optimistic update - mostra mídia imediatamente
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: '',
-      sender_id: user.id,
-      created_at: new Date().toISOString(),
-      message_type: type,
-      media_url: url,
-      duration,
-      profiles: {
-        first_name: 'Você',
-        avatar_url: null,
-      }
-    };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
-
     const { error } = await supabase.from('group_messages').insert({
       group_id: groupId,
       sender_id: user.id,
@@ -180,7 +146,6 @@ export default function GroupChat() {
     });
 
     if (error) {
-      setMessages(prev => prev.filter(m => m.id !== tempId));
       console.error('Error sending media:', error);
     }
   };
