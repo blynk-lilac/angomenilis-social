@@ -19,6 +19,7 @@ import ContactInfo from "./pages/settings/ContactInfo";
 import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
+import Create from "./pages/Create";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
 import GroupSettings from './pages/GroupSettings';
@@ -162,6 +163,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Feed />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create"
+              element={
+                <ProtectedRoute>
+                  <Create />
                 </ProtectedRoute>
               }
             />
