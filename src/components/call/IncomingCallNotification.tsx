@@ -12,6 +12,7 @@ export default function IncomingCallNotification() {
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [caller, setCaller] = useState<any>(null);
+  const [ringingSound] = useState(() => new Audio('/sounds/ringing.mp3'));
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +39,10 @@ export default function IncomingCallNotification() {
               .single();
             
             setCaller(callerData);
+            
+            // Play ringing sound
+            ringingSound.loop = true;
+            ringingSound.play().catch(console.error);
           }
         }
       )
@@ -45,11 +50,16 @@ export default function IncomingCallNotification() {
 
     return () => {
       supabase.removeChannel(channel);
+      ringingSound.pause();
+      ringingSound.currentTime = 0;
     };
   }, [user]);
 
   const acceptCall = async () => {
     if (!incomingCall) return;
+
+    ringingSound.pause();
+    ringingSound.currentTime = 0;
 
     await supabase
       .from('calls')
@@ -63,6 +73,9 @@ export default function IncomingCallNotification() {
 
   const rejectCall = async () => {
     if (!incomingCall) return;
+
+    ringingSound.pause();
+    ringingSound.currentTime = 0;
 
     await supabase
       .from('calls')
