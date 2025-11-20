@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageSquare, Share2, MoreHorizontal, Globe, Users, Radio } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import { TopBar } from "@/components/TopBar";
+import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StoriesBar from "@/components/StoriesBar";
 import CreateStory from "@/components/CreateStory";
@@ -333,9 +334,10 @@ export default function Feed() {
         className="min-h-screen bg-background pb-20"
         onDoubleClick={handleDoubleClick}
       >
-        <Navbar />
+        <TopBar />
+        <MainNav />
 
-        <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4">
+        <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4 pt-20">
           {/* Stories Bar */}
           <div className="px-4 sm:px-0">
             <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />

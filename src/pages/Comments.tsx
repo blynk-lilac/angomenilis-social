@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
+import { TopBar } from "@/components/TopBar";
+import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -257,8 +258,9 @@ export default function Comments() {
   if (!post) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-background">
-          <Navbar />
+        <div className="min-h-screen bg-background pb-20">
+          <TopBar />
+          <MainNav />
           <div className="flex items-center justify-center h-screen">
             <p className="text-muted-foreground">Carregando...</p>
           </div>
