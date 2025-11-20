@@ -127,6 +127,11 @@ All colors MUST be HSL.
     -ms-user-select: none;
   }
 
+  /* Mirror effect for local video */
+  .mirror {
+    transform: scaleX(-1);
+  }
+
   /* Allow text selection only in messages */
   .message-bubble,
   .message-container,

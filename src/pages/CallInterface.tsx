@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import CallInterfaceComponent from '@/components/call/CallInterface';
 
 export default function CallInterface() {
   const { userId } = useParams();
@@ -19,6 +20,7 @@ export default function CallInterface() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callStatus, setCallStatus] = useState<'calling' | 'ringing' | 'connected' | 'ended'>('calling');
   const [callDuration, setCallDuration] = useState(0);
+  const [showCallInterface, setShowCallInterface] = useState(false);
 
   useEffect(() => {
     if (userId && user) {
@@ -73,10 +75,29 @@ export default function CallInterface() {
       setCallId(data.id);
       setCallStatus('ringing');
 
-      // Simular atendimento após 3 segundos
-      setTimeout(() => {
-        setCallStatus('connected');
-      }, 3000);
+      // Subscribe to call status changes
+      const channel = supabase
+        .channel(`call_status:${data.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'calls',
+            filter: `id=eq.${data.id}`,
+          },
+          (payload) => {
+            if (payload.new.status === 'accepted') {
+              setCallStatus('connected');
+              setShowCallInterface(true);
+            } else if (payload.new.status === 'rejected' || payload.new.status === 'missed') {
+              setCallStatus('ended');
+              toast.error('Chamada não atendida');
+              setTimeout(() => navigate(-1), 1500);
+            }
+          }
+        )
+        .subscribe();
     } catch (error: any) {
       console.error('Error initiating call:', error);
       toast.error('Erro ao iniciar chamada');
@@ -132,6 +153,16 @@ export default function CallInterface() {
       <div className="h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Carregando...</p>
       </div>
+    );
+  }
+
+  if (showCallInterface && callId) {
+    return (
+      <CallInterfaceComponent
+        callId={callId}
+        isVideo={callType === 'video'}
+        onEnd={() => navigate(-1)}
+      />
     );
   }
 
