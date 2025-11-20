@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageSquare, Share2, Upload, MoreVertical } from "lucide-react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import { TopBar } from "@/components/TopBar";
+import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -230,8 +231,9 @@ export default function Videos() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-black">
-        <Navbar />
+      <div className="min-h-screen bg-black pb-20">
+        <TopBar />
+        <MainNav />
 
         <div className="fixed top-14 right-4 z-50 md:block hidden">
           <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-2">

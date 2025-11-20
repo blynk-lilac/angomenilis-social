@@ -10,7 +10,8 @@ import { ArrowLeft, Send, Heart, Trash2, Volume2 } from "lucide-react";
 import AudioRecorder from "@/components/AudioRecorder";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import Navbar from "@/components/Navbar";
+import { TopBar } from "@/components/TopBar";
+import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
 
@@ -132,8 +133,9 @@ export default function CommentsVideo() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background pb-20">
-        <Navbar />
+      <div className="min-h-screen bg-background pb-20 pt-20">
+        <TopBar />
+        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-4 py-4">
           <Button

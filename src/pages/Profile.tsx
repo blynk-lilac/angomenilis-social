@@ -26,7 +26,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import Navbar from "@/components/Navbar";
+import { TopBar } from "@/components/TopBar";
+import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
@@ -359,8 +360,9 @@ export default function Profile() {
   if (!profile) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-background">
-          <Navbar />
+        <div className="min-h-screen bg-background pb-20">
+          <TopBar />
+          <MainNav />
           <div className="flex items-center justify-center h-screen">
             <p className="text-muted-foreground">Carregando...</p>
           </div>
@@ -372,7 +374,8 @@ export default function Profile() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20">
-        <Navbar />
+        <TopBar />
+        <MainNav />
 
         {/* Header com Back e Search */}
         <div className="sticky top-14 z-40 bg-background border-b px-4 py-2 flex items-center justify-between">
