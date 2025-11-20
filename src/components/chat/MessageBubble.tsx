@@ -235,6 +235,8 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
     return null;
   };
 
+  const isMediaOnly = (message.message_type === 'image' || message.message_type === 'video') && !message.content;
+
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -243,19 +245,25 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md select-text ${
-            isSent
-              ? 'bg-primary text-primary-foreground rounded-br-sm'
-              : 'bg-muted/80 text-foreground rounded-bl-sm'
+          className={`max-w-[80%] transition-all select-text ${
+            isMediaOnly 
+              ? 'p-0' 
+              : `rounded-2xl px-4 py-2.5 shadow-sm hover:shadow-md ${
+                  isSent
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
+                    : 'bg-muted/80 text-foreground rounded-bl-sm'
+                }`
           }`}
         >
           {renderMedia()}
           {message.content && (
             <p className="text-base break-words leading-relaxed whitespace-pre-wrap">{message.content}</p>
           )}
-          <p className={`text-[11px] mt-1 ${isSent ? 'text-primary-foreground/70' : 'text-muted-foreground/70'}`}>
-            {format(new Date(message.created_at), 'HH:mm')}
-          </p>
+          {!isMediaOnly && (
+            <p className={`text-[11px] mt-1 ${isSent ? 'text-primary-foreground/70' : 'text-muted-foreground/70'}`}>
+              {format(new Date(message.created_at), 'HH:mm')}
+            </p>
+          )}
         </div>
 
         {/* Reactions Display */}
