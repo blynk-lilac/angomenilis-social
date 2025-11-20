@@ -4,8 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import IncomingCallNotification from "@/components/call/IncomingCallNotification";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
@@ -20,21 +20,11 @@ import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import Create from "./pages/Create";
-import Groups from "./pages/Groups";
-import GroupChat from "./pages/GroupChat";
-import GroupSettings from './pages/GroupSettings';
+import Comments from "./pages/Comments";
+import CommentsVideo from "./pages/CommentsVideo";
+import Videos from "./pages/Videos";
+import RequestVerification from "./pages/RequestVerification";
 import Report from './pages/Report';
-import AddMembers from './pages/group-settings/AddMembers';
-import ViewMembers from './pages/group-settings/ViewMembers';
-import EditName from './pages/group-settings/EditName';
-import EditPhoto from './pages/group-settings/EditPhoto';
-import Nicknames from './pages/group-settings/Nicknames';
-import GroupPermissions from './pages/group-settings/Permissions';
-import Channels from './pages/Channels';
-import CreateChannel from './pages/CreateChannel';
-import ChannelView from './pages/ChannelView';
-import Calls from './pages/Calls';
-import CallInterface from './pages/CallInterface';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -69,12 +59,80 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            
             <Route
               path="/"
               element={
                 <ProtectedRoute>
                   <Feed />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <Feed />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create"
+              element={
+                <ProtectedRoute>
+                  <Create />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/videos"
+              element={
+                <ProtectedRoute>
+                  <Videos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/videos/:shareCode"
+              element={
+                <ProtectedRoute>
+                  <Videos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/comments/:postId"
+              element={
+                <ProtectedRoute>
+                  <Comments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/comments-video/:videoId"
+              element={
+                <ProtectedRoute>
+                  <CommentsVideo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/verification"
+              element={
+                <ProtectedRoute>
+                  <RequestVerification />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Messages Routes */}
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <Messages />
                 </ProtectedRoute>
               }
             />
@@ -94,6 +152,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Stories Routes */}
             <Route
               path="/stories"
               element={
@@ -102,6 +162,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Friends Routes */}
             <Route
               path="/friends"
               element={
@@ -110,6 +172,34 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Profile Routes */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/:userId"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/perfil/:username"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Settings Routes */}
             <Route
               path="/settings"
               element={
@@ -150,151 +240,13 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/perfil/:username"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/feed"
-              element={
-                <ProtectedRoute>
-                  <Feed />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <ProtectedRoute>
-                  <Create />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupos"
-              element={
-                <ProtectedRoute>
-                  <Groups />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId"
-              element={
-                <ProtectedRoute>
-                  <GroupChat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/configuracoes"
-              element={
-                <ProtectedRoute>
-                  <GroupSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/adicionar-membros"
-              element={
-                <ProtectedRoute>
-                  <AddMembers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/membros"
-              element={
-                <ProtectedRoute>
-                  <ViewMembers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/editar-nome"
-              element={
-                <ProtectedRoute>
-                  <EditName />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/editar-foto"
-              element={
-                <ProtectedRoute>
-                  <EditPhoto />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/alcunhas"
-              element={
-                <ProtectedRoute>
-                  <Nicknames />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/grupo/:groupId/permissoes"
-              element={
-                <ProtectedRoute>
-                  <GroupPermissions />
-                </ProtectedRoute>
-              }
-            />
+            
+            {/* Report Route */}
             <Route
               path="/denunciar/:type/:id"
               element={
                 <ProtectedRoute>
                   <Report />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Channel Routes */}
-            <Route
-              path="/canais"
-              element={
-                <ProtectedRoute>
-                  <Channels />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/canais/criar"
-              element={
-                <ProtectedRoute>
-                  <CreateChannel />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/canal/:channelId"
-              element={
-                <ProtectedRoute>
-                  <ChannelView />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Call Routes */}
-            <Route
-              path="/chamadas"
-              element={
-                <ProtectedRoute>
-                  <Calls />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chamada/:userId"
-              element={
-                <ProtectedRoute>
-                  <CallInterface />
                 </ProtectedRoute>
               }
             />
