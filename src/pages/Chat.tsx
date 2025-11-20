@@ -5,12 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
-import ChatPrivacyMenu from '@/components/chat/ChatPrivacyMenu';
 import ChatPinProtection from '@/components/chat/ChatPinProtection';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
@@ -391,12 +390,14 @@ export default function Chat() {
           >
             <Video className="h-5 w-5" />
           </Button>
-          {friendId && friend && (
-            <ChatPrivacyMenu 
-              chatPartnerId={friendId} 
-              chatPartnerName={friend.first_name}
-            />
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full"
+            onClick={() => navigate(`/chat/${friendId}/settings`)}
+          >
+            <Lock className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
