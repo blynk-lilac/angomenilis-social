@@ -1,26 +1,46 @@
 import { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { BottomNav } from './BottomNav';
+import { Button } from '@/components/ui/button';
 
 interface MainLayoutProps {
   children: ReactNode;
-  title: string;
+  title?: string;
+  showBackButton?: boolean;
+  action?: ReactNode;
 }
 
-export const MainLayout = ({ children, title }: MainLayoutProps) => {
+export const MainLayout = ({ children, title, showBackButton = false, action }: MainLayoutProps) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen bg-background pb-16 flex flex-col overflow-hidden">
-      <header className="flex-shrink-0 sticky top-0 z-40 bg-card border-b border-border safe-area-top">
-        <div className="flex items-center justify-center h-14 px-4 max-w-screen-xl mx-auto">
-          <h1 className="text-xl font-bold text-primary">
-            {title}
-          </h1>
-        </div>
-      </header>
-      
-      <main className="flex-1 max-w-screen-xl mx-auto w-full overflow-y-auto">
+    <div className="flex flex-col h-screen bg-background">
+      {title && (
+        <header className="sticky top-0 z-10 glass-effect border-b border-border/50 safe-area-top shadow-sm backdrop-blur-xl">
+          <div className="flex items-center justify-between h-16 px-4">
+            <div className="flex items-center gap-3">
+              {showBackButton && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(-1)}
+                  className="h-10 w-10 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover-lift"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in font-display">
+                {title}
+              </h1>
+            </div>
+            {action && <div className="flex items-center gap-2 animate-fade-in">{action}</div>}
+          </div>
+        </header>
+      )}
+      <main className="flex-1 overflow-hidden pb-16 animate-fade-in">
         {children}
       </main>
-      
       <BottomNav />
     </div>
   );
