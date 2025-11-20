@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
+import ChatSettings from "./pages/ChatSettings";
 import Stories from "./pages/Stories";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
@@ -80,6 +81,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Chat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat/:friendId/settings"
+              element={
+                <ProtectedRoute>
+                  <ChatSettings />
                 </ProtectedRoute>
               }
             />
