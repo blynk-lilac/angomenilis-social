@@ -18,6 +18,7 @@ import EditProfile from "./pages/settings/EditProfile";
 import ContactInfo from "./pages/settings/ContactInfo";
 import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
+import Feed from "./pages/Feed";
 import Groups from "./pages/Groups";
 import GroupChat from "./pages/GroupChat";
 import GroupSettings from './pages/GroupSettings';
@@ -72,7 +73,7 @@ const App = () => (
               path="/"
               element={
                 <ProtectedRoute>
-                  <Messages />
+                  <Feed />
                 </ProtectedRoute>
               }
             />
@@ -149,10 +150,18 @@ const App = () => (
               }
             />
             <Route
-              path="/profile/:userId"
+              path="/perfil/:username"
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <Feed />
                 </ProtectedRoute>
               }
             />

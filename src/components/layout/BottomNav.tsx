@@ -1,12 +1,13 @@
 import { NavLink } from '@/components/NavLink';
-import { MessageSquare, Clock, UsersRound, Phone } from 'lucide-react';
+import { Home, UsersRound, MessageSquare, Phone, User } from 'lucide-react';
 
 export const BottomNav = () => {
   const navItems = [
-    { to: '/', icon: MessageSquare, label: 'Conversas' },
-    { to: '/', icon: Clock, label: 'Atualizações' },
-    { to: '/grupos', icon: UsersRound, label: 'Comunidades' },
+    { to: '/feed', icon: Home, label: 'Feed' },
+    { to: '/grupos', icon: UsersRound, label: 'Grupos' },
+    { to: '/canais', icon: MessageSquare, label: 'Canais' },
     { to: '/chamadas', icon: Phone, label: 'Chamadas' },
+    { to: '/settings', icon: User, label: 'Perfil' },
   ];
 
   return (
@@ -16,7 +17,7 @@ export const BottomNav = () => {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/feed'}
             className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-all rounded-lg hover:bg-muted/50 py-2 relative group"
             activeClassName="text-primary font-semibold"
           >
