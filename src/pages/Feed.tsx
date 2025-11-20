@@ -409,36 +409,31 @@ export default function Feed() {
             </div>
           )}
 
-          {/* Feed - Estilo Facebook Moderno */}
-          <div className="space-y-4 mt-4">
+          {/* Feed - Design Moderno e Limpo */}
+          <div className="space-y-3 mt-4">
             {posts.map((post) => (
-              <Card key={post.id} className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-md transition-all">
+              <Card key={post.id} className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
                 {/* Header do Post */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="p-4 pb-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Link to={`/profile/${post.profiles?.id}`} className="flex-shrink-0">
-                        <Avatar className="h-10 w-10 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all">
-                          <AvatarImage src={post.profiles?.avatar_url} />
-                          <AvatarFallback className="text-sm bg-primary/10 text-primary font-bold">
-                            {post.profiles?.username?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Link>
+                      <Avatar className="h-11 w-11 cursor-pointer ring-2 ring-border hover:ring-primary/30 transition-all">
+                        <AvatarImage src={post.profiles?.avatar_url} />
+                        <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
+                          {post.profiles?.username?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <Link 
-                            to={`/profile/${post.profiles?.id}`} 
-                            className="hover:underline font-semibold text-[15px] truncate"
-                          >
+                          <span className="font-semibold text-[15px] truncate text-foreground">
                             {post.profiles?.full_name || post.profiles?.username}
-                          </Link>
+                          </span>
                           {post.profiles?.verified && (
                             <VerificationBadge badgeType={post.profiles?.badge_type} className="w-4 h-4 flex-shrink-0" />
                           )}
                         </div>
-                        <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                           <span>
                             {formatDistanceToNow(new Date(post.created_at), {
                               addSuffix: true,
@@ -460,7 +455,7 @@ export default function Feed() {
 
                   {/* Conteúdo do Post */}
                   {post.content && (
-                    <p className="text-[15px] text-foreground break-words whitespace-pre-wrap leading-5">
+                    <p className="mt-3 text-[15px] text-foreground break-words whitespace-pre-wrap leading-relaxed">
                       {post.content}
                     </p>
                   )}
@@ -490,18 +485,18 @@ export default function Feed() {
                 )}
 
                 {/* Estatísticas e Ações */}
-                <div className="px-4 pb-2">
+                <div className="px-4 pb-3">
                   {/* Contadores */}
-                  <div className="flex items-center justify-between py-2 text-[13px] text-muted-foreground">
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between py-2.5 text-[13px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
                       {post.post_likes && post.post_likes.length > 0 && (
                         <>
                           <div className="flex items-center">
-                            <div className="w-[18px] h-[18px] rounded-full bg-primary flex items-center justify-center">
-                              <Heart className="h-2.5 w-2.5 fill-white text-white" />
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
+                              <Heart className="h-3 w-3 fill-white text-white" />
                             </div>
                           </div>
-                          <span className="hover:underline cursor-pointer">
+                          <span className="hover:underline cursor-pointer font-medium">
                             {post.post_likes.length}
                           </span>
                         </>
@@ -511,7 +506,7 @@ export default function Feed() {
                       {post.comments && post.comments.length > 0 && (
                         <button
                           onClick={() => navigate(`/comments/${post.id}`)}
-                          className="hover:underline"
+                          className="hover:underline font-medium"
                         >
                           {post.comments.length} {post.comments.length === 1 ? 'comentário' : 'comentários'}
                         </button>
@@ -519,20 +514,20 @@ export default function Feed() {
                     </div>
                   </div>
 
-                  <Separator className="mb-1" />
+                  <Separator className="mb-2" />
 
                   {/* Botões de Ação */}
-                  <div className="flex items-center justify-around -mx-2">
+                  <div className="flex items-center justify-around gap-1">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="flex-1 gap-2 hover:bg-muted/70 rounded-lg h-9 font-semibold"
+                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
                       onClick={() => handleLike(post.id)}
                     >
                       <Heart 
                         className={`h-[18px] w-[18px] transition-all ${
                           post.post_likes?.some(like => like.user_id === currentUserId)
-                            ? "fill-primary text-primary"
+                            ? "fill-primary text-primary scale-110"
                             : "text-muted-foreground"
                         }`}
                       />
@@ -547,7 +542,7 @@ export default function Feed() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="flex-1 gap-2 hover:bg-muted/70 rounded-lg h-9 font-semibold"
+                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
                       onClick={() => navigate(`/comments/${post.id}`)}
                     >
                       <MessageSquare className="h-[18px] w-[18px] text-muted-foreground" />
@@ -556,7 +551,7 @@ export default function Feed() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="flex-1 gap-2 hover:bg-muted/70 rounded-lg h-9 font-semibold"
+                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
                       onClick={() => handleRepost(post.id)}
                     >
                       <Share2 className="h-[18px] w-[18px] text-muted-foreground" />
