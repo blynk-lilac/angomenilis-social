@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Search, Settings } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
 
@@ -21,11 +21,6 @@ export const TopBar = () => {
           <Button variant="ghost" size="icon" asChild>
             <Link to="/notifications">
               <Bell className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/settings">
-              <Settings className="h-5 w-5" />
             </Link>
           </Button>
         </div>
