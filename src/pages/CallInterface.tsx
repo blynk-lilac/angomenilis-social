@@ -21,12 +21,20 @@ export default function CallInterface() {
   const [callStatus, setCallStatus] = useState<'calling' | 'ringing' | 'connected' | 'ended'>('calling');
   const [callDuration, setCallDuration] = useState(0);
   const [showCallInterface, setShowCallInterface] = useState(false);
+  const [callingSound] = useState(() => new Audio('/sounds/calling.mp3'));
+  const [connectSound] = useState(() => new Audio('/sounds/connect.mp3'));
+  const [hangupSound] = useState(() => new Audio('/sounds/hangup.mp3'));
 
   useEffect(() => {
     if (userId && user) {
       loadUser();
       initiateCall();
     }
+    
+    return () => {
+      callingSound.pause();
+      callingSound.currentTime = 0;
+    };
   }, [userId, user]);
 
   useEffect(() => {
@@ -75,6 +83,10 @@ export default function CallInterface() {
       setCallId(data.id);
       setCallStatus('ringing');
 
+      // Play calling sound
+      callingSound.loop = true;
+      callingSound.play().catch(console.error);
+
       // Subscribe to call status changes
       const channel = supabase
         .channel(`call_status:${data.id}`)
@@ -88,9 +100,14 @@ export default function CallInterface() {
           },
           (payload) => {
             if (payload.new.status === 'accepted') {
+              callingSound.pause();
+              callingSound.currentTime = 0;
+              connectSound.play().catch(console.error);
               setCallStatus('connected');
               setShowCallInterface(true);
             } else if (payload.new.status === 'rejected' || payload.new.status === 'missed') {
+              callingSound.pause();
+              callingSound.currentTime = 0;
               setCallStatus('ended');
               toast.error('Chamada não atendida');
               setTimeout(() => navigate(-1), 1500);
@@ -109,6 +126,10 @@ export default function CallInterface() {
     if (!callId) return;
 
     try {
+      callingSound.pause();
+      callingSound.currentTime = 0;
+      hangupSound.play().catch(console.error);
+
       await supabase
         .from('calls')
         .update({
