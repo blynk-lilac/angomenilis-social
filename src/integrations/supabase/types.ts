@@ -1073,6 +1073,167 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_video_comments: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_video_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_video_comments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "verification_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_video_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_video_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_video_likes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "verification_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_videos: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          share_code: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          share_code?: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          share_code?: string
+          user_id?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_videos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
