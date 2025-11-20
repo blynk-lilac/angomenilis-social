@@ -263,7 +263,7 @@ export default function GroupChat() {
                 </div>
               )}
               <div className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
-                <MessageBubble message={message} isSent={isSent} />
+                <MessageBubble message={message} isSent={isSent} isGroupMessage={true} />
               </div>
             </div>
           );

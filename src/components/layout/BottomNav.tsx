@@ -4,7 +4,7 @@ import { MessageSquare, Clock, UsersRound, Phone } from 'lucide-react';
 export const BottomNav = () => {
   const navItems = [
     { to: '/', icon: MessageSquare, label: 'Conversas' },
-    { to: '/stories', icon: Clock, label: 'Atualizações' },
+    { to: '/', icon: Clock, label: 'Atualizações' },
     { to: '/grupos', icon: UsersRound, label: 'Comunidades' },
     { to: '/chamadas', icon: Phone, label: 'Chamadas' },
   ];

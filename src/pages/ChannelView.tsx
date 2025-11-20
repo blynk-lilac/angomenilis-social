@@ -271,6 +271,7 @@ export default function ChannelView() {
                 <MessageBubble
                   message={message}
                   isSent={message.sender_id === user?.id}
+                  isGroupMessage="channel"
                 />
               </div>
             </div>

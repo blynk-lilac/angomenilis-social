@@ -1,5 +1,17 @@
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Play, ImageOff } from 'lucide-react';
+import { ReactionPicker } from './ReactionPicker';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+interface Reaction {
+  emoji: string;
+  count: number;
+  users: string[];
+  hasUserReacted: boolean;
+}
 
 interface MessageBubbleProps {
   message: {
@@ -13,11 +25,170 @@ interface MessageBubbleProps {
   };
   isSent: boolean;
   hideMedia?: boolean;
+  isGroupMessage?: boolean | 'channel';
 }
 
-export default function MessageBubble({ message, isSent, hideMedia = false }: MessageBubbleProps) {
+export default function MessageBubble({ message, isSent, hideMedia = false, isGroupMessage = false }: MessageBubbleProps) {
+  const { user } = useAuth();
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 });
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [myReaction, setMyReaction] = useState<string | null>(null);
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef({ x: 0, y: 0 });
+  const messageRef = useRef<HTMLDivElement>(null);
+
+  // Determine which table to use based on message type
+  const reactionTable = isGroupMessage === 'channel' 
+    ? 'channel_message_reactions' 
+    : isGroupMessage === true 
+    ? 'group_message_reactions' 
+    : 'message_reactions';
+
+  useEffect(() => {
+    loadReactions();
+
+    // Subscribe to reactions changes
+    const channel = supabase
+      .channel(`reactions:${message.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: reactionTable,
+          filter: `message_id=eq.${message.id}`,
+        },
+        () => {
+          loadReactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [message.id, reactionTable]);
+
+  const loadReactions = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from(reactionTable)
+      .select('emoji, user_id')
+      .eq('message_id', message.id);
+
+    if (error) {
+      console.error('Error loading reactions:', error);
+      return;
+    }
+
+    // Group reactions by emoji
+    const reactionMap = new Map<string, { users: string[]; hasUserReacted: boolean }>();
+    
+    data.forEach((reaction: any) => {
+      const current = reactionMap.get(reaction.emoji) || { users: [], hasUserReacted: false };
+      current.users.push(reaction.user_id);
+      if (reaction.user_id === user.id) {
+        current.hasUserReacted = true;
+        setMyReaction(reaction.emoji);
+      }
+      reactionMap.set(reaction.emoji, current);
+    });
+
+    const reactionsArray = Array.from(reactionMap.entries()).map(([emoji, data]) => ({
+      emoji,
+      count: data.users.length,
+      users: data.users,
+      hasUserReacted: data.hasUserReacted,
+    }));
+
+    setReactions(reactionsArray);
+
+    // Update myReaction if user has no reaction
+    if (!data.some((r: any) => r.user_id === user.id)) {
+      setMyReaction(null);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartPos.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+
+    touchTimerRef.current = setTimeout(() => {
+      // Show reaction picker after 2 seconds
+      const rect = messageRef.current?.getBoundingClientRect();
+      if (rect) {
+        setPickerPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top,
+        });
+        setShowReactionPicker(true);
+        
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }
+    }, 2000);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Cancel if moved more than 10px
+    const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+    const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+    
+    if (dx > 10 || dy > 10) {
+      if (touchTimerRef.current) {
+        clearTimeout(touchTimerRef.current);
+        touchTimerRef.current = null;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
+  const handleReactionSelect = async (emoji: string) => {
+    if (!user) return;
+
+    try {
+      // If user already has a reaction, remove it first
+      if (myReaction) {
+        await supabase
+          .from(reactionTable)
+          .delete()
+          .eq('message_id', message.id)
+          .eq('user_id', user.id);
+      }
+
+      // Add new reaction (unless clicking the same one)
+      if (myReaction !== emoji) {
+        const { error } = await supabase
+          .from(reactionTable)
+          .insert({
+            message_id: message.id,
+            user_id: user.id,
+            emoji,
+          });
+
+        if (error) throw error;
+      }
+
+      loadReactions();
+    } catch (error: any) {
+      console.error('Error adding reaction:', error);
+      toast.error('Erro ao adicionar reação');
+    }
+  };
+
   const renderMedia = () => {
-    // If media visibility is disabled, show placeholder
     if (hideMedia && (message.message_type === 'image' || message.message_type === 'video')) {
       return (
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl mb-2">
@@ -65,20 +236,62 @@ export default function MessageBubble({ message, isSent, hideMedia = false }: Me
   };
 
   return (
-    <div
-      className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md ${
-        isSent
-          ? 'bg-primary/10 text-foreground rounded-br-sm'
-          : 'bg-card text-foreground rounded-bl-sm'
-      }`}
-    >
-      {renderMedia()}
-      {message.content && (
-        <p className="text-base break-words leading-relaxed">{message.content}</p>
+    <>
+      <div className="flex flex-col gap-1">
+        <div
+          ref={messageRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md select-text ${
+            isSent
+              ? 'bg-primary text-primary-foreground rounded-br-sm'
+              : 'bg-muted/80 text-foreground rounded-bl-sm'
+          }`}
+        >
+          {renderMedia()}
+          {message.content && (
+            <p className="text-base break-words leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          )}
+          <p className={`text-[11px] mt-1 ${isSent ? 'text-primary-foreground/70' : 'text-muted-foreground/70'}`}>
+            {format(new Date(message.created_at), 'HH:mm')}
+          </p>
+        </div>
+
+        {/* Reactions Display */}
+        {reactions.length > 0 && (
+          <div className={`flex gap-1 flex-wrap ${isSent ? 'justify-end' : 'justify-start'}`}>
+            {reactions.map((reaction) => (
+              <button
+                key={reaction.emoji}
+                onClick={() => handleReactionSelect(reaction.emoji)}
+                className={`
+                  flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                  transition-all hover:scale-110 active:scale-95
+                  ${reaction.hasUserReacted 
+                    ? 'bg-primary/20 border border-primary ring-1 ring-primary/30' 
+                    : 'bg-card border border-border hover:bg-muted'
+                  }
+                `}
+              >
+                <span className="text-sm">{reaction.emoji}</span>
+                <span className={`font-medium ${reaction.hasUserReacted ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {reaction.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showReactionPicker && (
+        <ReactionPicker
+          onSelect={handleReactionSelect}
+          onClose={() => setShowReactionPicker(false)}
+          position={pickerPosition}
+          currentReaction={myReaction || undefined}
+        />
       )}
-      <p className="text-[11px] text-muted-foreground/70 mt-1">
-        {format(new Date(message.created_at), 'HH:mm')}
-      </p>
-    </div>
+    </>
   );
 }

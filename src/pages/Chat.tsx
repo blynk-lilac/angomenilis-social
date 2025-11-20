@@ -46,6 +46,7 @@ export default function Chat() {
   const [activeCall, setActiveCall] = useState<{ id: string; type: 'voice' | 'video' } | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [chatSettings, setChatSettings] = useState<any>(null);
+  const [sendingMessages, setSendingMessages] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -226,13 +227,22 @@ export default function Chat() {
     e.preventDefault();
     if (!newMessage.trim() || !user || !friendId) return;
 
+    const messageText = newMessage.trim();
+    
+    // Prevent duplicate messages
+    if (sendingMessages.has(messageText)) {
+      return;
+    }
+
     setTyping(false);
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    const messageText = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
+    
+    // Mark message as being sent
+    setSendingMessages(prev => new Set(prev).add(messageText));
     
     // Optimistic update - mostra mensagem imediatamente
     const optimisticMessage: Message = {
@@ -253,6 +263,13 @@ export default function Chat() {
       receiver_id: friendId,
       content: messageText,
       message_type: 'text',
+    });
+
+    // Remove from sending set
+    setSendingMessages(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(messageText);
+      return newSet;
     });
 
     if (error) {
