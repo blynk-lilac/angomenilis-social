@@ -287,21 +287,19 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm truncate">
+            <p className="text-white font-bold text-base truncate">
               {currentStory.profile.first_name}
             </p>
             <div className="flex items-center gap-2">
-              <p className="text-white/80 text-xs">
+              <p className="text-white/90 text-xs">
                 {formatTime(currentStory.created_at)}
               </p>
               {currentStory.music_name && (
-                <>
-                  <span className="text-white/60">•</span>
-                  <div className="flex items-center gap-1 text-white/90 text-xs truncate">
-                    <Music className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{currentStory.music_name}</span>
-                  </div>
-                </>
+                <div className="flex items-center gap-1 text-white text-xs font-medium">
+                  <Music className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">{currentStory.music_artist || currentStory.music_name}</span>
+                  <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                </div>
               )}
             </div>
           </div>
