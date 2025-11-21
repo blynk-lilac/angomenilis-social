@@ -504,6 +504,7 @@ export type Database = {
         Row: {
           group_id: string
           id: string
+          is_admin: boolean | null
           is_muted: boolean | null
           joined_at: string | null
           nickname: string | null
@@ -512,6 +513,7 @@ export type Database = {
         Insert: {
           group_id: string
           id?: string
+          is_admin?: boolean | null
           is_muted?: boolean | null
           joined_at?: string | null
           nickname?: string | null
@@ -520,6 +522,7 @@ export type Database = {
         Update: {
           group_id?: string
           id?: string
+          is_admin?: boolean | null
           is_muted?: boolean | null
           joined_at?: string | null
           nickname?: string | null
@@ -581,9 +584,12 @@ export type Database = {
           duration: number | null
           group_id: string
           id: string
+          image_url: string | null
           media_url: string | null
           message_type: string | null
+          read_by: string[] | null
           sender_id: string
+          video_url: string | null
         }
         Insert: {
           content: string
@@ -591,9 +597,12 @@ export type Database = {
           duration?: number | null
           group_id: string
           id?: string
+          image_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          read_by?: string[] | null
           sender_id: string
+          video_url?: string | null
         }
         Update: {
           content?: string
@@ -601,9 +610,12 @@ export type Database = {
           duration?: number | null
           group_id?: string
           id?: string
+          image_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          read_by?: string[] | null
           sender_id?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -893,6 +905,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          expires_at: string | null
           id: string
           media_type: string | null
           media_url: string | null
@@ -903,6 +916,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           media_type?: string | null
           media_url?: string | null
@@ -913,6 +927,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           media_type?: string | null
           media_url?: string | null
@@ -1082,6 +1097,42 @@ export type Database = {
           {
             foreignKeyName: "story_views_viewer_id_fkey"
             columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stream_viewers: {
+        Row: {
+          id: string
+          joined_at: string | null
+          stream_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          stream_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          stream_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stream_viewers_stream_id_fkey"
+            columns: ["stream_id"]
+            isOneToOne: false
+            referencedRelation: "live_streams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stream_viewers_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1278,12 +1329,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_expired_posts: { Args: never; Returns: undefined }
+      delete_expired_stories: { Args: never; Returns: undefined }
       is_channel_admin: {
         Args: { _channel_id: string; _user_id: string }
         Returns: boolean
       }
       is_channel_follower: {
         Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_admin: {
+        Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
       is_group_creator: {
@@ -1294,6 +1351,7 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
