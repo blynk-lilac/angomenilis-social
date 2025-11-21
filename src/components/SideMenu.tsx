@@ -177,7 +177,7 @@ export default function SideMenu() {
               )}
               
               <Link
-                to="/settings/edit-profile"
+                to="/settings"
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors group"
               >
                 <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
