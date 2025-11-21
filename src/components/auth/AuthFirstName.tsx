@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/blynk-logo.jpg';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -36,8 +36,8 @@ export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
   return (
     <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-4">
-        <img src={logo} alt="Angomenilis" className="h-20 w-20 mx-auto" />
-        <h1 className="text-3xl font-bold text-foreground">Bem-vindo ao Angomenilis</h1>
+        <img src={logo} alt="Blynk" className="h-20 w-20 mx-auto rounded-full" />
+        <h1 className="text-3xl font-bold text-foreground">Bem-vindo ao Blynk</h1>
         <p className="text-muted-foreground">Conecte-se com seus amigos</p>
       </div>
 
