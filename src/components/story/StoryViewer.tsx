@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, Trash2, ChevronRight, ChevronLeft, Music } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,8 @@ interface Story {
   media_url: string;
   media_type: string;
   created_at: string;
+  music_name?: string | null;
+  music_artist?: string | null;
   profile: {
     username: string;
     first_name: string;
@@ -277,20 +279,31 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
       {/* Header */}
       <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 z-10">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 border-2 border-white">
+        <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+          <Avatar className="h-10 w-10 border-2 border-white flex-shrink-0">
             <AvatarImage src={currentStory.profile.avatar_url || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground">
               {currentStory.profile.first_name[0]}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-white font-semibold text-sm">
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold text-sm truncate">
               {currentStory.profile.first_name}
             </p>
-            <p className="text-white/80 text-xs">
-              {formatTime(currentStory.created_at)}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-white/80 text-xs">
+                {formatTime(currentStory.created_at)}
+              </p>
+              {currentStory.music_name && (
+                <>
+                  <span className="text-white/60">•</span>
+                  <div className="flex items-center gap-1 text-white/90 text-xs truncate">
+                    <Music className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{currentStory.music_name}</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
         
