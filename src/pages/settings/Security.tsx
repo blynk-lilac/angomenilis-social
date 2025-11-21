@@ -1,21 +1,86 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Shield, AlertTriangle, Key, Smartphone } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Shield, AlertTriangle, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Security() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [antiHackEnabled, setAntiHackEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const handleTwoFactorToggle = (enabled: boolean) => {
-    setTwoFactorEnabled(enabled);
-    if (enabled) {
-      toast.success('Autenticação de dois fatores ativada');
-    } else {
-      toast.success('Autenticação de dois fatores desativada');
+  useEffect(() => {
+    if (user) {
+      loadTwoFactorStatus();
+    }
+  }, [user]);
+
+  const loadTwoFactorStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('two_factor_auth')
+        .select('enabled')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      setTwoFactorEnabled(data?.enabled || false);
+    } catch (error) {
+      console.error('Erro ao carregar status 2FA:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTwoFactorToggle = async (enabled: boolean) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      const { data: existing } = await supabase
+        .from('two_factor_auth')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('two_factor_auth')
+          .update({ enabled })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('two_factor_auth')
+          .insert({ user_id: user.id, enabled });
+
+        if (error) throw error;
+      }
+
+      setTwoFactorEnabled(enabled);
+      
+      if (enabled) {
+        toast.success('Autenticação de dois fatores ativada! Um código de 2 dígitos será enviado ao fazer login.');
+      } else {
+        toast.success('Autenticação de dois fatores desativada');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar 2FA:', error);
+      toast.error('Erro ao atualizar autenticação de dois fatores');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,13 +110,17 @@ export default function Security() {
                 <div>
                   <h3 className="font-semibold mb-1">Autenticação de Dois Fatores</h3>
                   <p className="text-sm text-muted-foreground">
-                    Adicione uma camada extra de segurança à sua conta
+                    Ao fazer login, será enviado um código de 2 dígitos para confirmar sua identidade
                   </p>
+                  {twoFactorEnabled && (
+                    <p className="text-xs text-green-500 mt-2">✓ Proteção ativa - Código necessário para login</p>
+                  )}
                 </div>
               </div>
               <Switch 
                 checked={twoFactorEnabled}
                 onCheckedChange={handleTwoFactorToggle}
+                disabled={loading}
               />
             </div>
           </div>
