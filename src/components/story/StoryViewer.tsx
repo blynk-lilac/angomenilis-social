@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2, Heart } from 'lucide-react';
+import { X, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { showNotification } from '@/utils/pushNotifications';
+import heartIcon from "@/assets/reactions/heart.png";
+import laughingIcon from "@/assets/reactions/laughing.png";
+import thumbsUpIcon from "@/assets/reactions/thumbs-up.png";
 
 interface Story {
   id: string;
@@ -31,6 +35,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [views, setViews] = useState<number>(0);
   const [progress, setProgress] = useState(0);
+  const [replyText, setReplyText] = useState('');
+  const [userReaction, setUserReaction] = useState<string | null>(null);
   
   const currentStory = stories[currentIndex];
   const isOwnStory = currentStory.user_id === user?.id;
@@ -43,8 +49,9 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       recordView();
     }
 
-    // Load view count
+    // Load view count and user reaction
     loadViewCount();
+    loadUserReaction();
 
     // Auto progress
     const duration = currentStory.media_type === 'video' ? 15000 : 5000;
@@ -77,6 +84,19 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       .eq('story_id', currentStory.id);
     
     setViews(count || 0);
+  };
+
+  const loadUserReaction = async () => {
+    if (!user || isOwnStory) return;
+    
+    const { data } = await supabase
+      .from('story_reactions')
+      .select('reaction_type')
+      .eq('story_id', currentStory.id)
+      .eq('user_id', user.id)
+      .single();
+    
+    setUserReaction(data?.reaction_type || null);
   };
 
   const handleNext = () => {
@@ -115,6 +135,99 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     }
   };
 
+  const handleReaction = async (reactionType: string) => {
+    if (!user || isOwnStory) return;
+
+    try {
+      // Check if user already reacted
+      if (userReaction) {
+        // Delete existing reaction
+        await supabase
+          .from('story_reactions')
+          .delete()
+          .eq('story_id', currentStory.id)
+          .eq('user_id', user.id);
+        
+        if (userReaction === reactionType) {
+          setUserReaction(null);
+          return;
+        }
+      }
+
+      // Insert new reaction
+      await supabase
+        .from('story_reactions')
+        .insert({
+          story_id: currentStory.id,
+          user_id: user.id,
+          reaction_type: reactionType
+        });
+
+      setUserReaction(reactionType);
+
+      // Create notification for story owner
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: currentStory.user_id,
+          type: 'story_reaction',
+          title: 'Nova reação no seu story',
+          message: `${profile?.first_name || 'Alguém'} reagiu ao seu story`,
+          related_id: currentStory.id
+        });
+
+      toast.success('Reação enviada!');
+    } catch (error) {
+      console.error('Error reacting to story:', error);
+      toast.error('Erro ao reagir');
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!replyText.trim() || !user || isOwnStory) return;
+
+    try {
+      // Send message to story owner
+      await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: currentStory.user_id,
+          content: replyText,
+          message_type: 'text'
+        });
+
+      // Create notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: currentStory.user_id,
+          type: 'message',
+          title: 'Nova mensagem',
+          message: `${profile?.first_name || 'Alguém'} respondeu ao seu story`,
+          related_id: user.id
+        });
+
+      toast.success('Mensagem enviada!');
+      setReplyText('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Erro ao enviar mensagem');
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -132,11 +245,9 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       {currentIndex > 0 && (
         <button
           onClick={handlePrevious}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110 animate-fade-in"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-14 w-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all"
         >
-          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="h-8 w-8 text-white" />
         </button>
       )}
 
@@ -144,11 +255,9 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       {currentIndex < stories.length - 1 && (
         <button
           onClick={handleNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110 animate-fade-in"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-14 w-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all"
         >
-          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="h-8 w-8 text-white" />
         </button>
       )}
       
@@ -242,22 +351,50 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         )}
       </div>
 
-      {/* Reply button (bottom) */}
+      {/* Reply and reactions (bottom) */}
       {!isOwnStory && (
-        <div className="absolute bottom-4 left-4 right-4 z-10">
-          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full p-3">
-            <input
-              type="text"
-              placeholder="Responder"
-              className="flex-1 bg-transparent text-white placeholder-white/60 outline-none"
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-white hover:bg-white/20 rounded-full"
-            >
-              <Heart className="h-5 w-5" />
-            </Button>
+        <div className="absolute bottom-6 left-4 right-4 z-10">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-3 border border-white/10">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Enviar mensagem..."
+                className="flex-1 bg-transparent text-white placeholder-white/60 outline-none text-sm"
+              />
+            </div>
+            
+            {/* Reaction buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleReaction('heart')}
+                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
+                  userReaction === 'heart' ? 'bg-red-500/80' : 'bg-black/60 border border-white/10'
+                }`}
+              >
+                <img src={heartIcon} alt="Heart" className="h-6 w-6" />
+              </button>
+              
+              <button
+                onClick={() => handleReaction('thumbs-up')}
+                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
+                  userReaction === 'thumbs-up' ? 'bg-blue-500/80' : 'bg-black/60 border border-white/10'
+                }`}
+              >
+                <img src={thumbsUpIcon} alt="Like" className="h-6 w-6" />
+              </button>
+              
+              <button
+                onClick={() => handleReaction('laughing')}
+                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
+                  userReaction === 'laughing' ? 'bg-yellow-500/80' : 'bg-black/60 border border-white/10'
+                }`}
+              >
+                <img src={laughingIcon} alt="Laughing" className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
       )}
