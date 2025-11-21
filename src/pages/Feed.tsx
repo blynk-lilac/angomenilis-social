@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -60,6 +60,7 @@ export default function Feed() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -192,6 +193,19 @@ export default function Feed() {
 
   const handleLongPress = (postId: string) => {
     setShowReactions(postId);
+  };
+
+  const handlePressStart = (postId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      handleLongPress(postId);
+    }, 500);
+  };
+
+  const handlePressEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const handleDoubleClick = () => {
@@ -523,14 +537,11 @@ export default function Feed() {
                         size="sm" 
                         className="w-full gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
                         onClick={() => handleLike(post.id)}
-                        onMouseDown={() => {
-                          const timer = setTimeout(() => handleLongPress(post.id), 500);
-                          return () => clearTimeout(timer);
-                        }}
-                        onTouchStart={() => {
-                          const timer = setTimeout(() => handleLongPress(post.id), 500);
-                          return () => clearTimeout(timer);
-                        }}
+                        onMouseDown={() => handlePressStart(post.id)}
+                        onMouseUp={handlePressEnd}
+                        onMouseLeave={handlePressEnd}
+                        onTouchStart={() => handlePressStart(post.id)}
+                        onTouchEnd={handlePressEnd}
                       >
                         <Heart 
                           className={`h-[18px] w-[18px] transition-all ${
