@@ -1,19 +1,30 @@
 {
-  "name": "Angomenilis",
-  "short_name": "Angomenilis",
-  "description": "Plataforma de mensagens e conexões sociais",
+  "name": "Blynk",
+  "short_name": "Blynk",
+  "description": "Blynk - A rede social que conecta você com amigos",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#14B8A6",
+  "theme_color": "#2563eb",
   "orientation": "portrait",
-  "gcm_sender_id": "103953800507",
   "scope": "/",
   "categories": ["social", "messaging"],
   "prefer_related_applications": false,
   "icons": [
     {
       "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

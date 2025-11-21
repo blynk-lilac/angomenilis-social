@@ -27,6 +27,7 @@ import Report from './pages/Report';
 import SavedPosts from './pages/SavedPosts';
 import PostDetail from './pages/PostDetail';
 import Notifications from './pages/Notifications';
+import InstallPWA from './pages/InstallPWA';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -282,6 +283,9 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Install PWA Route */}
+            <Route path="/install" element={<InstallPWA />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
