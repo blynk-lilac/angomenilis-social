@@ -1215,6 +1215,7 @@ export type Database = {
       stories: {
         Row: {
           created_at: string | null
+          custom_music_url: string | null
           expires_at: string | null
           id: string
           media_type: string
@@ -1225,6 +1226,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_music_url?: string | null
           expires_at?: string | null
           id?: string
           media_type: string
@@ -1235,6 +1237,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_music_url?: string | null
           expires_at?: string | null
           id?: string
           media_type?: string
