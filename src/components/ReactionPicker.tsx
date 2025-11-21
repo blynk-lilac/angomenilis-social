@@ -39,10 +39,10 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
         onClick={onClose}
       />
       <div 
-        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
+        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50"
       >
         <div 
-          className={`flex gap-1 bg-card border-2 border-border rounded-full px-3 py-2 shadow-2xl transition-all duration-200 ${
+          className={`flex gap-2 bg-card border-2 border-border rounded-full px-4 py-2.5 shadow-2xl transition-all duration-200 ${
             isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'
           }`}
         >
@@ -54,10 +54,10 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
                 onSelect(reaction.type);
                 onClose();
               }}
-              className="w-12 h-12 hover:scale-125 transition-transform duration-150 active:scale-110 flex items-center justify-center"
+              className="w-11 h-11 hover:scale-125 transition-transform duration-150 active:scale-110 flex items-center justify-center rounded-full"
               title={reaction.label}
             >
-              <img src={reaction.icon} alt={reaction.type} className="w-full h-full" />
+              <img src={reaction.icon} alt={reaction.type} className="w-full h-full object-contain" />
             </button>
           ))}
         </div>
