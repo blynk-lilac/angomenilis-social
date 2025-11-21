@@ -21,7 +21,7 @@ interface MusicSearchProps {
 const searchItunesMusic = async (query: string): Promise<Music[]> => {
   try {
     const response = await fetch(
-      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25`
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=200&country=AO`
     );
 
     if (!response.ok) throw new Error("Erro na API do iTunes");
@@ -34,7 +34,7 @@ const searchItunesMusic = async (query: string): Promise<Music[]> => {
       id: track.trackId?.toString() || crypto.randomUUID(),
       name: track.trackName,
       artist: track.artistName,
-      cover: track.artworkUrl100,
+      cover: track.artworkUrl100?.replace('100x100', '300x300') || track.artworkUrl60?.replace('60x60', '300x300') || '',
       preview: track.previewUrl,
     }));
   } catch (error) {
@@ -43,24 +43,32 @@ const searchItunesMusic = async (query: string): Promise<Music[]> => {
   }
 };
 
-// Sugestões locais (fallback) – músicas reais populares
+// Sugestões locais (fallback) – músicas angolanas populares
 const SAMPLE_MUSIC: Music[] = [
   { id: "sample-1", name: "Melhor de Mim", artist: "Lupambo", cover: "" },
-  { id: "sample-2", name: "2 Grown", artist: "Lil Tjay", cover: "" },
-  { id: "sample-3", name: "Éternité", artist: "Fally Ipupa", cover: "" },
-  { id: "sample-4", name: "TI TI TI", artist: "Gradur", cover: "" },
-  { id: "sample-5", name: "Couleurs", artist: "Fally Ipupa", cover: "" },
-  { id: "sample-6", name: "Mine", artist: "Jastin Martin", cover: "" },
-  { id: "sample-7", name: "TA TUDO BEM", artist: "T-Rex", cover: "" },
-  { id: "sample-8", name: "Mon bébé", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-2", name: "Éternité", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-3", name: "Couleurs", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-4", name: "Mon bébé", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-5", name: "ندى", artist: "C4 Pedro", cover: "" },
+  { id: "sample-6", name: "African Beauty", artist: "C4 Pedro", cover: "" },
+  { id: "sample-7", name: "Vamos Ficar Por Aqui", artist: "Anselmo Ralph", cover: "" },
+  { id: "sample-8", name: "Não Me Toca", artist: "Anselmo Ralph", cover: "" },
+  { id: "sample-9", name: "Pérola", artist: "Yuri da Cunha", cover: "" },
+  { id: "sample-10", name: "Minha Deusa", artist: "Yuri da Cunha", cover: "" },
 ];
 
-// Consultas para carregar tendências ao abrir a aba
+// Consultas para carregar tendências de músicas angolanas
 const TRENDING_QUERIES = [
-  "Lupambo Melhor de Mim",
-  "Lil Tjay 2 Grown",
-  "Fally Ipupa",
-  "T-Rex TA TUDO BEM",
+  "Anselmo Ralph",
+  "C4 Pedro",
+  "Yuri da Cunha",
+  "Filho do Zua",
+  "Landrick",
+  "Edmázia Mayembe",
+  "Matias Damásio",
+  "Pérola",
+  "Neyna",
+  "Djodje",
 ];
 
 export default function MusicSearch({ onSelect }: MusicSearchProps) {
@@ -151,10 +159,11 @@ export default function MusicSearch({ onSelect }: MusicSearchProps) {
   };
 
   const categories = [
-    { name: "Aniversário", query: "happy birthday" },
-    { name: "Encontro noturno", query: "romantic night" },
-    { name: "Família", query: "family" },
-    { name: "Festa", query: "party" },
+    { name: "Kizomba", query: "kizomba angola" },
+    { name: "Semba", query: "semba angola" },
+    { name: "Kuduro", query: "kuduro angola" },
+    { name: "Afrohouse", query: "afrohouse angola" },
+    { name: "Zouk", query: "zouk angola" },
   ];
 
   return (

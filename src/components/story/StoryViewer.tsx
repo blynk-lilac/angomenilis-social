@@ -39,6 +39,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const [progress, setProgress] = useState(0);
   const [replyText, setReplyText] = useState('');
   const [userReaction, setUserReaction] = useState<string | null>(null);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   
   const currentStory = stories[currentIndex];
   const isOwnStory = currentStory.user_id === user?.id;
@@ -55,6 +56,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     loadViewCount();
     loadUserReaction();
 
+    // Play music if available
+    if (currentStory.music_name) {
+      playMusic();
+    }
+
     // Auto progress
     const duration = currentStory.media_type === 'video' ? 15000 : 5000;
     const interval = setInterval(() => {
@@ -67,8 +73,40 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       });
     }, 100);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
   }, [currentIndex, currentStory]);
+
+  const playMusic = async () => {
+    try {
+      // Stop previous audio if playing
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+
+      // Try to play preview from iTunes or similar
+      const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
+      const response = await fetch(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&entity=song&limit=1`
+      );
+      const data = await response.json();
+
+      if (data.results && data.results[0]?.previewUrl) {
+        const newAudio = new Audio(data.results[0].previewUrl);
+        newAudio.volume = 0.5;
+        newAudio.play().catch(err => console.log('Audio play failed:', err));
+        setAudio(newAudio);
+      }
+    } catch (error) {
+      console.log('Could not play music:', error);
+    }
+  };
 
   const recordView = async () => {
     if (!user) return;
@@ -351,15 +389,17 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
             alt="Story"
             className="max-w-full max-h-full object-contain"
           />
-        ) : (
+        ) : currentStory.media_type === 'video' ? (
           <video
+            key={currentStory.id}
             src={currentStory.media_url}
             className="max-w-full max-h-full object-contain"
             autoPlay
-            loop
+            muted={false}
             playsInline
+            controls={false}
           />
-        )}
+        ) : null}
       </div>
 
       {/* Reply and reactions (bottom) */}
