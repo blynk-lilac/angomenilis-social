@@ -67,8 +67,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       playMusic();
     }
 
-    // Auto progress
-    const duration = currentStory.media_type === 'video' ? 15000 : 5000;
+    // Auto progress - 10 segundos para todos os tipos
+    const duration = 10000;
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -96,23 +96,30 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         audio.currentTime = 0;
       }
 
-      // Try to play preview from iTunes
+      // Buscar música via backend function
       const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
       const response = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&entity=song&limit=1&country=AO`
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`
       );
       const data = await response.json();
 
-      if (data.results && data.results[0]?.previewUrl) {
-        const track = data.results[0];
-        const newAudio = new Audio(track.previewUrl);
-        newAudio.volume = 0.5;
-        newAudio.play().catch(err => console.log('Audio play failed:', err));
-        setAudio(newAudio);
+      console.log('Music search result:', data);
 
-        const cover = track.artworkUrl100?.replace('100x100', '300x300') || track.artworkUrl60?.replace('60x60', '300x300');
-        if (cover) {
-          setMusicCover(cover);
+      if (data.tracks && data.tracks.length > 0) {
+        const track = data.tracks[0];
+        
+        // Tocar o preview se disponível
+        if (track.preview) {
+          const newAudio = new Audio(track.preview);
+          newAudio.volume = 0.5;
+          newAudio.loop = true; // Loop para continuar tocando durante o story
+          newAudio.play().catch(err => console.log('Audio play failed:', err));
+          setAudio(newAudio);
+        }
+
+        // Usar a capa da música
+        if (track.cover) {
+          setMusicCover(track.cover);
         }
       }
     } catch (error) {
