@@ -98,6 +98,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
       // Buscar música via backend function
       const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
+      console.log('Searching for music:', searchQuery);
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`
       );
@@ -107,23 +109,39 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
       if (data.tracks && data.tracks.length > 0) {
         const track = data.tracks[0];
+        console.log('Found track with preview:', track.preview);
         
         // Tocar o preview se disponível
         if (track.preview) {
-          const newAudio = new Audio(track.preview);
-          newAudio.volume = 0.5;
-          newAudio.loop = true; // Loop para continuar tocando durante o story
-          newAudio.play().catch(err => console.log('Audio play failed:', err));
-          setAudio(newAudio);
+          try {
+            const newAudio = new Audio(track.preview);
+            newAudio.volume = 0.6;
+            newAudio.loop = true; // Loop para continuar tocando durante o story
+            
+            // Tentar tocar o áudio
+            const playPromise = newAudio.play();
+            if (playPromise !== undefined) {
+              await playPromise;
+              console.log('Audio playing successfully');
+              setAudio(newAudio);
+            }
+          } catch (playError) {
+            console.error('Failed to play audio:', playError);
+            toast.error('Não foi possível tocar a música. Toque na tela para ativar o som.');
+          }
+        } else {
+          console.log('No preview URL available for this track');
         }
 
         // Usar a capa da música
         if (track.cover) {
           setMusicCover(track.cover);
         }
+      } else {
+        console.log('No tracks found for query:', searchQuery);
       }
     } catch (error) {
-      console.log('Could not play music:', error);
+      console.error('Could not play music:', error);
     }
   };
 
@@ -399,15 +417,27 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           </div>
         </div>
 
-        {/* Navigation areas */}
+        {/* Navigation areas - Click to play audio if blocked */}
         <div className="absolute inset-0 flex">
           <button 
-            onClick={handlePrevious}
+            onClick={(e) => {
+              // Tentar reproduzir áudio se foi bloqueado
+              if (audio && audio.paused) {
+                audio.play().catch(err => console.log('Failed to resume audio:', err));
+              }
+              handlePrevious();
+            }}
             className="flex-1"
             disabled={currentIndex === 0}
           />
           <button 
-            onClick={handleNext}
+            onClick={(e) => {
+              // Tentar reproduzir áudio se foi bloqueado
+              if (audio && audio.paused) {
+                audio.play().catch(err => console.log('Failed to resume audio:', err));
+              }
+              handleNext();
+            }}
             className="flex-1"
           />
         </div>
