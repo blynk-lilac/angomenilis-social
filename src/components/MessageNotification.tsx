@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { showNotification } from '@/utils/pushNotifications';
 
 interface Notification {
   id: string;
@@ -41,12 +42,23 @@ export const MessageNotification = () => {
             .single();
 
           if (profile) {
-            setNotification({
+            const notifData = {
               id: payload.new.id,
               senderId: payload.new.sender_id,
               senderName: profile.first_name,
               senderAvatar: profile.avatar_url,
               content: payload.new.content,
+            };
+
+            setNotification(notifData);
+
+            // Show native notification
+            showNotification(`${profile.first_name} enviou uma mensagem`, {
+              body: payload.new.content,
+              tag: `message-${payload.new.id}`,
+              data: {
+                url: `/chat/${payload.new.sender_id}`,
+              },
             });
 
             // Auto-hide after 5 seconds

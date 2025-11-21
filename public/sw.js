@@ -1,22 +1,37 @@
-// Prevent screenshot detection and enhance security
+// Service Worker for PWA with Push Notifications
 self.addEventListener('install', function(event) {
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(
+    caches.open('blynk-v1').then(function(cache) {
+      return cache.addAll([
+        '/',
+        '/favicon.png',
+        '/logo-192.png',
+        '/logo-512.png'
+      ]);
+    }).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', function(event) {
   event.waitUntil(self.clients.claim());
 });
 
+// Handle push notifications
 self.addEventListener('push', function(event) {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Nova mensagem';
+  const title = data.title || 'Blynk';
   const options = {
-    body: data.body || 'Você recebeu uma nova mensagem',
-    icon: '/favicon.png',
+    body: data.body || 'Nova notificação',
+    icon: '/logo-192.png',
     badge: '/favicon.png',
     vibrate: [200, 100, 200],
-    data: data.url || '/',
-    requireInteraction: true,
+    tag: data.tag || 'notification',
+    data: {
+      url: data.url || '/',
+      ...data
+    },
+    requireInteraction: false,
+    actions: data.actions || []
   };
 
   event.waitUntil(
@@ -24,9 +39,40 @@ self.addEventListener('push', function(event) {
   );
 });
 
+// Handle notification clicks
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  
+  const urlToOpen = event.notification.data.url || '/';
+  
   event.waitUntil(
-    clients.openWindow(event.notification.data)
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then(function(clientList) {
+      // Check if there's already a window open
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If not, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
   );
 });
+
+// Handle background sync
+self.addEventListener('sync', function(event) {
+  if (event.tag === 'sync-messages') {
+    event.waitUntil(syncMessages());
+  }
+});
+
+function syncMessages() {
+  // Sync logic here
+  return Promise.resolve();
+}

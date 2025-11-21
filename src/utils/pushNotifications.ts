@@ -21,14 +21,17 @@ export const showNotification = (title: string, options?: NotificationOptions) =
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification(title, {
-          icon: '/favicon.png',
+          icon: '/logo-192.png',
           badge: '/favicon.png',
+          tag: 'blynk-notification',
+          requireInteraction: false,
           ...options,
         });
       });
     } else {
       new Notification(title, {
-        icon: '/favicon.png',
+        icon: '/logo-192.png',
+        badge: '/favicon.png',
         ...options,
       });
     }

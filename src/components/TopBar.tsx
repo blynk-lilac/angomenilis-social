@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Bell, Search, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
+import blynkLogo from "@/assets/blynk-logo.jpg";
 import SideMenu from "@/components/SideMenu";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -16,8 +16,9 @@ export const TopBar = () => {
       <div className="flex items-center justify-between h-16 px-4 max-w-screen-xl mx-auto">
         <div className="flex items-center gap-2">
           <SideMenu />
-          <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
-          <span className="text-xl font-bold hidden sm:inline">Angomenilis</span>
+          <Link to="/feed" className="flex items-center gap-2">
+            <img src={blynkLogo} alt="Blynk" className="h-8 w-auto" />
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">

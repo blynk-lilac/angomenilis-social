@@ -15,18 +15,32 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'robots.txt'],
+      includeAssets: ['favicon.png', 'logo-192.png', 'logo-512.png', 'robots.txt'],
       manifest: {
-        name: 'Angomenilis',
-        short_name: 'Angomenilis',
-        description: 'Plataforma de mensagens e conexões sociais',
-        theme_color: '#14B8A6',
+        name: 'Blynk',
+        short_name: 'Blynk',
+        description: 'Blynk - A rede social que conecta você com amigos',
+        theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: '/favicon.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/logo-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: '/logo-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
@@ -37,6 +51,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallback: '/index.html',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -51,8 +66,24 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-cache',
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24
+              }
+            }
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ].filter(Boolean),
