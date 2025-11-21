@@ -90,7 +90,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     };
   }, [currentIndex, currentStory, user]);
 
-  const loadMusicData = async () => {
+  const loadMusicData = async (): Promise<HTMLAudioElement | null> => {
     try {
       // Parar áudio anterior se estiver a tocar
       if (audio) {
@@ -99,8 +99,12 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         setAudio(null);
       }
 
-      // Buscar música via backend function
-      const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
+      if (!currentStory.music_name) {
+        console.log('Story sem música definida');
+        return null;
+      }
+
+      const searchQuery = `${currentStory.music_artist || ''} ${currentStory.music_name}`.trim();
       console.log('Loading music data for:', searchQuery);
       
       const response = await fetch(
@@ -114,9 +118,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         const track = data.tracks[0];
         console.log('Found track with preview:', track.preview);
         
+        let newAudio: HTMLAudioElement | null = null;
+
         // Preparar o áudio mas não tocar ainda
         if (track.preview) {
-          const newAudio = new Audio(track.preview);
+          newAudio = new Audio(track.preview);
           newAudio.volume = 0.7;
           newAudio.loop = true;
           setAudio(newAudio);
@@ -129,23 +135,29 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         if (track.cover) {
           setMusicCover(track.cover);
         }
+
+        return newAudio;
       } else {
         console.log('No tracks found for query:', searchQuery);
       }
     } catch (error) {
       console.error('Could not load music data:', error);
     }
+
+    return null;
   };
 
   const playMusic = async () => {
-    if (!audio) {
+    let audioToPlay = audio;
+
+    if (!audioToPlay) {
       toast.error('Música não carregada. A tentar novamente...');
-      await loadMusicData();
-      if (!audio) return;
+      audioToPlay = await loadMusicData();
+      if (!audioToPlay) return;
     }
 
     try {
-      await audio.play();
+      await audioToPlay.play();
       console.log('Audio playing successfully');
       setAudioEnabled(true);
       toast.success('Som ativado!');
@@ -465,24 +477,26 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         </div>
 
         {/* Media content */}
-        <div className="relative w-full h-full flex items-center justify-center bg-muted/20">
-          {currentStory.media_type === 'image' ? (
-            <img
-              src={currentStory.media_url}
-              alt="Story"
-              className="w-full h-full object-cover"
-            />
-          ) : currentStory.media_type === 'video' ? (
-            <video
-              key={currentStory.id}
-              src={currentStory.media_url}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted={false}
-              playsInline
-              controls={false}
-            />
-          ) : null}
+        <div className="relative w-full h-full flex items-center justify-center bg-muted/40">
+          <div className="relative max-w-[420px] w-full aspect-[9/16] rounded-2xl overflow-hidden bg-background shadow-2xl flex items-center justify-center">
+            {currentStory.media_type === 'image' ? (
+              <img
+                src={currentStory.media_url}
+                alt="Story"
+                className="w-full h-full object-contain"
+              />
+            ) : currentStory.media_type === 'video' ? (
+              <video
+                key={currentStory.id}
+                src={currentStory.media_url}
+                className="w-full h-full object-contain"
+                autoPlay
+                muted={false}
+                playsInline
+                controls={false}
+              />
+            ) : null}
+          </div>
           
           {/* Botão grande de ativar som no centro */}
           {currentStory.music_name && !audioEnabled && (
