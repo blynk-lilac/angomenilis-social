@@ -1,4 +1,4 @@
-import badgeVerified from "@/assets/badge-verified.svg";
+import badgeVerified from "@/assets/badge-verified-blue.svg";
 
 interface VerificationBadgeProps {
   badgeType?: string | null;
