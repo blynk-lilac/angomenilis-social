@@ -18,7 +18,8 @@ import {
   Bell,
   Copy,
   PlusCircle,
-  MinusCircle
+  MinusCircle,
+  Trash2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -166,6 +167,32 @@ export default function PostMenu({
     setOpen(false);
   };
 
+  const handleDeletePost = async () => {
+    if (!window.confirm("Tens certeza que desejas eliminar esta publicação?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", currentUserId);
+
+      if (error) throw error;
+
+      toast.success("Publicação eliminada com sucesso");
+      onUpdate?.();
+      navigate("/feed");
+    } catch (error: any) {
+      toast.error("Erro ao eliminar publicação");
+      console.error(error);
+    }
+    setOpen(false);
+  };
+
+  const isOwner = postUserId === currentUserId;
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -177,7 +204,19 @@ export default function PostMenu({
           <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto">
+        {isOwner && (
+          <>
+            <DropdownMenuItem onClick={handleDeletePost} className="py-3 cursor-pointer text-destructive focus:text-destructive">
+              <div className="flex items-center gap-3">
+                <Trash2 className="h-5 w-5" />
+                <p className="font-semibold text-sm">Eliminar publicação</p>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <DropdownMenuItem onClick={handleInterested} className="py-3 cursor-pointer">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-muted rounded-full">
