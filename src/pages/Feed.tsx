@@ -239,9 +239,6 @@ export default function Feed() {
     }
   };
 
-  const handleDoubleClick = () => {
-    setCreateStoryOpen(true);
-  };
 
   const handleRepost = async (postId: string) => {
     try {
@@ -383,10 +380,7 @@ export default function Feed() {
   return (
     <ProtectedRoute>
       <MessageNotification />
-      <div 
-        className="min-h-screen bg-background pb-20"
-        onDoubleClick={handleDoubleClick}
-      >
+      <div className="min-h-screen bg-background pb-20">
         <TopBar />
         <MainNav />
 
