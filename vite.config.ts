@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'logo-192.png', 'logo-512.png', 'robots.txt'],
+      includeAssets: ['favicon.png', 'logo-192.png', 'logo-512.png', 'robots.txt', 'sitemap.xml', 'google7e9cd02c2abe4306.html'],
       manifest: {
         name: 'Blynk',
         short_name: 'Blynk',
