@@ -21,24 +21,19 @@ interface MusicSearchProps {
 const searchItunesMusic = async (query: string): Promise<Music[]> => {
   try {
     const response = await fetch(
-      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=200&country=AO`
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=200`
     );
-
-    if (!response.ok) throw new Error("Erro na API do iTunes");
-
     const data = await response.json();
-
-    if (!Array.isArray(data.results)) return [];
-
-    return data.results.map((track: any) => ({
-      id: track.trackId?.toString() || crypto.randomUUID(),
-      name: track.trackName,
-      artist: track.artistName,
-      cover: track.artworkUrl100?.replace('100x100', '300x300') || track.artworkUrl60?.replace('60x60', '300x300') || '',
-      preview: track.previewUrl,
+    
+    return data.results.map((item: any) => ({
+      id: item.trackId.toString(),
+      name: item.trackName,
+      artist: item.artistName,
+      cover: item.artworkUrl100.replace('100x100', '300x300'),
+      preview: item.previewUrl,
     }));
   } catch (error) {
-    console.error("Error searching iTunes:", error);
+    console.error('Error searching iTunes:', error);
     return [];
   }
 };

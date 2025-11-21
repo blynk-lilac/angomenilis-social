@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import VerificationBadge from "@/components/VerificationBadge";
+import { VideosSkeleton } from "@/components/loading/VideosSkeleton";
 
 interface Video {
   id: string;
@@ -45,6 +46,7 @@ export default function Videos() {
   const [uploading, setUploading] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [expandedCaptions, setExpandedCaptions] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const { shareCode } = useParams();
   const navigate = useNavigate();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -111,33 +113,37 @@ export default function Videos() {
   };
 
   const loadVideos = async () => {
-    let query = supabase
-      .from("verification_videos")
-      .select(`
-        *,
-        profiles (
-          username,
-          avatar_url,
-          verified,
-          badge_type
-        ),
-        verification_video_likes (user_id),
-        verification_video_comments (id)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      let query = supabase
+        .from("verification_videos")
+        .select(`
+          *,
+          profiles (
+            username,
+            avatar_url,
+            verified,
+            badge_type
+          ),
+          verification_video_likes (user_id),
+          verification_video_comments (id)
+        `)
+        .order("created_at", { ascending: false });
 
-    if (shareCode) {
-      query = query.eq("share_code", shareCode);
+      if (shareCode) {
+        query = query.eq("share_code", shareCode);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        toast.error("Erro ao carregar vídeos");
+        return;
+      }
+
+      setVideos(data || []);
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      toast.error("Erro ao carregar vídeos");
-      return;
-    }
-
-    setVideos(data || []);
   };
 
   const handleLike = async (videoId: string) => {
@@ -247,7 +253,14 @@ export default function Videos() {
           className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
           style={{ scrollBehavior: 'smooth' }}
         >
-          {videos.map((video, index) => {
+          {loading ? (
+            <VideosSkeleton />
+          ) : videos.length === 0 ? (
+            <div className="h-screen flex items-center justify-center text-white">
+              <p>Nenhum vídeo disponível</p>
+            </div>
+          ) : (
+            videos.map((video, index) => {
             const isExpanded = expandedCaptions.has(video.id);
             const captionPreview = video.caption?.slice(0, 80);
             const needsExpand = video.caption && video.caption.length > 80;
@@ -393,7 +406,8 @@ export default function Videos() {
                 </div>
               </div>
             );
-          })}
+          })
+          )}
         </div>
 
         {/* Mobile Upload Button */}

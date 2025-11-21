@@ -16,6 +16,7 @@ import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
 import { useTemporaryMessages } from '@/hooks/useTemporaryMessages';
+import { ChatSkeleton } from '@/components/loading/ChatSkeleton';
 
 interface Message {
   id: string;
@@ -46,6 +47,7 @@ export default function Chat() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [chatSettings, setChatSettings] = useState<any>(null);
   const [sendingMessages, setSendingMessages] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -65,9 +67,12 @@ export default function Chat() {
   useEffect(() => {
     if (!friendId) return;
 
-    loadFriend();
-    loadChatSettings();
-    loadMessages();
+    const loadData = async () => {
+      await Promise.all([loadFriend(), loadChatSettings(), loadMessages()]);
+      setLoading(false);
+    };
+    
+    loadData();
     const messagesCleanup = subscribeToMessages();
     const settingsCleanup = subscribeToChatSettings();
 
@@ -333,12 +338,8 @@ export default function Chat() {
     );
   }
 
-  if (!friend) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+  if (loading || !friend) {
+    return <ChatSkeleton />;
   }
 
   const isTyping = typingUsers.size > 0;

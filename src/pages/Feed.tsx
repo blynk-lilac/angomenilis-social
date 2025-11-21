@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import PostMenu from "@/components/PostMenu";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 
 interface LiveStream {
   id: string;
@@ -64,6 +65,7 @@ export default function Feed() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -72,9 +74,12 @@ export default function Feed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setCurrentUserId(user.id);
     };
-    loadUser();
-    loadPosts();
-    loadLiveStreams();
+    const loadData = async () => {
+      await loadUser();
+      await Promise.all([loadPosts(), loadLiveStreams()]);
+      setLoading(false);
+    };
+    loadData();
 
     const postsChannel = supabase
       .channel("posts-changes")
@@ -458,8 +463,17 @@ export default function Feed() {
 
           {/* Feed - Design Moderno e Limpo */}
           <div className="space-y-3 mt-4">
-            {posts.map((post) => (
-              <Card key={post.id} className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
+            {loading ? (
+              <FeedSkeleton />
+            ) : posts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <p className="text-muted-foreground text-center">
+                  Nenhuma publicação ainda
+                </p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <Card key={post.id} className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
                 {/* Header do Post */}
                 <div className="p-4 pb-3">
                   <div className="flex items-center gap-3">
@@ -645,7 +659,8 @@ export default function Feed() {
                   </div>
                 </div>
               </Card>
-            ))}
+            ))
+            )}
           </div>
         </div>
 

@@ -31,6 +31,7 @@ import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
+import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
 
 interface Profile {
   id: string;
@@ -92,36 +93,45 @@ export default function Profile() {
   const [modalType, setModalType] = useState<"followers" | "following" | "friends">("followers");
   const [modalUsers, setModalUsers] = useState<Profile[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
   }, [userId]);
 
   const loadProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    setCurrentUserId(user.id);
-    const profileId = userId || user.id;
-    setIsOwnProfile(profileId === user.id);
+      setCurrentUserId(user.id);
+      const profileId = userId || user.id;
+      setIsOwnProfile(profileId === user.id);
 
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", profileId)
-      .single();
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", profileId)
+        .single();
 
-    if (profileData) {
-      setProfile(profileData);
-      loadStats(profileId);
-      loadPosts(profileId);
-      loadVideos(profileId);
-      loadFriends(profileId);
-      
-      if (profileId !== user.id) {
-        checkFollowing(user.id, profileId);
-        checkFriendStatus(user.id, profileId);
+      if (profileData) {
+        setProfile(profileData);
+        await Promise.all([
+          loadStats(profileId),
+          loadPosts(profileId),
+          loadVideos(profileId),
+          loadFriends(profileId),
+        ]);
+        
+        if (profileId !== user.id) {
+          await Promise.all([
+            checkFollowing(user.id, profileId),
+            checkFriendStatus(user.id, profileId),
+          ]);
+        }
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -357,15 +367,13 @@ export default function Profile() {
     }
   };
 
-  if (!profile) {
+  if (loading || !profile) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-background pb-20">
           <TopBar />
           <MainNav />
-          <div className="flex items-center justify-center h-screen">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
+          <ProfileSkeleton />
         </div>
       </ProtectedRoute>
     );

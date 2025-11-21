@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { Search, Plus, Settings } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { toast } from 'sonner';
+import { MessagesSkeleton } from '@/components/loading/MessagesSkeleton';
 
 interface Friend {
   id: string;
@@ -204,11 +205,7 @@ export default function Messages() {
   const myStories = groupedStories.find(stories => stories[0].user_id === user?.id);
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+    return <MessagesSkeleton />;
   }
 
   return (
