@@ -66,11 +66,13 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
 
       for (const query of GLOBAL_QUERIES) {
         const results = await searchDeezerMusic(query);
-        allMusic.push(...results.slice(0, 20));
+        allMusic.push(...results.slice(0, 10));
       }
 
       if (allMusic.length > 0) {
         setMusic(allMusic);
+      } else {
+        toast.error("Nenhuma música encontrada");
       }
     } catch (error) {
       console.error(error);

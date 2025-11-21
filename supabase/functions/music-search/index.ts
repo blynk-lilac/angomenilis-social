@@ -38,7 +38,10 @@ const handler = async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const query = url.searchParams.get("query");
 
+    console.log("Received query:", query);
+
     if (!query || query.trim().length === 0) {
+      console.log("Empty query, returning empty array");
       return new Response(JSON.stringify({ tracks: [] }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,10 +49,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=50`;
+    console.log("Fetching from Deezer:", deezerUrl);
+    
     const deezerResponse = await fetch(deezerUrl);
+    console.log("Deezer response status:", deezerResponse.status);
 
     if (!deezerResponse.ok) {
-      console.error("Deezer API error", await deezerResponse.text());
+      const errorText = await deezerResponse.text();
+      console.error("Deezer API error:", errorText);
       return new Response(JSON.stringify({ tracks: [] }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -57,6 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const data: DeezerResponse = await deezerResponse.json();
+    console.log("Deezer data:", JSON.stringify(data).substring(0, 200));
 
     const tracks = (data.data || []).map((item) => ({
       id: item.id.toString(),
@@ -66,6 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
       duration: formatDuration(item.duration || 0),
       preview: item.preview,
     }));
+
+    console.log("Returning tracks count:", tracks.length);
 
     return new Response(JSON.stringify({ tracks }), {
       status: 200,
