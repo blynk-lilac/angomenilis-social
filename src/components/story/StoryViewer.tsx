@@ -219,7 +219,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       // Create notification for story owner
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -230,7 +230,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           type: 'story_reaction',
           title: 'Nova reação no seu story',
           message: `${profile?.first_name || 'Alguém'} reagiu ao seu story`,
-          related_id: currentStory.id
+          related_id: currentStory.id,
+          avatar_url: profile?.avatar_url
         });
 
       toast.success('Reação enviada!');
@@ -257,7 +258,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       // Create notification
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -268,7 +269,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           type: 'message',
           title: 'Nova mensagem',
           message: `${profile?.first_name || 'Alguém'} respondeu ao seu story`,
-          related_id: user.id
+          related_id: user.id,
+          avatar_url: profile?.avatar_url
         });
 
       toast.success('Mensagem enviada!');

@@ -31,7 +31,7 @@ export const useStoryReactions = () => {
             // Get reactor's profile
             const { data: profile } = await supabase
               .from('profiles')
-              .select('first_name, username')
+              .select('first_name, username, avatar_url')
               .eq('id', payload.new.user_id)
               .single();
 
@@ -45,12 +45,13 @@ export const useStoryReactions = () => {
               'Nova reação no seu story',
               {
                 body: `${profile?.first_name || profile?.username || 'Alguém'} reagiu ${reactionEmoji}`,
-                icon: '/logo-192.png',
+                icon: profile?.avatar_url || '/logo-192.png',
                 badge: '/favicon.png',
                 tag: 'story-reaction',
                 data: { 
                   type: 'story_reaction',
-                  storyId: payload.new.story_id
+                  storyId: payload.new.story_id,
+                  avatar: profile?.avatar_url,
                 }
               }
             );

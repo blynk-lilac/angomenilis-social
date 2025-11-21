@@ -22,12 +22,14 @@ self.addEventListener('push', function(event) {
   const title = data.title || 'Blynk';
   const options = {
     body: data.body || 'Nova notificação',
-    icon: '/logo-192.png',
+    icon: data.icon || data.avatar || '/logo-192.png',
     badge: '/favicon.png',
     vibrate: [200, 100, 200],
     tag: data.tag || 'notification',
+    image: data.image || null,
     data: {
       url: data.url || '/',
+      avatar: data.avatar || null,
       ...data
     },
     requireInteraction: false,
