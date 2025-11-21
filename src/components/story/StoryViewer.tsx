@@ -293,7 +293,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   };
 
   return (
-    <div className="fixed inset-0 bg-background/95 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-background z-50">
       {/* Navigation - Left Arrow */}
       {currentIndex > 0 && (
         <button
@@ -315,7 +315,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       )}
       
       {/* Story Card Container */}
-      <div className="relative max-w-md w-full h-[85vh] bg-card rounded-2xl shadow-2xl overflow-hidden mx-4">
+      <div className="relative w-full h-full bg-card overflow-hidden">
         {/* Progress bars */}
         <div className="absolute top-0 left-0 right-0 flex gap-1 p-3 z-10">
           {stories.map((_, idx) => (
