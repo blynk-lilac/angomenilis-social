@@ -8,7 +8,7 @@ export const BottomNav = () => {
     { to: '/friends', icon: Users, label: 'Amigos' },
     { to: '/messages', icon: MessageSquare, label: 'Mensagens' },
     { to: '/videos', icon: Video, label: 'Vídeos' },
-    { to: '/settings', icon: User, label: 'Perfil' },
+    { to: '/profile', icon: User, label: 'Perfil' },
   ];
 
   return (
