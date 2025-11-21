@@ -9,6 +9,7 @@ import { MessageNotification } from "@/components/MessageNotification";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
+import TwoFactorVerification from "./pages/TwoFactorVerification";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
 import ChatSettings from "./pages/ChatSettings";
@@ -64,6 +65,7 @@ const AppContent = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/two-factor-verification" element={<TwoFactorVerification />} />
         
         <Route
           path="/"
