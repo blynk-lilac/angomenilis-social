@@ -134,20 +134,20 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
+      <DialogContent className="max-w-full max-h-full h-screen w-screen p-0 m-0 rounded-none">
+        <DialogHeader className="sticky top-0 z-10 bg-background border-b p-4">
+          <div className="flex items-center gap-3">
             {mode !== "select" && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setMode("select")}
-                className="h-8 w-8"
+                className="h-10 w-10"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             )}
-            <DialogTitle>
+            <DialogTitle className="text-xl">
               {mode === "select" ? "Criar história" : 
                mode === "text" ? "Texto" :
                mode === "music" ? "Adicionar uma música à tua história" :
@@ -156,8 +156,9 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
           </div>
         </DialogHeader>
 
-        {mode === "select" && (
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto">
+          {mode === "select" && (
+            <div className="space-y-6 p-4 h-full">
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("text")}
@@ -233,11 +234,11 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
               onChange={handleFileChange}
               className="hidden"
             />
-          </div>
-        )}
+            </div>
+          )}
 
-        {mode === "text" && (
-          <div className="space-y-4">
+          {mode === "text" && (
+            <div className="space-y-4 p-4 h-full">
             <Textarea
               placeholder="Digite seu texto..."
               value={textContent}
@@ -280,11 +281,11 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
                 {loading ? "Publicando..." : "Publicar"}
               </Button>
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
-        {mode === "music" && (
-          <div className="space-y-4">
+          {mode === "music" && (
+            <div className="h-full p-4">
             <MusicSearch
               onSelect={(music) => {
                 setSelectedMusic({ name: music.name, artist: music.artist });
@@ -292,11 +293,11 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
                 setMode(textContent ? "text" : mediaFiles.length > 0 ? "camera" : "select");
               }}
             />
-          </div>
-        )}
+            </div>
+          )}
 
-        {mode === "camera" && (
-          <div className="space-y-4">
+          {mode === "camera" && (
+            <div className="space-y-4 p-4 h-full overflow-y-auto">
             {mediaPreviews.length > 0 ? (
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {mediaPreviews.map((preview, index) => (
@@ -372,8 +373,9 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
                 {loading ? "Publicando..." : "Publicar"}
               </Button>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
