@@ -35,15 +35,15 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
   return (
     <>
       <div 
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-40 bg-black/20"
         onClick={onClose}
       />
       <div 
-        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
       >
         <div 
           className={`flex gap-2 bg-card border-2 border-border rounded-full px-4 py-2.5 shadow-2xl transition-all duration-200 ${
-            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'
+            isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
           }`}
         >
           {reactions.map((reaction) => (
