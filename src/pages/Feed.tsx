@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { MessageNotification } from "@/components/MessageNotification";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -380,6 +382,7 @@ export default function Feed() {
 
   return (
     <ProtectedRoute>
+      <MessageNotification />
       <div 
         className="min-h-screen bg-background pb-20"
         onDoubleClick={handleDoubleClick}

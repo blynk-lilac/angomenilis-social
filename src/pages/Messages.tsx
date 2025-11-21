@@ -22,6 +22,7 @@ interface Friend {
     read: boolean;
     sender_id: string;
   };
+  unreadCount: number;
 }
 
 interface Story {
@@ -119,9 +120,18 @@ export default function Messages() {
             .order('created_at', { ascending: false })
             .limit(1);
 
+          // Count unread messages from this friend
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('sender_id', profile.id)
+            .eq('receiver_id', user.id)
+            .eq('read', false);
+
           return {
             ...profile,
-            lastMessage: messages?.[0]
+            lastMessage: messages?.[0],
+            unreadCount: unreadCount || 0
           };
         })
       );
@@ -351,8 +361,10 @@ export default function Messages() {
                         <p className={`text-sm truncate flex-1 ${isUnread ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                           {friend.lastMessage.content}
                         </p>
-                        {isUnread && (
-                          <div className="h-3 w-3 bg-primary rounded-full flex-shrink-0 animate-pulse-ring" />
+                        {friend.unreadCount > 0 && (
+                          <div className="min-w-[20px] h-5 px-1.5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
+                            {friend.unreadCount > 15 ? '15+' : friend.unreadCount}
+                          </div>
                         )}
                       </div>
                     )}
