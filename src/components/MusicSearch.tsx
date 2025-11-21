@@ -51,18 +51,10 @@ const formatDuration = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Consultas para carregar tendências de músicas angolanas
-const TRENDING_QUERIES = [
-  "Anselmo Ralph",
-  "C4 Pedro",
-  "Yuri da Cunha",
-  "Kalibrados",
-  "Landrick",
-  "Edmázia Mayembe",
-  "Matias Damásio",
-  "Pérola",
-  "Neyna",
-  "Djodje",
+// Consultas para carregar músicas populares do mundo
+const GLOBAL_QUERIES = [
+  "pop", "rock", "hip hop", "electronic", "jazz", 
+  "reggae", "country", "latin", "r&b", "indie"
 ];
 
 export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
@@ -79,7 +71,7 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
     try {
       const allMusic: Music[] = [];
 
-      for (const query of TRENDING_QUERIES) {
+      for (const query of GLOBAL_QUERIES) {
         const results = await searchDeezerMusic(query);
         allMusic.push(...results.slice(0, 20));
       }
