@@ -289,14 +289,14 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-background/95 z-50 flex items-center justify-center">
       {/* Navigation - Left Arrow */}
       {currentIndex > 0 && (
         <button
           onClick={handlePrevious}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-14 w-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-all shadow-lg"
         >
-          <ChevronLeft className="h-8 w-8 text-white" />
+          <ChevronLeft className="h-6 w-6 text-foreground" />
         </button>
       )}
 
@@ -304,169 +304,171 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       {currentIndex < stories.length - 1 && (
         <button
           onClick={handleNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-14 w-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-all shadow-lg"
         >
-          <ChevronRight className="h-8 w-8 text-white" />
+          <ChevronRight className="h-6 w-6 text-foreground" />
         </button>
       )}
       
-      {/* Progress bars */}
-      <div className="absolute top-0 left-0 right-0 flex gap-1 p-2 z-10">
-        {stories.map((_, idx) => (
-          <div key={idx} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white transition-all duration-100"
-              style={{ 
-                width: idx === currentIndex ? `${progress}%` : idx < currentIndex ? '100%' : '0%' 
-              }}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Header */}
-      <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 z-10">
-        <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
-          <Avatar className="h-10 w-10 border-2 border-white flex-shrink-0">
-            <AvatarImage src={currentStory.profile.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {currentStory.profile.first_name[0]}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-base truncate">
-              {currentStory.profile.first_name}
-            </p>
-            <div className="flex items-center gap-2">
-              <p className="text-white/90 text-xs">
-                {formatTime(currentStory.created_at)}
-              </p>
-              {currentStory.music_name && (
-                <div className="flex items-center gap-1 text-white text-xs font-medium max-w-[55%]">
-                  {musicCover && (
-                    <img
-                      src={musicCover}
-                      alt={currentStory.music_name || 'Música do story'}
-                      className="h-5 w-5 rounded-sm object-cover flex-shrink-0"
-                    />
-                  )}
-                  <Music className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">
-                    {currentStory.music_artist || currentStory.music_name}
-                  </span>
-                  <ChevronRight className="h-3 w-3 flex-shrink-0" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {isOwnStory && (
-            <>
-              <span className="text-white text-sm">{views} visualizações</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDelete}
-                className="text-white hover:bg-white/20"
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-white hover:bg-white/20"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Navigation areas */}
-      <div className="absolute inset-0 flex">
-        <button 
-          onClick={handlePrevious}
-          className="flex-1"
-          disabled={currentIndex === 0}
-        />
-        <button 
-          onClick={handleNext}
-          className="flex-1"
-        />
-      </div>
-
-      {/* Media content */}
-      <div className="relative w-full h-full flex items-center justify-center">
-        {currentStory.media_type === 'image' ? (
-          <img
-            src={currentStory.media_url}
-            alt="Story"
-            className="max-w-full max-h-full object-contain"
-          />
-        ) : currentStory.media_type === 'video' ? (
-          <video
-            key={currentStory.id}
-            src={currentStory.media_url}
-            className="max-w-full max-h-full object-contain"
-            autoPlay
-            muted={false}
-            playsInline
-            controls={false}
-          />
-        ) : null}
-      </div>
-
-      {/* Reply and reactions (bottom) */}
-      {!isOwnStory && (
-        <div className="absolute bottom-6 left-4 right-4 z-10">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-3 border border-white/10">
-              <input
-                type="text"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Enviar mensagem..."
-                className="flex-1 bg-transparent text-white placeholder-white/60 outline-none text-sm"
+      {/* Story Card Container */}
+      <div className="relative max-w-md w-full h-[85vh] bg-card rounded-2xl shadow-2xl overflow-hidden mx-4">
+        {/* Progress bars */}
+        <div className="absolute top-0 left-0 right-0 flex gap-1 p-3 z-10">
+          {stories.map((_, idx) => (
+            <div key={idx} className="flex-1 h-1 bg-muted/40 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-foreground transition-all duration-100"
+                style={{ 
+                  width: idx === currentIndex ? `${progress}%` : idx < currentIndex ? '100%' : '0%' 
+                }}
               />
             </div>
-            
-            {/* Reaction buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleReaction('heart')}
-                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
-                  userReaction === 'heart' ? 'bg-red-500/80' : 'bg-black/60 border border-white/10'
-                }`}
-              >
-                <img src={heartIcon} alt="Heart" className="h-6 w-6" />
-              </button>
-              
-              <button
-                onClick={() => handleReaction('thumbs-up')}
-                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
-                  userReaction === 'thumbs-up' ? 'bg-blue-500/80' : 'bg-black/60 border border-white/10'
-                }`}
-              >
-                <img src={thumbsUpIcon} alt="Like" className="h-6 w-6" />
-              </button>
-              
-              <button
-                onClick={() => handleReaction('laughing')}
-                className={`h-12 w-12 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
-                  userReaction === 'laughing' ? 'bg-yellow-500/80' : 'bg-black/60 border border-white/10'
-                }`}
-              >
-                <img src={laughingIcon} alt="Laughing" className="h-6 w-6" />
-              </button>
+          ))}
+        </div>
+
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 pb-2 z-10 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+            <Avatar className="h-10 w-10 border-2 border-background flex-shrink-0">
+              <AvatarImage src={currentStory.profile.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {currentStory.profile.first_name[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-background font-bold text-sm truncate">
+                {currentStory.profile.first_name}
+              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-background/90 text-xs">
+                  {formatTime(currentStory.created_at)}
+                </p>
+                {currentStory.music_name && (
+                  <div className="flex items-center gap-1 text-background text-xs font-medium max-w-[45%]">
+                    {musicCover && (
+                      <img
+                        src={musicCover}
+                        alt={currentStory.music_name || 'Música do story'}
+                        className="h-4 w-4 rounded-sm object-cover flex-shrink-0"
+                      />
+                    )}
+                    <Music className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">
+                      {currentStory.music_artist || currentStory.music_name}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+          
+          <div className="flex items-center gap-1">
+            {isOwnStory && (
+              <>
+                <span className="text-background text-xs mr-1">{views}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDelete}
+                  className="h-9 w-9 text-background hover:bg-background/20"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-9 w-9 text-background hover:bg-background/20"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
-      )}
+
+        {/* Navigation areas */}
+        <div className="absolute inset-0 flex">
+          <button 
+            onClick={handlePrevious}
+            className="flex-1"
+            disabled={currentIndex === 0}
+          />
+          <button 
+            onClick={handleNext}
+            className="flex-1"
+          />
+        </div>
+
+        {/* Media content */}
+        <div className="relative w-full h-full flex items-center justify-center bg-muted/20">
+          {currentStory.media_type === 'image' ? (
+            <img
+              src={currentStory.media_url}
+              alt="Story"
+              className="w-full h-full object-cover"
+            />
+          ) : currentStory.media_type === 'video' ? (
+            <video
+              key={currentStory.id}
+              src={currentStory.media_url}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted={false}
+              playsInline
+              controls={false}
+            />
+          ) : null}
+        </div>
+
+        {/* Reply and reactions (bottom) */}
+        {!isOwnStory && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-black/60 to-transparent">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-4 py-2.5 border border-border/50 shadow-lg">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Enviar mensagem..."
+                  className="flex-1 bg-transparent text-foreground placeholder-muted-foreground outline-none text-sm"
+                />
+              </div>
+              
+              {/* Reaction buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleReaction('heart')}
+                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'heart' ? 'bg-red-500' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={heartIcon} alt="Heart" className="h-5 w-5" />
+                </button>
+                
+                <button
+                  onClick={() => handleReaction('thumbs-up')}
+                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'thumbs-up' ? 'bg-blue-500' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={thumbsUpIcon} alt="Like" className="h-5 w-5" />
+                </button>
+                
+                <button
+                  onClick={() => handleReaction('laughing')}
+                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'laughing' ? 'bg-yellow-500' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={laughingIcon} alt="Laughing" className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
