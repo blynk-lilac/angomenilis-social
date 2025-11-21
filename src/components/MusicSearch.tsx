@@ -46,8 +46,14 @@ const formatDuration = (seconds: number): string => {
 
 // Consultas para carregar músicas populares do mundo
 const GLOBAL_QUERIES = [
-  "pop", "rock", "hip hop", "electronic", "jazz", 
-  "reggae", "country", "latin", "r&b", "indie"
+  "pop hits", "rock music", "hip hop", "electronic dance", "jazz classics", 
+  "reggae", "country music", "latin music", "r&b soul", "indie alternative",
+  "rap music", "edm", "house music", "techno", "dubstep",
+  "metal", "punk rock", "blues", "folk music", "classical",
+  "kpop", "jpop", "afrobeat", "reggaeton", "salsa",
+  "tango", "samba", "bossa nova", "flamenco", "fado",
+  "bollywood", "arabic music", "trap music", "drill", "grime",
+  "disco", "funk", "soul music", "gospel", "spiritual"
 ];
 
 export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
@@ -64,13 +70,16 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
     try {
       const allMusic: Music[] = [];
 
+      // Carregar mais músicas por gênero
       for (const query of GLOBAL_QUERIES) {
         const results = await searchDeezerMusic(query);
-        allMusic.push(...results.slice(0, 10));
+        allMusic.push(...results.slice(0, 30));
       }
 
       if (allMusic.length > 0) {
-        setMusic(allMusic);
+        // Embaralhar para ter variedade
+        const shuffled = allMusic.sort(() => Math.random() - 0.5);
+        setMusic(shuffled);
       } else {
         toast.error("Nenhuma música encontrada");
       }

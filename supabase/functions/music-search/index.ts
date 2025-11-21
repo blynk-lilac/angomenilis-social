@@ -48,7 +48,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=50`;
+    const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=200`;
     console.log("Fetching from Deezer:", deezerUrl);
     
     const deezerResponse = await fetch(deezerUrl);
