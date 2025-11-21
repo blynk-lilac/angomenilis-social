@@ -19,28 +19,21 @@ interface MusicSearchProps {
   onClose?: () => void;
 }
 
-// Busca músicas reais na API pública do Deezer
+// Busca músicas reais via função backend (evita problemas de CORS)
 const searchDeezerMusic = async (query: string): Promise<Music[]> => {
   try {
     const response = await fetch(
-      `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=200`
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(query)}`
     );
     const data = await response.json();
-    
-    if (!data.data || data.data.length === 0) {
+
+    if (!data.tracks || data.tracks.length === 0) {
       return [];
     }
-    
-    return data.data.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.title,
-      artist: item.artist.name,
-      cover: item.album.cover_medium || item.album.cover_big,
-      duration: formatDuration(item.duration),
-      preview: item.preview,
-    }));
+
+    return data.tracks as Music[];
   } catch (error) {
-    console.error('Error searching Deezer:', error);
+    console.error("Error searching music API:", error);
     return [];
   }
 };
