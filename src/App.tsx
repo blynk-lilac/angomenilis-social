@@ -31,6 +31,7 @@ import SavedPosts from './pages/SavedPosts';
 import PostDetail from './pages/PostDetail';
 import Notifications from './pages/Notifications';
 import InstallPWA from './pages/InstallPWA';
+import Hashtag from './pages/Hashtag';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -288,6 +289,16 @@ const AppContent = () => {
         
         {/* Install PWA Route */}
         <Route path="/install" element={<InstallPWA />} />
+        
+        {/* Hashtag Route */}
+        <Route
+          path="/hashtag/:name"
+          element={
+            <ProtectedRoute>
+              <Hashtag />
+            </ProtectedRoute>
+          }
+        />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

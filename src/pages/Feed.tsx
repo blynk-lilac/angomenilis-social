@@ -21,6 +21,7 @@ import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import PostMenu from "@/components/PostMenu";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
+import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 
 interface LiveStream {
   id: string;
@@ -525,9 +526,9 @@ export default function Feed() {
 
                   {/* Conteúdo do Post */}
                   {post.content && (
-                    <p className="mt-3 text-[15px] text-foreground break-words whitespace-pre-wrap leading-relaxed">
-                      {post.content}
-                    </p>
+                    <div className="mt-3 text-[15px] text-foreground break-words whitespace-pre-wrap leading-relaxed">
+                      {parseTextWithLinksAndMentions(post.content)}
+                    </div>
                   )}
                 </div>
 

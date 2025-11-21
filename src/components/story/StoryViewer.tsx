@@ -95,7 +95,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       // Parar áudio anterior se estiver a tocar
       if (audio) {
         audio.pause();
-        audio.currentTime = 0;
+        audio.src = '';
         setAudio(null);
       }
 
@@ -110,28 +110,37 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`
       );
+      
       const data = await response.json();
-
-      console.log('Music search result:', data);
-
+      
       if (data.tracks && data.tracks.length > 0) {
         const track = data.tracks[0];
         console.log('Found track with preview:', track.preview);
         
         let newAudio: HTMLAudioElement | null = null;
 
-        // Preparar o áudio mas não tocar ainda
+        // Preparar o áudio mas não tocar ainda (preview de 30s do Deezer)
         if (track.preview) {
           newAudio = new Audio(track.preview);
           newAudio.volume = 0.7;
-          newAudio.loop = true;
+          newAudio.loop = false; // Preview de 30s não deve dar loop
+          
+          // Event listener para quando o preview acabar
+          newAudio.addEventListener('ended', () => {
+            console.log('Preview de 30s terminou');
+            setAudioEnabled(false);
+          });
+
           setAudio(newAudio);
-          console.log('Audio loaded and ready');
-        } else {
-          console.log('No preview URL available for this track');
+          console.log('Audio preparado, pronto para tocar');
         }
 
-        // Usar a capa da música
+        // Armazenar informações da música
+        if (track.name && track.artist) {
+          console.log('Music info:', { name: track.name, artist: track.artist });
+        }
+
+        // Armazenar capa do álbum
         if (track.cover) {
           setMusicCover(track.cover);
         }
@@ -139,9 +148,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         return newAudio;
       } else {
         console.log('No tracks found for query:', searchQuery);
+        toast.error('Música não encontrada');
       }
     } catch (error) {
       console.error('Could not load music data:', error);
+      toast.error('Erro ao carregar música');
     }
 
     return null;
