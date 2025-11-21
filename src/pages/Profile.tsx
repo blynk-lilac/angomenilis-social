@@ -421,7 +421,7 @@ export default function Profile() {
                 
                 {isOwnProfile && (
                   <Button
-                    onClick={() => navigate("/settings/edit-profile")}
+                    onClick={() => navigate("/settings")}
                     variant="outline"
                     size="sm"
                     className="rounded-full"

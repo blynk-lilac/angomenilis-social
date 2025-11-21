@@ -64,7 +64,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/settings/edit-profile" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/settings" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                   Editar Perfil
                 </Link>
               </li>

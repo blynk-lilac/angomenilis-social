@@ -14,7 +14,6 @@ import Stories from "./pages/Stories";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/settings/ChangePassword";
-import EditProfile from "./pages/settings/EditProfile";
 import ContactInfo from "./pages/settings/ContactInfo";
 import Security from "./pages/settings/Security";
 import Profile from "./pages/Profile";
@@ -213,14 +212,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ChangePassword />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings/edit-profile"
-              element={
-                <ProtectedRoute>
-                  <EditProfile />
                 </ProtectedRoute>
               }
             />

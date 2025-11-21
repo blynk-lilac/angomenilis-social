@@ -103,7 +103,6 @@ export default function Settings() {
       subtitle: 'Gere as tuas palavras-passe, as preferências de acesso e os métodos de recuperação.',
       items: [
         { label: 'Alterar palavra-passe', icon: Lock, path: '/settings/change-password' },
-        { label: 'Editar perfil', icon: User, path: '/settings/edit-profile' },
       ]
     },
     {
