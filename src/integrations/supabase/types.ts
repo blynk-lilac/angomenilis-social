@@ -1189,6 +1189,8 @@ export type Database = {
           id: string
           media_type: string
           media_url: string
+          music_artist: string | null
+          music_name: string | null
           user_id: string
         }
         Insert: {
@@ -1197,6 +1199,8 @@ export type Database = {
           id?: string
           media_type: string
           media_url: string
+          music_artist?: string | null
+          music_name?: string | null
           user_id: string
         }
         Update: {
@@ -1205,6 +1209,8 @@ export type Database = {
           id?: string
           media_type?: string
           media_url?: string
+          music_artist?: string | null
+          music_name?: string | null
           user_id?: string
         }
         Relationships: [

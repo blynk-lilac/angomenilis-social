@@ -1,20 +1,32 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Type, Music, Camera, X, ImageIcon, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import MusicSearch from "@/components/MusicSearch";
+import { cn } from "@/lib/utils";
 
 interface CreateStoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface SelectedMusic {
+  name: string;
+  artist: string;
+}
+
 export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
+  const [mode, setMode] = useState<"select" | "text" | "music" | "camera">("select");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [textContent, setTextContent] = useState("");
+  const [selectedMusic, setSelectedMusic] = useState<SelectedMusic | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -40,11 +52,12 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
 
     setMediaFiles([...mediaFiles, ...validFiles]);
     setMediaPreviews([...mediaPreviews, ...previews]);
+    setMode("camera");
   };
 
   const handleCreateStory = async () => {
-    if (mediaFiles.length === 0) {
-      toast.error("Adicione uma foto ou vídeo");
+    if (mediaFiles.length === 0 && !textContent.trim()) {
+      toast.error("Adicione conteúdo ao story");
       return;
     }
 
@@ -53,39 +66,50 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Upload de múltiplos arquivos
-      for (const mediaFile of mediaFiles) {
-        const fileExt = mediaFile.name.split(".").pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      if (mediaFiles.length > 0) {
+        for (const mediaFile of mediaFiles) {
+          const fileExt = mediaFile.name.split(".").pop();
+          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("stories")
-          .upload(fileName, mediaFile, {
-            cacheControl: "3600",
-            upsert: false,
+          const { error: uploadError } = await supabase.storage
+            .from("stories")
+            .upload(fileName, mediaFile, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("stories")
+            .getPublicUrl(fileName);
+
+          const mediaType = mediaFile.type.startsWith("image/") ? "image" : "video";
+
+          const { error } = await supabase.from("stories").insert({
+            user_id: user.id,
+            media_url: publicUrl,
+            media_type: mediaType,
+            music_name: selectedMusic?.name || null,
+            music_artist: selectedMusic?.artist || null,
           });
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("stories")
-          .getPublicUrl(fileName);
-
-        const mediaType = mediaFile.type.startsWith("image/") ? "image" : "video";
-
+          if (error) throw error;
+        }
+      } else if (textContent.trim()) {
         const { error } = await supabase.from("stories").insert({
           user_id: user.id,
-          media_url: publicUrl,
-          media_type: mediaType,
+          media_url: `data:text/plain,${encodeURIComponent(textContent)}`,
+          media_type: "text",
+          music_name: selectedMusic?.name || null,
+          music_artist: selectedMusic?.artist || null,
         });
 
         if (error) throw error;
       }
 
       toast.success("Story publicado!");
-      onOpenChange(false);
-      setMediaFiles([]);
-      setMediaPreviews([]);
+      handleClose();
     } catch (error: any) {
       console.error("Story error:", error);
       toast.error(error.message || "Erro ao criar story");
@@ -100,93 +124,256 @@ export default function CreateStory({ open, onOpenChange }: CreateStoryProps) {
   };
 
   const handleClose = () => {
+    setMode("select");
     setMediaFiles([]);
     setMediaPreviews([]);
+    setTextContent("");
+    setSelectedMusic(null);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Criar Story</DialogTitle>
+          <div className="flex items-center gap-2">
+            {mode !== "select" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMode("select")}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <DialogTitle>
+              {mode === "select" ? "Criar história" : 
+               mode === "text" ? "Texto" :
+               mode === "music" ? "Adicionar uma música à tua história" :
+               "Galeria"}
+            </DialogTitle>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {mediaPreviews.length > 0 ? (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {mediaPreviews.map((preview, index) => (
-                <div key={index} className="relative">
-                  {mediaFiles[index]?.type.startsWith("image/") ? (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ) : (
-                    <video
-                      src={preview}
-                      controls
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
-                    onClick={() => removeMedia(index)}
-                  >
-                    <X className="h-4 w-4 text-white" />
-                  </Button>
+        {mode === "select" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setMode("text")}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 hover:opacity-90 transition-opacity"
+              >
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                  <Type className="h-8 w-8 text-purple-600" />
                 </div>
-              ))}
+                <span className="text-white font-semibold">Texto</span>
+              </button>
+
+              <button
+                onClick={() => setMode("music")}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 hover:opacity-90 transition-opacity"
+              >
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                  <Music className="h-8 w-8 text-teal-600" />
+                </div>
+                <span className="text-white font-semibold">Música</span>
+              </button>
+
+              <button
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 transition-opacity"
+              >
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                  <Camera className="h-8 w-8 text-blue-600" />
+                </div>
+                <span className="text-white font-semibold">Câmara</span>
+              </button>
             </div>
-          ) : (
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <div className="flex flex-col items-center gap-4">
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold">Galeria</h3>
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  className="rounded-full"
                 >
-                  <ImageIcon className="h-5 w-5 mr-2" />
-                  Selecionar Foto/Vídeo
+                  <Check className="h-4 w-4 mr-2" />
+                  Selecionar vários
                 </Button>
-                <p className="text-sm text-muted-foreground">
-                  Selecione fotos ou vídeos (máx. 20MB cada)
-                </p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-muted rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                ))}
               </div>
             </div>
-          )}
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*,video/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        )}
 
-          {mediaPreviews.length > 0 && (
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="w-full"
-            >
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Adicionar mais
-            </Button>
-          )}
-        </div>
+        {mode === "text" && (
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Digite seu texto..."
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              className="min-h-[300px] text-lg"
+            />
+            
+            {selectedMusic && (
+              <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
+                <Music className="h-4 w-4" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{selectedMusic.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{selectedMusic.artist}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedMusic(null)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
 
-        <Button
-          onClick={handleCreateStory}
-          disabled={loading || mediaFiles.length === 0}
-          className="w-full bg-primary hover:bg-primary/90"
-        >
-          {loading ? "Publicando..." : "Publicar Story"}
-        </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setMode("music")}
+                className="flex-1"
+              >
+                <Music className="h-4 w-4 mr-2" />
+                Adicionar música
+              </Button>
+              <Button
+                onClick={handleCreateStory}
+                disabled={loading || !textContent.trim()}
+                className="flex-1 bg-primary hover:bg-primary/90"
+              >
+                {loading ? "Publicando..." : "Publicar"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {mode === "music" && (
+          <div className="space-y-4">
+            <MusicSearch
+              onSelect={(music) => {
+                setSelectedMusic({ name: music.name, artist: music.artist });
+                toast.success(`Música "${music.name}" selecionada`);
+                setMode(textContent ? "text" : mediaFiles.length > 0 ? "camera" : "select");
+              }}
+            />
+          </div>
+        )}
+
+        {mode === "camera" && (
+          <div className="space-y-4">
+            {mediaPreviews.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {mediaPreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    {mediaFiles[index]?.type.startsWith("image/") ? (
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <video
+                        src={preview}
+                        controls
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                      onClick={() => removeMedia(index)}
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {selectedMusic && (
+              <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
+                <Music className="h-4 w-4" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{selectedMusic.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{selectedMusic.artist}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedMusic(null)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {mediaPreviews.length > 0 && (
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Adicionar mais
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setMode("music")}
+                className="flex-1"
+              >
+                <Music className="h-4 w-4 mr-2" />
+                Música
+              </Button>
+              <Button
+                onClick={handleCreateStory}
+                disabled={loading || mediaFiles.length === 0}
+                className="flex-1 bg-primary hover:bg-primary/90"
+              >
+                {loading ? "Publicando..." : "Publicar"}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
