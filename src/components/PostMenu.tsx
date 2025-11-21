@@ -204,106 +204,84 @@ export default function PostMenu({
           <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-72 max-h-[70vh] overflow-y-auto bg-card border shadow-lg z-50"
+        sideOffset={5}
+      >
         {isOwner && (
           <>
-            <DropdownMenuItem onClick={handleDeletePost} className="py-3 cursor-pointer text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={handleDeletePost} className="py-2.5 cursor-pointer text-destructive focus:text-destructive">
               <div className="flex items-center gap-3">
-                <Trash2 className="h-5 w-5" />
-                <p className="font-semibold text-sm">Eliminar publicação</p>
+                <Trash2 className="h-4 w-4" />
+                <p className="font-medium text-sm">Eliminar publicação</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
 
-        <DropdownMenuItem onClick={handleInterested} className="py-3 cursor-pointer">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-muted rounded-full">
-              <PlusCircle className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Com interesse</p>
-              <p className="text-xs text-muted-foreground">
-                As publicações que te apresentarmos serão mais parecidas com esta.
-              </p>
-            </div>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={handleNotInterested} className="py-3 cursor-pointer">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-muted rounded-full">
-              <MinusCircle className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Sem interesse</p>
-              <p className="text-xs text-muted-foreground">
-                As publicações que te apresentarmos serão menos parecidas com esta.
-              </p>
-            </div>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={handleSavePost} className="py-3 cursor-pointer">
+        <DropdownMenuItem onClick={handleSavePost} className="py-2.5 cursor-pointer">
           <div className="flex items-center gap-3">
-            <Bookmark className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
-            <div>
-              <p className="font-semibold text-sm">
-                {isSaved ? "Remover dos guardados" : "Guardar publicação"}
-              </p>
-              {!isSaved && (
-                <p className="text-xs text-muted-foreground">
-                  Adiciona isto aos teus itens guardados.
-                </p>
-              )}
-            </div>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={handleShare} className="py-3 cursor-pointer">
-          <div className="flex items-center gap-3">
-            <Share2 className="h-5 w-5" />
-            <p className="font-semibold text-sm">Partilhar</p>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={handleHidePost} className="py-3 cursor-pointer">
-          <div className="flex items-center gap-3">
-            <EyeOff className="h-5 w-5" />
-            <p className="font-semibold text-sm">Não quero ver isto</p>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={handleReport} className="py-3 cursor-pointer">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5" />
-            <div>
-              <p className="font-semibold text-sm">Denunciar publicação</p>
-              <p className="text-xs text-muted-foreground">
-                Não vamos informar quem fez a denúncia.
-              </p>
-            </div>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={handleToggleNotifications} className="py-3 cursor-pointer">
-          <div className="flex items-center gap-3">
-            <Bell className={`h-5 w-5 ${hasNotifications ? 'fill-current' : ''}`} />
-            <p className="font-semibold text-sm">
-              {hasNotifications ? "Desativar" : "Ativar"} notificações para esta publicação
+            <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+            <p className="font-medium text-sm">
+              {isSaved ? "Remover dos guardados" : "Guardar publicação"}
             </p>
           </div>
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleCopyLink} className="py-3 cursor-pointer">
+        <DropdownMenuItem onClick={handleShare} className="py-2.5 cursor-pointer">
           <div className="flex items-center gap-3">
-            <Copy className="h-5 w-5" />
-            <p className="font-semibold text-sm">Copiar ligação</p>
+            <Share2 className="h-4 w-4" />
+            <p className="font-medium text-sm">Partilhar</p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleCopyLink} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <Copy className="h-4 w-4" />
+            <p className="font-medium text-sm">Copiar ligação</p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleInterested} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <PlusCircle className="h-4 w-4" />
+            <p className="font-medium text-sm">Com interesse</p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleNotInterested} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <MinusCircle className="h-4 w-4" />
+            <p className="font-medium text-sm">Sem interesse</p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleHidePost} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <EyeOff className="h-4 w-4" />
+            <p className="font-medium text-sm">Não quero ver isto</p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleToggleNotifications} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <Bell className={`h-4 w-4 ${hasNotifications ? 'fill-current' : ''}`} />
+            <p className="font-medium text-sm">
+              {hasNotifications ? "Desativar" : "Ativar"} notificações
+            </p>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleReport} className="py-2.5 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-4 w-4" />
+            <p className="font-medium text-sm">Denunciar publicação</p>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
