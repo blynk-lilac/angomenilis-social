@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 
 export default function Create() {
   const [content, setContent] = useState("");
@@ -16,6 +17,7 @@ export default function Create() {
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { processPostHashtagsAndMentions } = useHashtagsAndMentions();
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -88,13 +90,18 @@ export default function Create() {
         mediaUrls.push(publicUrl);
       }
 
-      const { error } = await supabase.from("posts").insert({
+      const { data: newPost, error } = await supabase.from("posts").insert({
         user_id: user.id,
         content,
         media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Processar hashtags e menções
+      if (newPost) {
+        await processPostHashtagsAndMentions(newPost.id, content, user.id);
+      }
 
       toast.success("Post criado!");
       navigate("/");
