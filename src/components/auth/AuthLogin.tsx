@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/blynk-logo.jpg';
 import TwoFactorCodeInput from '@/components/TwoFactorCodeInput';
+import { PhoneVerification } from '@/components/auth/PhoneVerification';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [show2FA, setShow2FA] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [tempUserId, setTempUserId] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState<string | null>(null);
 
@@ -90,6 +92,11 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         
         // Exibir código na tela (em produção, deveria ser enviado por SMS/email)
         toast.success(`Seu código de verificação é: ${code}`, { duration: 10000 });
+      } else if (!isEmail) {
+        // Se é login por telefone, verificar número
+        await supabase.auth.signOut();
+        setTempUserId(data.user.id);
+        setShowPhoneVerification(true);
       } else {
         toast.success('Login realizado com sucesso!');
       }
@@ -193,6 +200,37 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
           loading={loading}
         />
       </div>
+    );
+  }
+
+  // Verificação de telefone
+  if (showPhoneVerification) {
+    return (
+      <PhoneVerification
+        phoneNumber={credential}
+        onVerified={async () => {
+          // Re-fazer login após verificação
+          if (!tempUserId) return;
+          
+          try {
+            const { error } = await supabase.auth.signInWithPassword({
+              phone: credential.trim(),
+              password,
+            });
+
+            if (error) throw error;
+            
+            toast.success('Login realizado com sucesso!');
+            setShowPhoneVerification(false);
+          } catch (error) {
+            toast.error('Erro ao completar login');
+          }
+        }}
+        onBack={() => {
+          setShowPhoneVerification(false);
+          setTempUserId(null);
+        }}
+      />
     );
   }
 

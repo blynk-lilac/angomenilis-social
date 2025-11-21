@@ -10,9 +10,10 @@ import { AuthPassword } from '@/components/auth/AuthPassword';
 import { AuthLoading } from '@/components/auth/AuthLoading';
 import { AuthVerification } from '@/components/auth/AuthVerification';
 import { AuthForgotPassword } from '@/components/auth/AuthForgotPassword';
+import { PhoneVerification } from '@/components/auth/PhoneVerification';
 
 type AuthMode = 'selection' | 'login' | 'signup' | 'forgotPassword' | 'resetPassword';
-type SignupStep = 'firstName' | 'credentials' | 'password' | 'loading' | 'verification';
+type SignupStep = 'firstName' | 'credentials' | 'phoneVerification' | 'password' | 'loading' | 'verification';
 
 export default function Auth() {
   const { user, loading } = useAuth();
@@ -105,9 +106,28 @@ export default function Auth() {
             <AuthCredentials
               onNext={(credential, username) => {
                 updateFormData({ credential, username });
-                setSignupStep('password');
+                // Se for telefone, verificar antes de continuar
+                if (credential.startsWith('+')) {
+                  setSignupStep('phoneVerification');
+                } else {
+                  setSignupStep('password');
+                }
               }}
               onBack={() => setSignupStep('firstName')}
+            />
+          )}
+          
+          {signupStep === 'phoneVerification' && (
+            <PhoneVerification
+              phoneNumber={formData.credential}
+              onVerified={() => setSignupStep('password')}
+              onBack={() => {
+                if (formData.credential.startsWith('+')) {
+                  setSignupStep('phoneVerification');
+                } else {
+                  setSignupStep('credentials');
+                }
+              }}
             />
           )}
           
