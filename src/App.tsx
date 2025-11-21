@@ -26,6 +26,7 @@ import RequestVerification from "./pages/RequestVerification";
 import Report from './pages/Report';
 import SavedPosts from './pages/SavedPosts';
 import PostDetail from './pages/PostDetail';
+import Notifications from './pages/Notifications';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -268,6 +269,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PostDetail />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Notifications Route */}
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />
