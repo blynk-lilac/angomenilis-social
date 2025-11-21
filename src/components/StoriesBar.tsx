@@ -102,36 +102,44 @@ export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
   return (
     <>
       <div className="bg-card rounded-xl border border-border p-4 mb-4">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {/* Criar novo story */}
-          <div
+        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Criar novo story (estilo cartão do Facebook) */}
+          <button
+            type="button"
             onClick={onCreateStory}
-            className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border-2 border-dashed border-primary/50">
-                <Plus className="h-8 w-8 text-primary" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/20" />
+            <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground border-2 border-background">
+                <Plus className="h-4 w-4" />
               </div>
+              <span className="text-[11px] font-semibold text-background text-center leading-tight">
+                Criar história
+              </span>
             </div>
-            <span className="text-xs font-medium text-foreground">Criar</span>
-          </div>
+          </button>
 
           {/* Seu story se existir */}
           {hasOwnStory && (
-            <div
+            <button
+              type="button"
               onClick={() => handleViewStory(groupedStories[currentUserId], 0)}
-              className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+              className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
             >
-              <div className="p-1 rounded-full bg-gradient-to-tr from-primary via-accent to-secondary">
-                <div className="bg-card rounded-full p-1">
-                  <Avatar className="h-16 w-16 ring-2 ring-card">
-                    <AvatarImage src={groupedStories[currentUserId][0].profile.avatar_url || undefined} />
-                    <AvatarFallback className="bg-muted text-foreground">Você</AvatarFallback>
-                  </Avatar>
-                </div>
+              <img
+                src={groupedStories[currentUserId][0].media_url}
+                alt="Seu story"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute top-2 left-2 flex items-center justify-center h-6 min-w-[1.5rem] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+                {groupedStories[currentUserId].length}
               </div>
-              <span className="text-xs font-medium text-foreground max-w-[80px] truncate">Seu story</span>
-            </div>
+              <div className="absolute bottom-2 left-2 right-2">
+                <p className="text-[11px] font-semibold text-background line-clamp-2">Seu story</p>
+              </div>
+            </button>
           )}
 
           {/* Stories de outros usuários */}
@@ -140,25 +148,27 @@ export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
             .map(([userId, userStories]) => {
               const firstStory = userStories[0];
               return (
-                <div
+                <button
+                  type="button"
                   key={userId}
                   onClick={() => handleViewStory(userStories, 0)}
-                  className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  <div className="p-1 rounded-full bg-gradient-to-tr from-primary via-accent to-secondary">
-                    <div className="bg-card rounded-full p-1">
-                      <Avatar className="h-16 w-16 ring-2 ring-card">
-                        <AvatarImage src={firstStory.profile.avatar_url || undefined} />
-                        <AvatarFallback className="bg-muted text-foreground">
-                          {firstStory.profile.first_name[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
+                  <img
+                    src={firstStory.media_url}
+                    alt={firstStory.profile.first_name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute top-2 left-2 flex items-center justify-center h-6 min-w-[1.5rem] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+                    {userStories.length}
                   </div>
-                  <span className="text-xs font-medium text-foreground max-w-[80px] truncate">
-                    {firstStory.profile.first_name}
-                  </span>
-                </div>
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <p className="text-[11px] font-semibold text-background line-clamp-2">
+                      {firstStory.profile.first_name}
+                    </p>
+                  </div>
+                </button>
               );
             })}
         </div>

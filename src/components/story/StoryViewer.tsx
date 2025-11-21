@@ -40,12 +40,15 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const [replyText, setReplyText] = useState('');
   const [userReaction, setUserReaction] = useState<string | null>(null);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [musicCover, setMusicCover] = useState<string | null>(null);
   
   const currentStory = stories[currentIndex];
   const isOwnStory = currentStory.user_id === user?.id;
 
   useEffect(() => {
     if (!user || !currentStory) return;
+
+    setMusicCover(null);
 
     // Record view if not own story
     if (!isOwnStory) {
@@ -80,7 +83,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         audio.currentTime = 0;
       }
     };
-  }, [currentIndex, currentStory]);
+  }, [currentIndex, currentStory, user]);
 
   const playMusic = async () => {
     try {
@@ -90,18 +93,24 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         audio.currentTime = 0;
       }
 
-      // Try to play preview from iTunes or similar
+      // Try to play preview from iTunes
       const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
       const response = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&entity=song&limit=1`
+        `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&entity=song&limit=1&country=AO`
       );
       const data = await response.json();
 
       if (data.results && data.results[0]?.previewUrl) {
-        const newAudio = new Audio(data.results[0].previewUrl);
+        const track = data.results[0];
+        const newAudio = new Audio(track.previewUrl);
         newAudio.volume = 0.5;
         newAudio.play().catch(err => console.log('Audio play failed:', err));
         setAudio(newAudio);
+
+        const cover = track.artworkUrl100?.replace('100x100', '300x300') || track.artworkUrl60?.replace('60x60', '300x300');
+        if (cover) {
+          setMusicCover(cover);
+        }
       }
     } catch (error) {
       console.log('Could not play music:', error);
@@ -333,9 +342,18 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
                 {formatTime(currentStory.created_at)}
               </p>
               {currentStory.music_name && (
-                <div className="flex items-center gap-1 text-white text-xs font-medium">
+                <div className="flex items-center gap-1 text-white text-xs font-medium max-w-[55%]">
+                  {musicCover && (
+                    <img
+                      src={musicCover}
+                      alt={currentStory.music_name || 'Música do story'}
+                      className="h-5 w-5 rounded-sm object-cover flex-shrink-0"
+                    />
+                  )}
                   <Music className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate">{currentStory.music_artist || currentStory.music_name}</span>
+                  <span className="truncate">
+                    {currentStory.music_artist || currentStory.music_name}
+                  </span>
                   <ChevronRight className="h-3 w-3 flex-shrink-0" />
                 </div>
               )}
