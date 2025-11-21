@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Music, Play, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, X, ArrowRight, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Music {
@@ -10,54 +10,53 @@ interface Music {
   name: string;
   artist: string;
   cover: string;
+  duration: string;
   preview?: string;
 }
 
 interface MusicSearchProps {
   onSelect: (music: Music) => void;
+  onClose?: () => void;
 }
 
-// Busca músicas reais na API pública do iTunes
-const searchItunesMusic = async (query: string): Promise<Music[]> => {
+// Busca músicas reais na API pública do Deezer
+const searchDeezerMusic = async (query: string): Promise<Music[]> => {
   try {
     const response = await fetch(
-      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=200`
+      `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=200`
     );
     const data = await response.json();
     
-    return data.results.map((item: any) => ({
-      id: item.trackId.toString(),
-      name: item.trackName,
-      artist: item.artistName,
-      cover: item.artworkUrl100.replace('100x100', '300x300'),
-      preview: item.previewUrl,
+    if (!data.data || data.data.length === 0) {
+      return [];
+    }
+    
+    return data.data.map((item: any) => ({
+      id: item.id.toString(),
+      name: item.title,
+      artist: item.artist.name,
+      cover: item.album.cover_medium || item.album.cover_big,
+      duration: formatDuration(item.duration),
+      preview: item.preview,
     }));
   } catch (error) {
-    console.error('Error searching iTunes:', error);
+    console.error('Error searching Deezer:', error);
     return [];
   }
 };
 
-// Sugestões locais (fallback) – músicas angolanas populares
-const SAMPLE_MUSIC: Music[] = [
-  { id: "sample-1", name: "Melhor de Mim", artist: "Lupambo", cover: "" },
-  { id: "sample-2", name: "Éternité", artist: "Fally Ipupa", cover: "" },
-  { id: "sample-3", name: "Couleurs", artist: "Fally Ipupa", cover: "" },
-  { id: "sample-4", name: "Mon bébé", artist: "Fally Ipupa", cover: "" },
-  { id: "sample-5", name: "ندى", artist: "C4 Pedro", cover: "" },
-  { id: "sample-6", name: "African Beauty", artist: "C4 Pedro", cover: "" },
-  { id: "sample-7", name: "Vamos Ficar Por Aqui", artist: "Anselmo Ralph", cover: "" },
-  { id: "sample-8", name: "Não Me Toca", artist: "Anselmo Ralph", cover: "" },
-  { id: "sample-9", name: "Pérola", artist: "Yuri da Cunha", cover: "" },
-  { id: "sample-10", name: "Minha Deusa", artist: "Yuri da Cunha", cover: "" },
-];
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
 // Consultas para carregar tendências de músicas angolanas
 const TRENDING_QUERIES = [
   "Anselmo Ralph",
   "C4 Pedro",
   "Yuri da Cunha",
-  "Filho do Zua",
+  "Kalibrados",
   "Landrick",
   "Edmázia Mayembe",
   "Matias Damásio",
@@ -66,16 +65,13 @@ const TRENDING_QUERIES = [
   "Djodje",
 ];
 
-export default function MusicSearch({ onSelect }: MusicSearchProps) {
+export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
   const [search, setSearch] = useState("");
-  const [music, setMusic] = useState<Music[]>(SAMPLE_MUSIC);
+  const [music, setMusic] = useState<Music[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Ao abrir, tenta carregar músicas reais; se falhar, mostra SAMPLE_MUSIC
   useEffect(() => {
     loadTrendingMusic();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadTrendingMusic = async () => {
@@ -84,19 +80,16 @@ export default function MusicSearch({ onSelect }: MusicSearchProps) {
       const allMusic: Music[] = [];
 
       for (const query of TRENDING_QUERIES) {
-        const results = await searchItunesMusic(query);
-        allMusic.push(...results.slice(0, 4));
+        const results = await searchDeezerMusic(query);
+        allMusic.push(...results.slice(0, 20));
       }
 
       if (allMusic.length > 0) {
         setMusic(allMusic);
-      } else {
-        setMusic(SAMPLE_MUSIC);
       }
     } catch (error) {
       console.error(error);
-      setMusic(SAMPLE_MUSIC);
-      toast.error("Erro ao carregar músicas, mostrando sugestões padrão");
+      toast.error("Erro ao carregar músicas");
     } finally {
       setLoading(false);
     }
@@ -107,119 +100,106 @@ export default function MusicSearch({ onSelect }: MusicSearchProps) {
 
     const trimmed = value.trim();
     if (trimmed.length < 2) {
-      // Poucos caracteres – volta para sugestões
-      setSelectedCategory(null);
-      setMusic(SAMPLE_MUSIC);
+      loadTrendingMusic();
       return;
     }
 
     setLoading(true);
     try {
-      const results = await searchItunesMusic(trimmed);
+      const results = await searchDeezerMusic(trimmed);
 
       if (results.length > 0) {
         setMusic(results);
       } else {
-        // Se a API não retornar nada, filtra nossas sugestões locais
-        const fallback = SAMPLE_MUSIC.filter(
-          (m) =>
-            m.name.toLowerCase().includes(trimmed.toLowerCase()) ||
-            m.artist.toLowerCase().includes(trimmed.toLowerCase())
-        );
-        setMusic(fallback.length > 0 ? fallback : SAMPLE_MUSIC);
-        toast.info("Nenhuma música encontrada, mostrando sugestões semelhantes");
+        toast.info("Nenhuma música encontrada");
+        setMusic([]);
       }
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao buscar músicas, mostrando sugestões padrão");
-      setMusic(SAMPLE_MUSIC);
+      toast.error("Erro ao buscar músicas");
+      setMusic([]);
     } finally {
       setLoading(false);
     }
   };
-
-  const handleCategorySearch = async (query: string) => {
-    setSelectedCategory(query);
-    setLoading(true);
-    try {
-      const results = await searchItunesMusic(query);
-      setMusic(results.length > 0 ? results : SAMPLE_MUSIC);
-    } catch (error) {
-      console.error(error);
-      setMusic(SAMPLE_MUSIC);
-      toast.error("Erro ao buscar músicas, mostrando sugestões padrão");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const categories = [
-    { name: "Kizomba", query: "kizomba angola" },
-    { name: "Semba", query: "semba angola" },
-    { name: "Kuduro", query: "kuduro angola" },
-    { name: "Afrohouse", query: "afrohouse angola" },
-    { name: "Zouk", query: "zouk angola" },
-  ];
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Pesquisa música ou intérpretes"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((cat) => (
-          <Button
-            key={cat.name}
-            variant={selectedCategory === cat.query ? "default" : "secondary"}
-            size="sm"
-            className="rounded-full flex-shrink-0"
-            onClick={() => handleCategorySearch(cat.query)}
-          >
-            {cat.name}
-          </Button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-hidden">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">
-            {search.trim() ? "Resultados" : selectedCategory ? "Resultados" : "Sugestões"}
-          </h3>
+    <div className="fixed inset-0 bg-background z-50 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-4 p-4 border-b border-border">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="flex-shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar música"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10 pr-10 bg-secondary/50 border-0"
+            autoFocus
+          />
+          {search && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setSearch("");
+                loadTrendingMusic();
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+      </div>
 
+      {/* Music List */}
+      <div className="flex-1 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <ScrollArea className="h-full">
-            <div className="space-y-2 pr-4">
+            <div className="p-2">
               {music.map((track) => (
                 <div
                   key={track.id}
                   onClick={() => onSelect(track)}
-                  className="flex items-center gap-3 p-3 hover:bg-accent rounded-lg cursor-pointer transition-colors"
+                  className="flex items-center gap-3 p-3 hover:bg-accent/50 rounded-lg cursor-pointer transition-colors active:bg-accent"
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 relative bg-secondary">
                     {track.cover ? (
-                      <img src={track.cover} alt={track.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={track.cover} 
+                        alt={track.name} 
+                        className="w-full h-full object-cover" 
+                      />
                     ) : (
-                      <Music className="h-6 w-6 text-primary" />
+                      <div className="w-full h-full flex items-center justify-center bg-secondary">
+                        <div className="w-8 h-8 rounded-full bg-background/50" />
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{track.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
+                    <p className="font-medium truncate text-foreground">{track.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {track.artist} · {track.duration}
+                    </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="flex-shrink-0">
-                    <Play className="h-4 w-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="flex-shrink-0 rounded-full bg-secondary/50 hover:bg-secondary"
+                  >
+                    <ArrowRight className="h-5 w-5" />
                   </Button>
                 </div>
               ))}
