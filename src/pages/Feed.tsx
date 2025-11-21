@@ -15,6 +15,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
 import { Separator } from "@/components/ui/separator";
+import ReactionPicker from "@/components/ReactionPicker";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 interface LiveStream {
   id: string;
@@ -57,6 +59,7 @@ export default function Feed() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
+  const [showReactions, setShowReactions] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -160,7 +163,7 @@ export default function Feed() {
     setLiveStreams(data || []);
   };
 
-  const handleLike = async (postId: string) => {
+  const handleLike = async (postId: string, reaction?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -181,9 +184,14 @@ export default function Feed() {
       }
 
       loadPosts();
+      setShowReactions(null);
     } catch (error: any) {
       toast.error("Erro ao curtir post");
     }
+  };
+
+  const handleLongPress = (postId: string) => {
+    setShowReactions(postId);
   };
 
   const handleDoubleClick = () => {
@@ -509,27 +517,42 @@ export default function Feed() {
 
                   {/* Botões de Ação */}
                   <div className="flex items-center justify-around gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
-                      onClick={() => handleLike(post.id)}
-                    >
-                      <Heart 
-                        className={`h-[18px] w-[18px] transition-all ${
+                    <div className="flex-1 relative">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
+                        onClick={() => handleLike(post.id)}
+                        onMouseDown={() => {
+                          const timer = setTimeout(() => handleLongPress(post.id), 500);
+                          return () => clearTimeout(timer);
+                        }}
+                        onTouchStart={() => {
+                          const timer = setTimeout(() => handleLongPress(post.id), 500);
+                          return () => clearTimeout(timer);
+                        }}
+                      >
+                        <Heart 
+                          className={`h-[18px] w-[18px] transition-all ${
+                            post.post_likes?.some(like => like.user_id === currentUserId)
+                              ? "fill-primary text-primary scale-110"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                        <span className={`text-[15px] ${
                           post.post_likes?.some(like => like.user_id === currentUserId)
-                            ? "fill-primary text-primary scale-110"
+                            ? "text-primary"
                             : "text-muted-foreground"
-                        }`}
+                        }`}>
+                          Gosto
+                        </span>
+                      </Button>
+                      <ReactionPicker 
+                        show={showReactions === post.id}
+                        onSelect={(reaction) => handleLike(post.id, reaction)}
+                        onClose={() => setShowReactions(null)}
                       />
-                      <span className={`text-[15px] ${
-                        post.post_likes?.some(like => like.user_id === currentUserId)
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`}>
-                        Gosto
-                      </span>
-                    </Button>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -557,6 +580,9 @@ export default function Feed() {
 
         {/* Create Story Dialog */}
         <CreateStory open={createStoryOpen} onOpenChange={setCreateStoryOpen} />
+        
+        {/* Bottom Navigation */}
+        <BottomNav />
       </div>
     </ProtectedRoute>
   );
