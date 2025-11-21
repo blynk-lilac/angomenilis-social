@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/blynk-logo.jpg';
+import TwoFactorCodeInput from '@/components/TwoFactorCodeInput';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -16,13 +17,19 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [tempUserId, setTempUserId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState<string | null>(null);
 
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credential);
+
+  const generateTwoFactorCode = () => {
+    return Math.floor(10 + Math.random() * 90).toString();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação de entrada
     if (!credential.trim()) {
       toast.error('Digite seu e-mail ou telefone');
       return;
@@ -36,7 +43,7 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: isEmail ? credential.trim() : undefined,
         phone: !isEmail ? credential.trim() : undefined,
         password,
@@ -50,6 +57,39 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         } else {
           toast.error('Erro ao fazer login. Tente novamente.');
         }
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se 2FA está ativado
+      const { data: twoFactorData } = await supabase
+        .from('two_factor_auth')
+        .select('enabled')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (twoFactorData?.enabled) {
+        // Fazer logout temporário
+        await supabase.auth.signOut();
+        
+        // Gerar código de 2FA
+        const code = generateTwoFactorCode();
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+        // Salvar código no banco
+        await supabase.from('two_factor_codes').insert({
+          user_id: data.user.id,
+          code,
+          expires_at: expiresAt.toISOString(),
+        });
+
+        setTempUserId(data.user.id);
+        setTwoFactorCode(code);
+        setShow2FA(true);
+        
+        // Exibir código na tela (em produção, deveria ser enviado por SMS/email)
+        toast.success(`Seu código de verificação é: ${code}`, { duration: 10000 });
       } else {
         toast.success('Login realizado com sucesso!');
       }
@@ -59,6 +99,102 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
       setLoading(false);
     }
   };
+
+  const handleVerifyCode = async (code: string) => {
+    if (!tempUserId) return;
+
+    setLoading(true);
+    try {
+      // Verificar código
+      const { data: codeData, error: codeError } = await supabase
+        .from('two_factor_codes')
+        .select('*')
+        .eq('user_id', tempUserId)
+        .eq('code', code)
+        .eq('used', false)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (codeError || !codeData) {
+        toast.error('Código inválido ou expirado');
+        setLoading(false);
+        return;
+      }
+
+      // Marcar código como usado
+      await supabase
+        .from('two_factor_codes')
+        .update({ used: true })
+        .eq('id', codeData.id);
+
+      // Fazer login novamente
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: isEmail ? credential.trim() : undefined,
+        phone: !isEmail ? credential.trim() : undefined,
+        password,
+      });
+
+      if (loginError) {
+        toast.error('Erro ao completar login');
+      } else {
+        toast.success('Login realizado com sucesso!');
+      }
+    } catch (error) {
+      toast.error('Erro ao verificar código');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!tempUserId) return;
+
+    setLoading(true);
+    try {
+      const code = generateTwoFactorCode();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+      await supabase.from('two_factor_codes').insert({
+        user_id: tempUserId,
+        code,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      setTwoFactorCode(code);
+      toast.success(`Novo código: ${code}`, { duration: 10000 });
+    } catch (error) {
+      toast.error('Erro ao reenviar código');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (show2FA) {
+    return (
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setShow2FA(false);
+            setTempUserId(null);
+            setTwoFactorCode(null);
+          }}
+          className="mb-4"
+          disabled={loading}
+        >
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Voltar
+        </Button>
+        
+        <TwoFactorCodeInput
+          onVerify={handleVerifyCode}
+          onResend={handleResendCode}
+          loading={loading}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">

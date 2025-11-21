@@ -1330,6 +1330,57 @@ export type Database = {
           },
         ]
       }
+      two_factor_auth: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      two_factor_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           granted_at: string | null
@@ -1522,6 +1573,7 @@ export type Database = {
     Functions: {
       delete_expired_posts: { Args: never; Returns: undefined }
       delete_expired_stories: { Args: never; Returns: undefined }
+      delete_expired_two_factor_codes: { Args: never; Returns: undefined }
       is_channel_admin: {
         Args: { _channel_id: string; _user_id: string }
         Returns: boolean
