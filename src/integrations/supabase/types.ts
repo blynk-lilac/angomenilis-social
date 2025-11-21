@@ -829,6 +829,33 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          phone_number: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          phone_number: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          phone_number?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -1574,6 +1601,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_expired_phone_codes: { Args: never; Returns: undefined }
       delete_expired_posts: { Args: never; Returns: undefined }
       delete_expired_stories: { Args: never; Returns: undefined }
       delete_expired_two_factor_codes: { Args: never; Returns: undefined }
