@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Trash2, ChevronRight, ChevronLeft, Music } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -292,8 +293,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     return `${diffHrs}h atrás`;
   };
 
-  return (
-    <div className="fixed inset-0 bg-background z-50">
+  return createPortal(
+    <div className="fixed inset-0 bg-background z-[9999]">
       {/* Navigation - Left Arrow */}
       {currentIndex > 0 && (
         <button
@@ -519,6 +520,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
