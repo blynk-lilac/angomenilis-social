@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import logo from '@/assets/blynk-logo.jpg';
 import TwoFactorCodeInput from '@/components/TwoFactorCodeInput';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
+import { requestNotificationPermission, showNotification } from '@/utils/pushNotifications';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -77,7 +78,7 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         // Gerar código de 2FA
         const code = generateTwoFactorCode();
         const expiresAt = new Date();
-        expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+        expiresAt.setSeconds(expiresAt.getSeconds() + 10); // 10 segundos
 
         // Salvar código no banco
         await supabase.from('two_factor_codes').insert({
@@ -90,7 +91,17 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         setTwoFactorCode(code);
         setShow2FA(true);
         
-        // Exibir código na tela (em produção, deveria ser enviado por SMS/email)
+        // Solicitar permissão de notificação e enviar
+        const hasPermission = await requestNotificationPermission();
+        if (hasPermission) {
+          showNotification('Código de Verificação Blynk', {
+            body: `Seu código de autenticação de dois fatores é: ${code}`,
+            icon: logo,
+            requireInteraction: true,
+          });
+        }
+        
+        // Exibir código na tela também
         toast.success(`Seu código de verificação é: ${code}`, { duration: 10000 });
       } else if (!isEmail) {
         // Se é login por telefone, verificar número
@@ -160,7 +171,7 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
     try {
       const code = generateTwoFactorCode();
       const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+      expiresAt.setSeconds(expiresAt.getSeconds() + 10); // 10 segundos
 
       await supabase.from('two_factor_codes').insert({
         user_id: tempUserId,
@@ -169,6 +180,17 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
       });
 
       setTwoFactorCode(code);
+      
+      // Enviar notificação push
+      const hasPermission = await requestNotificationPermission();
+      if (hasPermission) {
+        showNotification('Novo Código de Verificação Blynk', {
+          body: `Seu novo código de autenticação é: ${code}`,
+          icon: logo,
+          requireInteraction: true,
+        });
+      }
+      
       toast.success(`Novo código: ${code}`, { duration: 10000 });
     } catch (error) {
       toast.error('Erro ao reenviar código');
