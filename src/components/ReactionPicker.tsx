@@ -11,12 +11,12 @@ interface ReactionPickerProps {
   show: boolean;
 }
 
-const REACTIONS = [
-  { emoji: "❤️", icon: thumbsUpIcon, label: "Gosto" },
-  { emoji: "😂", icon: heartIcon, label: "Adoro" },
-  { emoji: "😮", icon: laughingIcon, label: "Risos" },
-  { emoji: "😢", icon: sadIcon, label: "Triste" },
-  { emoji: "😡", icon: angryIcon, label: "Grr" },
+export const reactions = [
+  { type: "heart", icon: heartIcon, label: "Adoro" },
+  { type: "laughing", icon: laughingIcon, label: "Risos" },
+  { type: "sad", icon: sadIcon, label: "Triste" },
+  { type: "angry", icon: angryIcon, label: "Grr" },
+  { type: "thumbs-up", icon: thumbsUpIcon, label: "Gosto" },
 ];
 
 export default function ReactionPicker({ onSelect, onClose, show }: ReactionPickerProps) {
@@ -32,39 +32,32 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
 
   if (!show) return null;
 
-  const handleSelect = (emoji: string) => {
-    onSelect(emoji);
-    setIsVisible(false);
-    setTimeout(onClose, 150);
-  };
-
   return (
     <>
       <div 
-        className="fixed inset-0 z-40" 
+        className="fixed inset-0 z-40"
         onClick={onClose}
       />
       <div 
-        className={`absolute bottom-full left-0 mb-2 transition-all duration-200 z-50 ${
-          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-        }`}
+        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
       >
-        <div className="bg-card border border-border rounded-full shadow-2xl px-2 py-2 flex items-center gap-1">
-          {REACTIONS.map(({ emoji, icon, label }) => (
+        <div 
+          className={`flex gap-1 bg-card border-2 border-border rounded-full px-3 py-2 shadow-2xl transition-all duration-200 ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'
+          }`}
+        >
+          {reactions.map((reaction) => (
             <button
-              key={emoji}
-              onClick={() => handleSelect(emoji)}
-              className="group relative hover:scale-125 transition-transform"
-              title={label}
+              key={reaction.type}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(reaction.type);
+                onClose();
+              }}
+              className="w-12 h-12 hover:scale-125 transition-transform duration-150 active:scale-110 flex items-center justify-center"
+              title={reaction.label}
             >
-              <img 
-                src={icon} 
-                alt={label} 
-                className="w-10 h-10 hover:scale-110 transition-transform"
-              />
-              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-                {label}
-              </span>
+              <img src={reaction.icon} alt={reaction.type} className="w-full h-full" />
             </button>
           ))}
         </div>

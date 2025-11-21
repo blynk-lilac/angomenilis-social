@@ -15,7 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
 import { Separator } from "@/components/ui/separator";
-import ReactionPicker from "@/components/ReactionPicker";
+import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import { BottomNav } from "@/components/layout/BottomNav";
 
 interface LiveStream {
@@ -51,6 +51,7 @@ interface Post {
     badge_type?: string | null;
   };
   post_likes: { user_id: string }[];
+  post_reactions: { user_id: string; reaction_type: string }[];
   comments: { id: string }[];
 }
 
@@ -124,6 +125,10 @@ export default function Feed() {
         post_likes (
           user_id
         ),
+        post_reactions (
+          user_id,
+          reaction_type
+        ),
         comments (
           id
         )
@@ -169,25 +174,48 @@ export default function Feed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const post = posts.find(p => p.id === postId);
-      const hasLiked = post?.post_likes?.some(like => like.user_id === user.id);
+      // Check if user already has a reaction
+      const { data: existingReaction } = await supabase
+        .from("post_reactions")
+        .select("*")
+        .eq("post_id", postId)
+        .eq("user_id", user.id)
+        .single();
 
-      if (hasLiked) {
-        await supabase
-          .from("post_likes")
-          .delete()
-          .eq("post_id", postId)
-          .eq("user_id", user.id);
+      if (existingReaction) {
+        if (reaction && existingReaction.reaction_type !== reaction) {
+          // Update to new reaction
+          await supabase
+            .from("post_reactions")
+            .update({ reaction_type: reaction })
+            .eq("id", existingReaction.id);
+        } else if (!reaction) {
+          // Remove reaction (simple click without long press)
+          await supabase
+            .from("post_reactions")
+            .delete()
+            .eq("id", existingReaction.id);
+        }
+      } else if (reaction) {
+        // Add new reaction
+        await supabase.from("post_reactions").insert({
+          post_id: postId,
+          user_id: user.id,
+          reaction_type: reaction,
+        });
       } else {
-        await supabase
-          .from("post_likes")
-          .insert({ post_id: postId, user_id: user.id });
+        // Add default "heart" reaction if no reaction selected
+        await supabase.from("post_reactions").insert({
+          post_id: postId,
+          user_id: user.id,
+          reaction_type: "heart",
+        });
       }
 
       loadPosts();
       setShowReactions(null);
     } catch (error: any) {
-      toast.error("Erro ao curtir post");
+      toast.error("Erro ao reagir ao post");
     }
   };
 
@@ -502,15 +530,29 @@ export default function Feed() {
                   {/* Contadores */}
                   <div className="flex items-center justify-between py-2.5 text-[13px] text-muted-foreground">
                     <div className="flex items-center gap-1.5">
-                      {post.post_likes && post.post_likes.length > 0 && (
+                      {post.post_reactions && post.post_reactions.length > 0 && (
                         <>
-                          <div className="flex items-center">
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-                              <Heart className="h-3 w-3 fill-white text-white" />
-                            </div>
+                          <div className="flex items-center -space-x-1">
+                            {Array.from(new Set(post.post_reactions.map((r: any) => r.reaction_type)))
+                              .slice(0, 3)
+                              .map((type: string) => {
+                                const reaction = reactions.find(r => r.type === type);
+                                return reaction ? (
+                                  <div 
+                                    key={type}
+                                    className="w-5 h-5 rounded-full border-2 border-card bg-card overflow-hidden"
+                                  >
+                                    <img 
+                                      src={reaction.icon} 
+                                      alt={type} 
+                                      className="w-full h-full"
+                                    />
+                                  </div>
+                                ) : null;
+                              })}
                           </div>
                           <span className="hover:underline cursor-pointer font-medium">
-                            {post.post_likes.length}
+                            {post.post_reactions.length}
                           </span>
                         </>
                       )}
@@ -543,20 +585,23 @@ export default function Feed() {
                         onTouchStart={() => handlePressStart(post.id)}
                         onTouchEnd={handlePressEnd}
                       >
-                        <Heart 
-                          className={`h-[18px] w-[18px] transition-all ${
-                            post.post_likes?.some(like => like.user_id === currentUserId)
-                              ? "fill-primary text-primary scale-110"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                        <span className={`text-[15px] ${
-                          post.post_likes?.some(like => like.user_id === currentUserId)
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}>
-                          Gosto
-                        </span>
+                        {post.post_reactions?.find((r: any) => r.user_id === currentUserId) ? (
+                          <>
+                            <img 
+                              src={reactions.find(r => r.type === post.post_reactions.find((re: any) => re.user_id === currentUserId)?.reaction_type)?.icon}
+                              alt="reaction"
+                              className="h-[18px] w-[18px]"
+                            />
+                            <span className="text-[15px] text-primary">
+                              {reactions.find(r => r.type === post.post_reactions.find((re: any) => re.user_id === currentUserId)?.reaction_type)?.label}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Heart className="h-[18px] w-[18px] text-muted-foreground" />
+                            <span className="text-[15px] text-muted-foreground">Gosto</span>
+                          </>
+                        )}
                       </Button>
                       <ReactionPicker 
                         show={showReactions === post.id}
