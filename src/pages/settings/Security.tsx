@@ -6,11 +6,13 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import TwoFactorQRCode from '@/components/TwoFactorQRCode';
 
 export default function Security() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = useState<string | null>(null);
   const [antiHackEnabled, setAntiHackEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +28,7 @@ export default function Security() {
     try {
       const { data, error } = await supabase
         .from('two_factor_auth')
-        .select('enabled')
+        .select('enabled, secret')
         .eq('user_id', user.id)
         .single();
 
@@ -35,6 +37,7 @@ export default function Security() {
       }
 
       setTwoFactorEnabled(data?.enabled || false);
+      setTwoFactorSecret(data?.secret || null);
     } catch (error) {
       console.error('Erro ao carregar status 2FA:', error);
     } finally {
@@ -50,7 +53,7 @@ export default function Security() {
 
       const { data: existing } = await supabase
         .from('two_factor_auth')
-        .select('id')
+        .select('id, secret')
         .eq('user_id', user.id)
         .single();
 
@@ -62,9 +65,15 @@ export default function Security() {
 
         if (error) throw error;
       } else {
+        // Gerar um segredo único para o usuário
+        const { data: secretData, error: secretError } = await supabase
+          .rpc('generate_2fa_secret');
+        
+        const secret = secretData || Math.random().toString(36).substring(2, 18).toUpperCase();
+
         const { error } = await supabase
           .from('two_factor_auth')
-          .insert({ user_id: user.id, enabled });
+          .insert({ user_id: user.id, enabled, secret });
 
         if (error) throw error;
       }
@@ -72,10 +81,13 @@ export default function Security() {
       setTwoFactorEnabled(enabled);
       
       if (enabled) {
-        toast.success('Autenticação de dois fatores ativada! Um código de 2 dígitos será enviado ao fazer login.');
+        toast.success('Autenticação de dois fatores ativada! Escaneie o QR code com seu app autenticador.');
       } else {
         toast.success('Autenticação de dois fatores desativada');
       }
+      
+      // Recarregar para mostrar QR code
+      await loadTwoFactorStatus();
     } catch (error) {
       console.error('Erro ao atualizar 2FA:', error);
       toast.error('Erro ao atualizar autenticação de dois fatores');
@@ -104,16 +116,16 @@ export default function Security() {
         <div className="space-y-6">
           {/* Two Factor Authentication */}
           <div className="bg-card rounded-xl p-4 border border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-start gap-3 flex-1">
                 <Smartphone className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold mb-1">Autenticação de Dois Fatores</h3>
                   <p className="text-sm text-muted-foreground">
-                    Ao fazer login, será enviado um código de 2 dígitos para confirmar sua identidade
+                    Use um app autenticador para gerar códigos de segurança
                   </p>
                   {twoFactorEnabled && (
-                    <p className="text-xs text-green-500 mt-2">✓ Proteção ativa - Código necessário para login</p>
+                    <p className="text-xs text-green-500 mt-2">✓ Proteção ativa</p>
                   )}
                 </div>
               </div>
@@ -123,6 +135,16 @@ export default function Security() {
                 disabled={loading}
               />
             </div>
+
+            {/* Mostrar QR Code se 2FA estiver ativado */}
+            {twoFactorEnabled && twoFactorSecret && user?.email && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <TwoFactorQRCode 
+                  secret={twoFactorSecret}
+                  userEmail={user.email}
+                />
+              </div>
+            )}
           </div>
 
           {/* Anti-Hack Protection */}

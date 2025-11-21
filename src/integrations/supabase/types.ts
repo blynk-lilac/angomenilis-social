@@ -1335,6 +1335,7 @@ export type Database = {
           created_at: string | null
           enabled: boolean | null
           id: string
+          secret: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1342,6 +1343,7 @@ export type Database = {
           created_at?: string | null
           enabled?: boolean | null
           id?: string
+          secret?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1349,6 +1351,7 @@ export type Database = {
           created_at?: string | null
           enabled?: boolean | null
           id?: string
+          secret?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1574,6 +1577,7 @@ export type Database = {
       delete_expired_posts: { Args: never; Returns: undefined }
       delete_expired_stories: { Args: never; Returns: undefined }
       delete_expired_two_factor_codes: { Args: never; Returns: undefined }
+      generate_2fa_secret: { Args: never; Returns: string }
       is_channel_admin: {
         Args: { _channel_id: string; _user_id: string }
         Returns: boolean
