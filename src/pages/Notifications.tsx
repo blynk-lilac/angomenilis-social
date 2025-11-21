@@ -29,6 +29,7 @@ interface Notification {
   created_at: string;
   is_read: boolean;
   related_id: string | null;
+  avatar_url: string | null;
 }
 
 export default function Notifications() {
@@ -228,9 +229,18 @@ export default function Notifications() {
                   !notif.is_read ? 'bg-primary/5' : ''
                 }`}
               >
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  {getNotificationIcon(notif.type)}
-                </div>
+                {notif.avatar_url ? (
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarImage src={notif.avatar_url} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {notif.message[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                    {getNotificationIcon(notif.type)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm">{notif.title}</p>
                   <p className="text-sm text-muted-foreground">{notif.message}</p>

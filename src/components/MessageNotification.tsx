@@ -55,9 +55,11 @@ export const MessageNotification = () => {
             // Show native notification
             showNotification(`${profile.first_name} enviou uma mensagem`, {
               body: payload.new.content,
+              icon: profile.avatar_url || '/logo-192.png',
               tag: `message-${payload.new.id}`,
               data: {
                 url: `/chat/${payload.new.sender_id}`,
+                avatar: profile.avatar_url,
               },
             });
 

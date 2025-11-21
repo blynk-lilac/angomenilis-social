@@ -186,7 +186,7 @@ export default function Chat() {
           schema: 'public',
           table: 'messages',
         },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as Message;
           if (
             (newMsg.sender_id === user?.id && newMsg.receiver_id === friendId) ||
@@ -196,8 +196,19 @@ export default function Chat() {
             
             // Show notification if message is from friend
             if (newMsg.sender_id === friendId && document.hidden) {
-              showNotification('Nova mensagem', {
+              // Load sender profile for avatar
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('avatar_url, first_name')
+                .eq('id', friendId)
+                .single();
+
+              showNotification(senderProfile?.first_name || 'Nova mensagem', {
                 body: newMsg.content || 'Mídia recebida',
+                icon: senderProfile?.avatar_url || '/logo-192.png',
+                data: {
+                  avatar: senderProfile?.avatar_url,
+                },
               });
             }
           }
