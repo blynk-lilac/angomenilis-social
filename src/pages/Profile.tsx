@@ -436,7 +436,11 @@ export default function Profile() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold">{profile.full_name || profile.username}</h2>
                   {profile.verified && (
-                    <VerificationBadge badgeType={profile.badge_type} className="w-5 h-5" />
+                    <VerificationBadge 
+                      verified={profile.verified}
+                      badgeType={profile.badge_type} 
+                      className="w-5 h-5" 
+                    />
                   )}
                 </div>
                 
@@ -563,6 +567,7 @@ export default function Profile() {
                                 </Link>
                                 {profile.verified && (
                                   <VerificationBadge
+                                    verified={profile.verified}
                                     badgeType={profile.badge_type}
                                     className="w-4 h-4"
                                   />
@@ -687,6 +692,7 @@ export default function Profile() {
                             </p>
                             {friend.verified && (
                               <VerificationBadge
+                                verified={friend.verified}
                                 badgeType={friend.badge_type}
                                 className="w-3 h-3 flex-shrink-0"
                               />
@@ -798,6 +804,7 @@ export default function Profile() {
                       </Link>
                       {user.verified && (
                         <VerificationBadge
+                          verified={user.verified}
                           badgeType={user.badge_type}
                           className="w-4 h-4"
                         />

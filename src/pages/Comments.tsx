@@ -213,6 +213,7 @@ export default function Comments() {
               </span>
               {comment.profiles.verified && (
                 <VerificationBadge
+                  verified={comment.profiles.verified}
                   badgeType={comment.profiles.badge_type}
                   className="w-3.5 h-3.5"
                 />
@@ -319,6 +320,7 @@ export default function Comments() {
                         </span>
                         {post.profiles.verified && (
                           <VerificationBadge
+                            verified={post.profiles.verified}
                             badgeType={post.profiles.badge_type}
                             className="w-4 h-4"
                           />

@@ -158,7 +158,8 @@ export default function SavedPosts() {
                               </span>
                               {post.profiles?.verified && (
                                 <VerificationBadge 
-                                  badgeType={post.profiles?.badge_type} 
+                                  verified={post.profiles?.verified}
+                                  badgeType={post.profiles?.badge_type}
                                   className="w-4 h-4" 
                                 />
                               )}

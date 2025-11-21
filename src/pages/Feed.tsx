@@ -482,7 +482,11 @@ export default function Feed() {
                           {post.profiles?.full_name || post.profiles?.username}
                         </span>
                         {post.profiles?.verified && (
-                          <VerificationBadge badgeType={post.profiles?.badge_type} className="w-4 h-4 flex-shrink-0" />
+                          <VerificationBadge 
+                            verified={post.profiles?.verified}
+                            badgeType={post.profiles?.badge_type} 
+                            className="w-4 h-4 flex-shrink-0" 
+                          />
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">

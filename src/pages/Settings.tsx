@@ -117,7 +117,8 @@ export default function Settings() {
 
   return (
     <MainLayout title="Definições">
-      <div className="p-4 max-w-2xl mx-auto pb-20">
+      <div className="h-[calc(100vh-8rem)] overflow-y-auto">
+        <div className="p-4 max-w-2xl mx-auto pb-20">
         {/* Avatar Section */}
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
@@ -190,6 +191,26 @@ export default function Settings() {
           <p className="font-mono text-sm text-primary break-all">
             angomenilis.netlify.app/perfil/{profile.username}
           </p>
+        </div>
+
+        {/* Footer Dark */}
+        <footer className="mt-8 p-6 bg-gray-900 dark:bg-black rounded-xl text-gray-400">
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-200 mb-2">Blynk © 2024</p>
+              <p className="text-xs">Todos os direitos reservados</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 text-xs">
+              <a href="/terms" className="hover:text-gray-200 transition-colors">Termos</a>
+              <span>•</span>
+              <a href="/privacy" className="hover:text-gray-200 transition-colors">Privacidade</a>
+              <span>•</span>
+              <a href="/help" className="hover:text-gray-200 transition-colors">Ajuda</a>
+              <span>•</span>
+              <a href="/about" className="hover:text-gray-200 transition-colors">Sobre</a>
+            </div>
+          </div>
+        </footer>
         </div>
       </div>
     </MainLayout>
