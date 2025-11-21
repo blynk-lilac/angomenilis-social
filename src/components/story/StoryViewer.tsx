@@ -63,10 +63,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     loadViewCount();
     loadUserReaction();
 
-    // Play music if available
-    if (currentStory.music_name) {
-      playMusic();
-    }
+    // Música: agora é ativada apenas quando o utilizador carrega no botão de som
 
     // Auto progress - 10 segundos para todos os tipos
     const duration = 10000;
@@ -91,7 +88,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
   const playMusic = async () => {
     try {
-      // Stop previous audio if playing
+      // Parar áudio anterior se estiver a tocar
       if (audio) {
         audio.pause();
         audio.currentTime = 0;
@@ -114,22 +111,25 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         
         // Tocar o preview se disponível
         if (track.preview) {
-          const newAudio = new Audio(track.preview);
-          newAudio.volume = 0.7;
-          newAudio.loop = true;
-          
-          // Só tocar se o usuário já ativou o áudio
-          if (audioEnabled) {
-            try {
-              await newAudio.play();
-              console.log('Audio playing successfully');
-            } catch (playError) {
-              console.error('Failed to play audio:', playError);
-              setAudioEnabled(false);
-            }
+          try {
+            const newAudio = new Audio(track.preview);
+            newAudio.volume = 0.7;
+            newAudio.loop = true;
+
+            // Este método é chamado a partir de um clique do utilizador,
+            // por isso o navegador permite autoplay
+            await newAudio.play();
+            console.log('Audio playing successfully');
+            setAudio(newAudio);
+            setAudioEnabled(true);
+          } catch (playError) {
+            console.error('Failed to play audio:', playError);
+            setAudioEnabled(false);
+            toast.error('Erro ao tocar a música deste story');
           }
-          
-          setAudio(newAudio);
+        } else {
+          console.log('No preview URL available for this track');
+          toast.error('Esta música não tem pré-visualização de áudio');
         }
 
         // Usar a capa da música
@@ -138,24 +138,15 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         }
       } else {
         console.log('No tracks found for query:', searchQuery);
+        toast.error('Não foi possível encontrar áudio para esta música');
       }
     } catch (error) {
       console.error('Could not play music:', error);
+      toast.error('Erro ao procurar a música');
     }
   };
 
-  const handleEnableAudio = async () => {
-    setAudioEnabled(true);
-    if (audio) {
-      try {
-        await audio.play();
-        toast.success('Som ativado!');
-      } catch (error) {
-        console.error('Failed to play audio:', error);
-        toast.error('Erro ao ativar som');
-      }
-    }
-  };
+  // Botão de som agora chama diretamente playMusic
 
   const recordView = async () => {
     if (!user) return;
@@ -406,11 +397,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           
           <div className="flex items-center gap-1">
             {/* Botão de Som */}
-            {currentStory.music_name && audio && !audioEnabled && (
+            {currentStory.music_name && !audioEnabled && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleEnableAudio}
+                onClick={playMusic}
                 className="h-9 w-9 text-background hover:bg-background/20 animate-pulse"
               >
                 <Music className="h-5 w-5" />
@@ -487,11 +478,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           ) : null}
           
           {/* Botão grande de ativar som no centro */}
-          {currentStory.music_name && audio && !audioEnabled && (
+          {currentStory.music_name && !audioEnabled && (
             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
               <Button
                 size="lg"
-                onClick={handleEnableAudio}
+                onClick={playMusic}
                 className="pointer-events-auto h-20 w-20 rounded-full bg-background/90 hover:bg-background shadow-2xl animate-pulse"
               >
                 <Music className="h-10 w-10 text-foreground" />
