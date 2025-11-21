@@ -44,6 +44,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const [userReaction, setUserReaction] = useState<string | null>(null);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [musicCover, setMusicCover] = useState<string | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   
   const currentStory = stories[currentIndex];
   const isOwnStory = currentStory.user_id === user?.id;
@@ -113,24 +114,22 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         
         // Tocar o preview se disponível
         if (track.preview) {
-          try {
-            const newAudio = new Audio(track.preview);
-            newAudio.volume = 0.6;
-            newAudio.loop = true; // Loop para continuar tocando durante o story
-            
-            // Tentar tocar o áudio
-            const playPromise = newAudio.play();
-            if (playPromise !== undefined) {
-              await playPromise;
+          const newAudio = new Audio(track.preview);
+          newAudio.volume = 0.7;
+          newAudio.loop = true;
+          
+          // Só tocar se o usuário já ativou o áudio
+          if (audioEnabled) {
+            try {
+              await newAudio.play();
               console.log('Audio playing successfully');
-              setAudio(newAudio);
+            } catch (playError) {
+              console.error('Failed to play audio:', playError);
+              setAudioEnabled(false);
             }
-          } catch (playError) {
-            console.error('Failed to play audio:', playError);
-            toast.error('Não foi possível tocar a música. Toque na tela para ativar o som.');
           }
-        } else {
-          console.log('No preview URL available for this track');
+          
+          setAudio(newAudio);
         }
 
         // Usar a capa da música
@@ -142,6 +141,19 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       }
     } catch (error) {
       console.error('Could not play music:', error);
+    }
+  };
+
+  const handleEnableAudio = async () => {
+    setAudioEnabled(true);
+    if (audio) {
+      try {
+        await audio.play();
+        toast.success('Som ativado!');
+      } catch (error) {
+        console.error('Failed to play audio:', error);
+        toast.error('Erro ao ativar som');
+      }
     }
   };
 
@@ -393,6 +405,18 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           </div>
           
           <div className="flex items-center gap-1">
+            {/* Botão de Som */}
+            {currentStory.music_name && audio && !audioEnabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleEnableAudio}
+                className="h-9 w-9 text-background hover:bg-background/20 animate-pulse"
+              >
+                <Music className="h-5 w-5" />
+              </Button>
+            )}
+            
             {isOwnStory && (
               <>
                 <span className="text-background text-xs mr-1">{views}</span>
@@ -461,6 +485,19 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
               controls={false}
             />
           ) : null}
+          
+          {/* Botão grande de ativar som no centro */}
+          {currentStory.music_name && audio && !audioEnabled && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+              <Button
+                size="lg"
+                onClick={handleEnableAudio}
+                className="pointer-events-auto h-20 w-20 rounded-full bg-background/90 hover:bg-background shadow-2xl animate-pulse"
+              >
+                <Music className="h-10 w-10 text-foreground" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Reply and reactions (bottom) */}
