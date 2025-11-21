@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import heartIcon from "@/assets/reactions/heart.png";
 import laughingIcon from "@/assets/reactions/laughing.png";
 import sadIcon from "@/assets/reactions/sad.png";
@@ -22,13 +22,13 @@ const REACTIONS = [
 export default function ReactionPicker({ onSelect, onClose, show }: ReactionPickerProps) {
   const [isVisible, setIsVisible] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (show) {
       setTimeout(() => setIsVisible(true), 10);
     } else {
       setIsVisible(false);
     }
-  });
+  }, [show]);
 
   if (!show) return null;
 
