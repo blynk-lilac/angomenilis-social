@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
 import { Separator } from "@/components/ui/separator";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
+import PostMenu from "@/components/PostMenu";
 import { BottomNav } from "@/components/layout/BottomNav";
 
 interface LiveStream {
@@ -492,6 +493,13 @@ export default function Feed() {
                         <Globe className="h-3 w-3" />
                       </div>
                     </div>
+
+                    <PostMenu
+                      postId={post.id}
+                      postUserId={post.user_id}
+                      currentUserId={currentUserId}
+                      onUpdate={loadPosts}
+                    />
                   </div>
 
                   {/* Conteúdo do Post */}

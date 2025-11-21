@@ -24,6 +24,8 @@ import CommentsVideo from "./pages/CommentsVideo";
 import Videos from "./pages/Videos";
 import RequestVerification from "./pages/RequestVerification";
 import Report from './pages/Report';
+import SavedPosts from './pages/SavedPosts';
+import PostDetail from './pages/PostDetail';
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -234,10 +236,38 @@ const App = () => (
             
             {/* Report Route */}
             <Route
+              path="/report"
+              element={
+                <ProtectedRoute>
+                  <Report />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/denunciar/:type/:id"
               element={
                 <ProtectedRoute>
                   <Report />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Saved Posts Route */}
+            <Route
+              path="/saved"
+              element={
+                <ProtectedRoute>
+                  <SavedPosts />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Post Detail Route */}
+            <Route
+              path="/post/:postId"
+              element={
+                <ProtectedRoute>
+                  <PostDetail />
                 </ProtectedRoute>
               }
             />

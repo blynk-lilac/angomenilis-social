@@ -84,7 +84,7 @@ export default function SideMenu() {
     {
       title: "Pessoal",
       items: [
-        { icon: Bookmark, label: "Guardados", path: "#", bgColor: "bg-purple-100 dark:bg-purple-900/20" },
+        { icon: Bookmark, label: "Guardados", path: "/saved", bgColor: "bg-purple-100 dark:bg-purple-900/20" },
         { icon: Clock, label: "Memórias", path: "#", bgColor: "bg-blue-100 dark:bg-blue-900/20" },
         { icon: Gift, label: "Aniversários", path: "#", bgColor: "bg-pink-100 dark:bg-pink-900/20" },
         { icon: Calendar, label: "Eventos", path: "#", bgColor: "bg-red-100 dark:bg-red-900/20" },
