@@ -139,7 +139,10 @@ export default function SavedPosts() {
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
+                          <Avatar 
+                            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                          >
                             <AvatarImage src={post.profiles?.avatar_url} />
                             <AvatarFallback>
                               {post.profiles?.username?.[0]?.toUpperCase()}
@@ -147,7 +150,10 @@ export default function SavedPosts() {
                           </Avatar>
                           <div>
                             <div className="flex items-center gap-1">
-                              <span className="font-semibold text-sm">
+                              <span 
+                                className="font-semibold text-sm cursor-pointer hover:underline"
+                                onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                              >
                                 {post.profiles?.full_name || post.profiles?.username}
                               </span>
                               {post.profiles?.verified && (

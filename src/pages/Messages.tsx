@@ -217,7 +217,7 @@ export default function Messages() {
       <header className="sticky top-0 z-10 bg-card border-b border-border safe-area-top">
         <div className="flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 cursor-pointer hover-scale" onClick={() => navigate('/settings')}>
+            <Avatar className="h-10 w-10 cursor-pointer hover-scale" onClick={() => navigate('/profile')}>
               <AvatarImage src={myProfile?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                 {myProfile?.first_name?.[0] || 'U'}
@@ -226,7 +226,7 @@ export default function Messages() {
             <h1 className="text-2xl font-bold">Chats</h1>
           </div>
           <button 
-            onClick={() => navigate('/settings')}
+            onClick={() => navigate('/profile')}
             className="p-2 hover:bg-muted rounded-full transition-colors"
           >
             <Settings className="h-6 w-6" />

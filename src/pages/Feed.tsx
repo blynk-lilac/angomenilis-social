@@ -463,7 +463,10 @@ export default function Feed() {
                 {/* Header do Post */}
                 <div className="p-4 pb-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 ring-2 ring-border hover:ring-primary/30 transition-all">
+                    <Avatar 
+                      className="h-11 w-11 ring-2 ring-border hover:ring-primary/30 transition-all cursor-pointer"
+                      onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                    >
                       <AvatarImage src={post.profiles?.avatar_url} />
                       <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
                         {post.profiles?.username?.[0]?.toUpperCase()}
@@ -472,7 +475,10 @@ export default function Feed() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-[15px] truncate text-foreground">
+                        <span 
+                          className="font-semibold text-[15px] truncate text-foreground cursor-pointer hover:underline"
+                          onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                        >
                           {post.profiles?.full_name || post.profiles?.username}
                         </span>
                         {post.profiles?.verified && (

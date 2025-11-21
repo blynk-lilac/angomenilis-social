@@ -193,7 +193,10 @@ export default function Comments() {
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`${isReply ? "ml-12 mt-3" : ""}`}>
       <div className="flex gap-2">
-        <Avatar className="h-9 w-9 flex-shrink-0">
+        <Avatar 
+          className="h-9 w-9 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate(`/profile/${comment.profiles.username}`)}
+        >
           <AvatarImage src={comment.profiles.avatar_url} />
           <AvatarFallback>
             {comment.profiles.username?.[0]?.toUpperCase()}
@@ -202,7 +205,10 @@ export default function Comments() {
         <div className="flex-1 min-w-0">
           <div className="bg-muted rounded-2xl px-4 py-2 inline-block max-w-full">
             <div className="flex items-center gap-1 mb-1">
-              <span className="font-semibold text-sm">
+              <span 
+                className="font-semibold text-sm cursor-pointer hover:underline"
+                onClick={() => navigate(`/profile/${comment.profiles.username}`)}
+              >
                 {comment.profiles.username}
               </span>
               {comment.profiles.verified && (
