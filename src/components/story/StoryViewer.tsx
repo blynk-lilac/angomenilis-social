@@ -9,6 +9,8 @@ import { showNotification } from '@/utils/pushNotifications';
 import heartIcon from "@/assets/reactions/heart.png";
 import laughingIcon from "@/assets/reactions/laughing.png";
 import thumbsUpIcon from "@/assets/reactions/thumbs-up.png";
+import sadIcon from "@/assets/reactions/sad.png";
+import angryIcon from "@/assets/reactions/angry.png";
 
 interface Story {
   id: string;
@@ -424,8 +426,84 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         {/* Reply and reactions (bottom) */}
         {!isOwnStory && (
           <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-black/60 to-transparent">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-4 py-2.5 border border-border/50 shadow-lg">
+            <div className="flex flex-col gap-3">
+              {/* Reaction buttons with horizontal scroll */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                <button
+                  onClick={() => handleReaction('heart')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'heart' ? 'bg-red-500 ring-2 ring-red-400' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={heartIcon} alt="Heart" className="h-6 w-6" />
+                </button>
+                
+                <button
+                  onClick={() => handleReaction('thumbs-up')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'thumbs-up' ? 'bg-blue-500 ring-2 ring-blue-400' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={thumbsUpIcon} alt="Like" className="h-6 w-6" />
+                </button>
+                
+                <button
+                  onClick={() => handleReaction('laughing')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'laughing' ? 'bg-yellow-500 ring-2 ring-yellow-400' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={laughingIcon} alt="Laughing" className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={() => handleReaction('sad')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'sad' ? 'bg-blue-400 ring-2 ring-blue-300' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={sadIcon} alt="Sad" className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={() => handleReaction('angry')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'angry' ? 'bg-orange-500 ring-2 ring-orange-400' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <img src={angryIcon} alt="Angry" className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={() => handleReaction('fire')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'fire' ? 'bg-orange-600 ring-2 ring-orange-500' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <span className="text-2xl">🔥</span>
+                </button>
+
+                <button
+                  onClick={() => handleReaction('clap')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'clap' ? 'bg-yellow-400 ring-2 ring-yellow-300' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <span className="text-2xl">👏</span>
+                </button>
+
+                <button
+                  onClick={() => handleReaction('love')}
+                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
+                    userReaction === 'love' ? 'bg-pink-500 ring-2 ring-pink-400' : 'bg-background/90 border border-border/50'
+                  }`}
+                >
+                  <span className="text-2xl">😍</span>
+                </button>
+              </div>
+
+              {/* Reply input */}
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-4 py-2.5 border border-border/50 shadow-lg">
                 <input
                   type="text"
                   value={replyText}
@@ -434,36 +512,6 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
                   placeholder="Enviar mensagem..."
                   className="flex-1 bg-transparent text-foreground placeholder-muted-foreground outline-none text-sm"
                 />
-              </div>
-              
-              {/* Reaction buttons */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleReaction('heart')}
-                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'heart' ? 'bg-red-500' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={heartIcon} alt="Heart" className="h-5 w-5" />
-                </button>
-                
-                <button
-                  onClick={() => handleReaction('thumbs-up')}
-                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'thumbs-up' ? 'bg-blue-500' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={thumbsUpIcon} alt="Like" className="h-5 w-5" />
-                </button>
-                
-                <button
-                  onClick={() => handleReaction('laughing')}
-                  className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'laughing' ? 'bg-yellow-500' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={laughingIcon} alt="Laughing" className="h-5 w-5" />
-                </button>
               </div>
             </div>
           </div>
