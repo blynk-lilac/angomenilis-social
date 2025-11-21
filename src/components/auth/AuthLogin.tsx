@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/blynk-logo.jpg';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -74,9 +74,9 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         </Button>
         
         <div className="text-center space-y-2">
-          <img src={logo} alt="Angomenilis" className="h-16 w-16 mx-auto" />
+          <img src={logo} alt="Blynk" className="h-16 w-16 mx-auto rounded-full" />
           <h2 className="text-3xl font-bold text-foreground">Bem-vindo de volta!</h2>
-          <p className="text-muted-foreground">Entre na sua conta</p>
+          <p className="text-muted-foreground">Entre no Blynk</p>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Zap } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/blynk-logo.jpg';
 
 interface AuthLoadingProps {
   onComplete?: () => void;
@@ -19,7 +19,7 @@ export const AuthLoading = ({ onComplete, isInitial }: AuthLoadingProps) => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
-          <img src={logo} alt="Angomenilis" className="h-24 w-24" />
+          <img src={logo} alt="Blynk" className="h-24 w-24 rounded-full" />
         </div>
       </div>
     );
@@ -34,7 +34,7 @@ export const AuthLoading = ({ onComplete, isInitial }: AuthLoadingProps) => {
       
       <div className="text-center space-y-2 animate-in slide-in-from-bottom-4 duration-700 delay-300">
         <h1 className="text-5xl font-bold text-primary tracking-wider">
-          ANGOMENILIS
+          BLYNK
         </h1>
         <p className="text-muted-foreground">Criando sua conta...</p>
       </div>

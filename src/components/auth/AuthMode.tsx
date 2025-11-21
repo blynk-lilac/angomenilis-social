@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/blynk-logo.jpg';
 
 interface AuthModeProps {
   onSelectMode: (mode: 'login' | 'signup') => void;
@@ -9,9 +9,9 @@ export const AuthMode = ({ onSelectMode }: AuthModeProps) => {
   return (
     <div className="w-full max-w-md space-y-8 animate-bounce-in">
       <div className="text-center space-y-4">
-        <img src={logo} alt="Angomenilis" className="h-24 w-24 mx-auto animate-glow rounded-full" />
+        <img src={logo} alt="Blynk" className="h-24 w-24 mx-auto animate-glow rounded-full" />
         <h1 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-          Angomenilis
+          Blynk
         </h1>
         <p className="text-muted-foreground text-lg animate-fade-in">
           Conecte-se com seus amigos e compartilhe momentos
