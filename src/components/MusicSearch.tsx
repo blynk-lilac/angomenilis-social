@@ -17,59 +17,83 @@ interface MusicSearchProps {
   onSelect: (music: Music) => void;
 }
 
-// API do iTunes para músicas reais
+// Busca músicas reais na API pública do iTunes
 const searchItunesMusic = async (query: string): Promise<Music[]> => {
   try {
     const response = await fetch(
       `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25`
     );
+
+    if (!response.ok) throw new Error("Erro na API do iTunes");
+
     const data = await response.json();
-    
+
+    if (!Array.isArray(data.results)) return [];
+
     return data.results.map((track: any) => ({
-      id: track.trackId.toString(),
+      id: track.trackId?.toString() || crypto.randomUUID(),
       name: track.trackName,
       artist: track.artistName,
       cover: track.artworkUrl100,
-      preview: track.previewUrl
+      preview: track.previewUrl,
     }));
   } catch (error) {
-    console.error('Error searching iTunes:', error);
+    console.error("Error searching iTunes:", error);
     return [];
   }
 };
 
-// Músicas populares como padrão
+// Sugestões locais (fallback) – músicas reais populares
+const SAMPLE_MUSIC: Music[] = [
+  { id: "sample-1", name: "Melhor de Mim", artist: "Lupambo", cover: "" },
+  { id: "sample-2", name: "2 Grown", artist: "Lil Tjay", cover: "" },
+  { id: "sample-3", name: "Éternité", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-4", name: "TI TI TI", artist: "Gradur", cover: "" },
+  { id: "sample-5", name: "Couleurs", artist: "Fally Ipupa", cover: "" },
+  { id: "sample-6", name: "Mine", artist: "Jastin Martin", cover: "" },
+  { id: "sample-7", name: "TA TUDO BEM", artist: "T-Rex", cover: "" },
+  { id: "sample-8", name: "Mon bébé", artist: "Fally Ipupa", cover: "" },
+];
+
+// Consultas para carregar tendências ao abrir a aba
 const TRENDING_QUERIES = [
+  "Lupambo Melhor de Mim",
+  "Lil Tjay 2 Grown",
   "Fally Ipupa",
-  "Burna Boy",
-  "Wizkid",
-  "Davido",
-  "Diamond Platnumz",
-  "Sauti Sol"
+  "T-Rex TA TUDO BEM",
 ];
 
 export default function MusicSearch({ onSelect }: MusicSearchProps) {
   const [search, setSearch] = useState("");
-  const [music, setMusic] = useState<Music[]>([]);
+  const [music, setMusic] = useState<Music[]>(SAMPLE_MUSIC);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Carrega músicas populares ao iniciar
+  // Ao abrir, tenta carregar músicas reais; se falhar, mostra SAMPLE_MUSIC
   useEffect(() => {
     loadTrendingMusic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadTrendingMusic = async () => {
     setLoading(true);
     try {
       const allMusic: Music[] = [];
+
       for (const query of TRENDING_QUERIES) {
         const results = await searchItunesMusic(query);
         allMusic.push(...results.slice(0, 4));
       }
-      setMusic(allMusic);
+
+      if (allMusic.length > 0) {
+        setMusic(allMusic);
+      } else {
+        setMusic(SAMPLE_MUSIC);
+      }
     } catch (error) {
-      toast.error("Erro ao carregar músicas");
+      console.error(error);
+      setMusic(SAMPLE_MUSIC);
+      toast.error("Erro ao carregar músicas, mostrando sugestões padrão");
     } finally {
       setLoading(false);
     }
@@ -77,33 +101,50 @@ export default function MusicSearch({ onSelect }: MusicSearchProps) {
 
   const handleSearch = async (value: string) => {
     setSearch(value);
-    if (value.trim().length < 2) {
-      loadTrendingMusic();
+
+    const trimmed = value.trim();
+    if (trimmed.length < 2) {
+      // Poucos caracteres – volta para sugestões
+      setSelectedCategory(null);
+      setMusic(SAMPLE_MUSIC);
       return;
     }
 
     setLoading(true);
     try {
-      const results = await searchItunesMusic(value);
-      setMusic(results);
-      if (results.length === 0) {
-        toast.info("Nenhuma música encontrada");
+      const results = await searchItunesMusic(trimmed);
+
+      if (results.length > 0) {
+        setMusic(results);
+      } else {
+        // Se a API não retornar nada, filtra nossas sugestões locais
+        const fallback = SAMPLE_MUSIC.filter(
+          (m) =>
+            m.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+            m.artist.toLowerCase().includes(trimmed.toLowerCase())
+        );
+        setMusic(fallback.length > 0 ? fallback : SAMPLE_MUSIC);
+        toast.info("Nenhuma música encontrada, mostrando sugestões semelhantes");
       }
     } catch (error) {
-      toast.error("Erro ao buscar músicas");
+      console.error(error);
+      toast.error("Erro ao buscar músicas, mostrando sugestões padrão");
+      setMusic(SAMPLE_MUSIC);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCategorySearch = async (category: string) => {
-    setSelectedCategory(category);
+  const handleCategorySearch = async (query: string) => {
+    setSelectedCategory(query);
     setLoading(true);
     try {
-      const results = await searchItunesMusic(category);
-      setMusic(results);
+      const results = await searchItunesMusic(query);
+      setMusic(results.length > 0 ? results : SAMPLE_MUSIC);
     } catch (error) {
-      toast.error("Erro ao buscar músicas");
+      console.error(error);
+      setMusic(SAMPLE_MUSIC);
+      toast.error("Erro ao buscar músicas, mostrando sugestões padrão");
     } finally {
       setLoading(false);
     }
@@ -112,8 +153,8 @@ export default function MusicSearch({ onSelect }: MusicSearchProps) {
   const categories = [
     { name: "Aniversário", query: "happy birthday" },
     { name: "Encontro noturno", query: "romantic night" },
-    { name: "Família", query: "family celebration" },
-    { name: "Festa", query: "party music" },
+    { name: "Família", query: "family" },
+    { name: "Festa", query: "party" },
   ];
 
   return (
