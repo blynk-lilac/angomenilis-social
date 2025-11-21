@@ -1217,6 +1217,38 @@ export type Database = {
           },
         ]
       }
+      story_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          reaction_type: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reaction_type: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reaction_type?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_reactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_views: {
         Row: {
           id: string

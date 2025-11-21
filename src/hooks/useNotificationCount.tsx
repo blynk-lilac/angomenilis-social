@@ -24,7 +24,23 @@ export const useNotificationCount = () => {
         .eq('receiver_id', user.id)
         .eq('status', 'pending');
 
-      setCount((notifCount || 0) + (requestCount || 0));
+      // Count story reactions
+      const { data: userStories } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('user_id', user.id);
+
+      let reactionCount = 0;
+      if (userStories && userStories.length > 0) {
+        const storyIds = userStories.map(s => s.id);
+        const { count } = await supabase
+          .from('story_reactions')
+          .select('*', { count: 'exact', head: true })
+          .in('story_id', storyIds);
+        reactionCount = count || 0;
+      }
+
+      setCount((notifCount || 0) + (requestCount || 0) + reactionCount);
     };
 
     loadCount();
@@ -49,6 +65,24 @@ export const useNotificationCount = () => {
           schema: 'public',
           table: 'friend_requests',
           filter: `receiver_id=eq.${user.id}`,
+        },
+        () => loadCount()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'story_reactions'
+        },
+        () => loadCount()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
         },
         () => loadCount()
       )

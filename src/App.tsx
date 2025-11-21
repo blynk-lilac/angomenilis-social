@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useStoryReactions } from "@/hooks/useStoryReactions";
+import { MessageNotification } from "@/components/MessageNotification";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
@@ -53,6 +55,244 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AppContent = () => {
+  useStoryReactions();
+  return (
+    <>
+      <MessageNotification />
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Feed />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute>
+              <Feed />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create"
+          element={
+            <ProtectedRoute>
+              <Create />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/videos"
+          element={
+            <ProtectedRoute>
+              <Videos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/videos/:shareCode"
+          element={
+            <ProtectedRoute>
+              <Videos />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/comments/:postId"
+          element={
+            <ProtectedRoute>
+              <Comments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/comments-video/:videoId"
+          element={
+            <ProtectedRoute>
+              <CommentsVideo />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/verification"
+          element={
+            <ProtectedRoute>
+              <RequestVerification />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Messages Routes */}
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:friendId"
+          element={
+            <ProtectedRoute>
+              <Chat />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:friendId/settings"
+          element={
+            <ProtectedRoute>
+              <ChatSettings />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Stories Routes */}
+        <Route
+          path="/stories"
+          element={
+            <ProtectedRoute>
+              <Stories />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Friends Routes */}
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <Friends />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Profile Routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil/:username"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Settings Routes */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/contact-info"
+          element={
+            <ProtectedRoute>
+              <ContactInfo />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/security"
+          element={
+            <ProtectedRoute>
+              <Security />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Report Route */}
+        <Route
+          path="/report"
+          element={
+            <ProtectedRoute>
+              <Report />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/denunciar/:type/:id"
+          element={
+            <ProtectedRoute>
+              <Report />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Saved Posts Route */}
+        <Route
+          path="/saved"
+          element={
+            <ProtectedRoute>
+              <SavedPosts />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Post Detail Route */}
+        <Route
+          path="/post/:postId"
+          element={
+            <ProtectedRoute>
+              <PostDetail />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Install PWA Route */}
+        <Route path="/install" element={<InstallPWA />} />
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -60,235 +300,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Feed />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/feed"
-              element={
-                <ProtectedRoute>
-                  <Feed />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <ProtectedRoute>
-                  <Create />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/videos"
-              element={
-                <ProtectedRoute>
-                  <Videos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/videos/:shareCode"
-              element={
-                <ProtectedRoute>
-                  <Videos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/comments/:postId"
-              element={
-                <ProtectedRoute>
-                  <Comments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/comments-video/:videoId"
-              element={
-                <ProtectedRoute>
-                  <CommentsVideo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/verification"
-              element={
-                <ProtectedRoute>
-                  <RequestVerification />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Messages Routes */}
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute>
-                  <Messages />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat/:friendId"
-              element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat/:friendId/settings"
-              element={
-                <ProtectedRoute>
-                  <ChatSettings />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Stories Routes */}
-            <Route
-              path="/stories"
-              element={
-                <ProtectedRoute>
-                  <Stories />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Friends Routes */}
-            <Route
-              path="/friends"
-              element={
-                <ProtectedRoute>
-                  <Friends />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Profile Routes */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile/:userId"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/perfil/:username"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Settings Routes */}
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings/change-password"
-              element={
-                <ProtectedRoute>
-                  <ChangePassword />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings/contact-info"
-              element={
-                <ProtectedRoute>
-                  <ContactInfo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings/security"
-              element={
-                <ProtectedRoute>
-                  <Security />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Report Route */}
-            <Route
-              path="/report"
-              element={
-                <ProtectedRoute>
-                  <Report />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/denunciar/:type/:id"
-              element={
-                <ProtectedRoute>
-                  <Report />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Saved Posts Route */}
-            <Route
-              path="/saved"
-              element={
-                <ProtectedRoute>
-                  <SavedPosts />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Post Detail Route */}
-            <Route
-              path="/post/:postId"
-              element={
-                <ProtectedRoute>
-                  <PostDetail />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Notifications Route */}
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <Notifications />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Install PWA Route */}
-            <Route path="/install" element={<InstallPWA />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppContent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
