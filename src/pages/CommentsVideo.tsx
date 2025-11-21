@@ -207,7 +207,11 @@ export default function CommentsVideo() {
                           {comment.profiles?.username}
                         </span>
                         {comment.profiles?.verified && (
-                          <VerificationBadge badgeType={comment.profiles?.badge_type} className="w-4 h-4" />
+                          <VerificationBadge 
+                            verified={comment.profiles?.verified}
+                            badgeType={comment.profiles?.badge_type} 
+                            className="w-4 h-4" 
+                          />
                         )}
                       </div>
                       <span className="text-xs text-muted-foreground">

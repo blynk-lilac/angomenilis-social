@@ -287,7 +287,11 @@ export default function Videos() {
                       <span className="font-bold text-base">{video.profiles.username}</span>
                     </Link>
                     {video.profiles.verified && (
-                      <VerificationBadge badgeType={video.profiles.badge_type} className="w-5 h-5" />
+                      <VerificationBadge 
+                        verified={video.profiles.verified}
+                        badgeType={video.profiles.badge_type} 
+                        className="w-5 h-5" 
+                      />
                     )}
                   </div>
                   
