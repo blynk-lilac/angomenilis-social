@@ -53,6 +53,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     if (!user || !currentStory) return;
 
     setMusicCover(null);
+    setAudioEnabled(false);
 
     // Record view if not own story
     if (!isOwnStory) {
@@ -63,7 +64,10 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     loadViewCount();
     loadUserReaction();
 
-    // Música: agora é ativada apenas quando o utilizador carrega no botão de som
+    // Carregar dados da música quando o story abre
+    if (currentStory.music_name) {
+      loadMusicData();
+    }
 
     // Auto progress - 10 segundos para todos os tipos
     const duration = 10000;
@@ -86,17 +90,18 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     };
   }, [currentIndex, currentStory, user]);
 
-  const playMusic = async () => {
+  const loadMusicData = async () => {
     try {
       // Parar áudio anterior se estiver a tocar
       if (audio) {
         audio.pause();
         audio.currentTime = 0;
+        setAudio(null);
       }
 
       // Buscar música via backend function
       const searchQuery = `${currentStory.music_artist} ${currentStory.music_name}`;
-      console.log('Searching for music:', searchQuery);
+      console.log('Loading music data for:', searchQuery);
       
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`
@@ -109,27 +114,15 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         const track = data.tracks[0];
         console.log('Found track with preview:', track.preview);
         
-        // Tocar o preview se disponível
+        // Preparar o áudio mas não tocar ainda
         if (track.preview) {
-          try {
-            const newAudio = new Audio(track.preview);
-            newAudio.volume = 0.7;
-            newAudio.loop = true;
-
-            // Este método é chamado a partir de um clique do utilizador,
-            // por isso o navegador permite autoplay
-            await newAudio.play();
-            console.log('Audio playing successfully');
-            setAudio(newAudio);
-            setAudioEnabled(true);
-          } catch (playError) {
-            console.error('Failed to play audio:', playError);
-            setAudioEnabled(false);
-            toast.error('Erro ao tocar a música deste story');
-          }
+          const newAudio = new Audio(track.preview);
+          newAudio.volume = 0.7;
+          newAudio.loop = true;
+          setAudio(newAudio);
+          console.log('Audio loaded and ready');
         } else {
           console.log('No preview URL available for this track');
-          toast.error('Esta música não tem pré-visualização de áudio');
         }
 
         // Usar a capa da música
@@ -138,16 +131,30 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         }
       } else {
         console.log('No tracks found for query:', searchQuery);
-        toast.error('Não foi possível encontrar áudio para esta música');
       }
     } catch (error) {
-      console.error('Could not play music:', error);
-      toast.error('Erro ao procurar a música');
+      console.error('Could not load music data:', error);
     }
   };
 
-  // Botão de som agora chama diretamente playMusic
+  const playMusic = async () => {
+    if (!audio) {
+      toast.error('Música não carregada. A tentar novamente...');
+      await loadMusicData();
+      if (!audio) return;
+    }
 
+    try {
+      await audio.play();
+      console.log('Audio playing successfully');
+      setAudioEnabled(true);
+      toast.success('Som ativado!');
+    } catch (playError) {
+      console.error('Failed to play audio:', playError);
+      setAudioEnabled(false);
+      toast.error('Erro ao tocar a música. Tente novamente.');
+    }
+  };
   const recordView = async () => {
     if (!user) return;
     
