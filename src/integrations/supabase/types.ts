@@ -974,33 +974,39 @@ export type Database = {
       }
       page_profiles: {
         Row: {
+          auth_user_id: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           email: string | null
           id: string
+          is_authenticated: boolean | null
           name: string
           page_type: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          is_authenticated?: boolean | null
           name: string
           page_type?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          is_authenticated?: boolean | null
           name?: string
           page_type?: string | null
           updated_at?: string | null
