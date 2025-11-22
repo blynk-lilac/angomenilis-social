@@ -45,13 +45,13 @@ export default function CreateAd() {
     const filePath = `${path}/${fileName}`;
 
     const { error: uploadError, data } = await supabase.storage
-      .from('posts')
+      .from('ads')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('posts')
+      .from('ads')
       .getPublicUrl(filePath);
 
     return publicUrl;

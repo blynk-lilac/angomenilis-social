@@ -2,8 +2,21 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface PageProfile {
   id: string;
@@ -21,6 +34,9 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<PageProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<PageProfile | null>(null);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (userId) {
@@ -42,6 +58,37 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
       console.error("Error fetching accounts:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoginClick = (account: PageProfile) => {
+    if (account.is_authenticated && account.email) {
+      setSelectedAccount(account);
+      setLoginDialogOpen(true);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!selectedAccount?.email || !password) {
+      toast.error("Por favor, insira a senha");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: selectedAccount.email,
+        password: password,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Conectado como ${selectedAccount.name}`);
+      setLoginDialogOpen(false);
+      setPassword("");
+      navigate("/feed");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Senha incorreta ou erro ao fazer login");
     }
   };
 
@@ -67,7 +114,7 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
         {accounts.map((account) => (
           <div
             key={account.id}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
           >
             <Avatar className="h-10 w-10">
               <AvatarImage src={account.avatar_url || ""} />
@@ -81,16 +128,58 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
                 </p>
               )}
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {account.is_authenticated && account.email ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleLoginClick(account)}
+                className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Entrar
+              </Button>
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
           </div>
         ))}
       </div>
       
       {accounts.some(a => a.is_authenticated) && (
         <p className="text-xs text-muted-foreground mt-3 px-2">
-          💡 Podes iniciar sessão com estas contas usando o email mostrado e a mesma senha da tua conta principal.
+          💡 Clica em "Entrar" para mudar para esta conta. Usa a mesma senha da tua conta principal.
         </p>
       )}
+
+      <AlertDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Iniciar sessão como {selectedAccount?.name}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Insira a senha da tua conta principal para entrar como {selectedAccount?.name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Digite sua senha"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleLogin();
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPassword("")}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogin}>Entrar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
