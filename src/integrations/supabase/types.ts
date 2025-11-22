@@ -185,6 +185,41 @@ export type Database = {
           },
         ]
       }
+      channel_invites: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          id: string
+          invited_user_id: string
+          inviter_id: string
+          status: string | null
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          id?: string
+          invited_user_id: string
+          inviter_id: string
+          status?: string | null
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          id?: string
+          invited_user_id?: string
+          inviter_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_invites_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_message_reactions: {
         Row: {
           created_at: string
@@ -933,6 +968,42 @@ export type Database = {
           related_id?: string | null
           title?: string
           type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      page_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          page_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          page_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          page_type?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
