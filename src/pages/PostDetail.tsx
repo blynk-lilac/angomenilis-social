@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
+import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 
 export default function PostDetail() {
   const { postId } = useParams();
@@ -22,6 +23,8 @@ export default function PostDetail() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [showReactions, setShowReactions] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     loadPost();
@@ -113,6 +116,11 @@ export default function PostDetail() {
     }
   };
 
+  const handleImageClick = (images: string[], index: number) => {
+    setGalleryImages(images);
+    setGalleryIndex(index);
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -192,20 +200,91 @@ export default function PostDetail() {
               </div>
 
               {post.content && (
-                <p className="mb-3 text-sm">{post.content}</p>
+                <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
               )}
             </div>
 
+            {/* Media Grid */}
             {post.media_urls && post.media_urls.length > 0 && (
-              <div className="grid grid-cols-1 gap-1">
-                {post.media_urls.map((url: string, idx: number) => (
+              <div className="mb-0">
+                {post.media_urls.length === 1 ? (
                   <img
-                    key={idx}
-                    src={url}
-                    alt={`Media ${idx + 1}`}
-                    className="w-full object-cover max-h-[600px]"
+                    src={post.media_urls[0]}
+                    alt="Post"
+                    onClick={() => handleImageClick(post.media_urls, 0)}
+                    className="w-full max-h-[500px] object-contain bg-muted cursor-pointer"
                   />
-                ))}
+                ) : post.media_urls.length === 2 ? (
+                  <div className="grid grid-cols-2 gap-0.5">
+                    {post.media_urls.map((url: string, idx: number) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Media ${idx + 1}`}
+                        onClick={() => handleImageClick(post.media_urls, idx)}
+                        className="w-full aspect-square object-cover cursor-pointer"
+                      />
+                    ))}
+                  </div>
+                ) : post.media_urls.length === 3 ? (
+                  <div className="grid grid-cols-2 gap-0.5">
+                    <img
+                      src={post.media_urls[0]}
+                      alt="Media 1"
+                      onClick={() => handleImageClick(post.media_urls, 0)}
+                      className="row-span-2 w-full h-full object-cover cursor-pointer"
+                    />
+                    {post.media_urls.slice(1).map((url: string, idx: number) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Media ${idx + 2}`}
+                        onClick={() => handleImageClick(post.media_urls, idx + 1)}
+                        className="w-full aspect-square object-cover cursor-pointer"
+                      />
+                    ))}
+                  </div>
+                ) : post.media_urls.length === 4 ? (
+                  <div className="grid grid-cols-2 gap-0.5">
+                    {post.media_urls.map((url: string, idx: number) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Media ${idx + 1}`}
+                        onClick={() => handleImageClick(post.media_urls, idx)}
+                        className="w-full aspect-square object-cover cursor-pointer"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-0.5">
+                    <img
+                      src={post.media_urls[0]}
+                      alt="Media 1"
+                      onClick={() => handleImageClick(post.media_urls, 0)}
+                      className="col-span-2 w-full aspect-video object-cover cursor-pointer"
+                    />
+                    {post.media_urls.slice(1, 5).map((url: string, idx: number) => {
+                      const actualIdx = idx + 1;
+                      const isLast = actualIdx === 4 && post.media_urls.length > 5;
+                      return (
+                        <div key={idx} className="relative">
+                          <img
+                            src={url}
+                            alt={`Media ${actualIdx + 1}`}
+                            onClick={() => handleImageClick(post.media_urls, actualIdx)}
+                            className="w-full aspect-square object-cover cursor-pointer"
+                          />
+                          {isLast && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                              <span className="text-white text-3xl font-bold">+{post.media_urls.length - 5}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -285,6 +364,15 @@ export default function PostDetail() {
             </div>
           </Card>
         </div>
+
+        {/* Image Gallery */}
+        {galleryImages && (
+          <ImageGalleryViewer
+            images={galleryImages}
+            initialIndex={galleryIndex}
+            onClose={() => setGalleryImages(null)}
+          />
+        )}
       </div>
     </ProtectedRoute>
   );

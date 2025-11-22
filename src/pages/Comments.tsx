@@ -15,6 +15,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import { CommentCard } from "@/components/CommentCard";
+import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 
 interface Comment {
   id: string;
@@ -42,6 +44,7 @@ interface Post {
   image_url?: string;
   video_url?: string;
   audio_url?: string;
+  media_urls?: string[];
   user_id: string;
   profiles: {
     username: string;
@@ -61,6 +64,8 @@ export default function Comments() {
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     loadPost();
@@ -190,77 +195,10 @@ export default function Comments() {
     loadComments();
   };
 
-  const renderComment = (comment: Comment, isReply = false) => (
-    <div key={comment.id} className={`${isReply ? "ml-12 mt-3" : ""}`}>
-      <div className="flex gap-2">
-        <Avatar 
-          className="h-9 w-9 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => navigate(`/profile/${comment.profiles.username}`)}
-        >
-          <AvatarImage src={comment.profiles.avatar_url} />
-          <AvatarFallback>
-            {comment.profiles.username?.[0]?.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="bg-muted rounded-2xl px-4 py-2 inline-block max-w-full">
-            <div className="flex items-center gap-1 mb-1">
-              <span 
-                className="font-semibold text-sm cursor-pointer hover:underline"
-                onClick={() => navigate(`/profile/${comment.profiles.username}`)}
-              >
-                {comment.profiles.username}
-              </span>
-              {comment.profiles.verified && (
-                <VerificationBadge
-                  verified={comment.profiles.verified}
-                  badgeType={comment.profiles.badge_type}
-                  className="w-3.5 h-3.5"
-                />
-              )}
-            </div>
-            {comment.audio_url ? (
-              <audio
-                controls
-                className="max-w-full h-8"
-                src={comment.audio_url}
-              />
-            ) : (
-              <p className="text-sm break-words">{comment.content}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-4 mt-1 ml-3 text-xs text-muted-foreground">
-            <span>
-              {formatDistanceToNow(new Date(comment.created_at), {
-                addSuffix: false,
-                locale: ptBR,
-              })}
-            </span>
-            <button
-              onClick={() => handleLikeComment(comment.id)}
-              className={`font-semibold hover:underline ${
-                comment.user_liked ? "text-primary" : ""
-              }`}
-            >
-              Gosto
-              {(comment.likes[0]?.count || 0) > 0 && ` • ${comment.likes[0]?.count}`}
-            </button>
-            <button
-              onClick={() => setReplyingTo(comment.id)}
-              className="font-semibold hover:underline"
-            >
-              Responder
-            </button>
-          </div>
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 space-y-3">
-              {comment.replies.map((reply) => renderComment(reply, true))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  const handleImageClick = (images: string[], index: number) => {
+    setGalleryImages(images);
+    setGalleryIndex(index);
+  };
 
   if (!post) {
     return (
@@ -343,9 +281,93 @@ export default function Comments() {
                   </Button>
                 </div>
 
-                <p className="text-sm mb-3 whitespace-pre-wrap">{post.content}</p>
+                <p className="text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
 
-                {post.image_url && (
+                {/* Media Grid */}
+                {post.media_urls && post.media_urls.length > 0 && (
+                  <div className="mb-3">
+                    {post.media_urls.length === 1 ? (
+                      <img
+                        src={post.media_urls[0]}
+                        alt="Post"
+                        onClick={() => handleImageClick(post.media_urls!, 0)}
+                        className="w-full max-h-[500px] object-contain bg-muted cursor-pointer"
+                      />
+                    ) : post.media_urls.length === 2 ? (
+                      <div className="grid grid-cols-2 gap-0.5">
+                        {post.media_urls.map((url: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt={`Media ${idx + 1}`}
+                            onClick={() => handleImageClick(post.media_urls!, idx)}
+                            className="w-full aspect-square object-cover cursor-pointer"
+                          />
+                        ))}
+                      </div>
+                    ) : post.media_urls.length === 3 ? (
+                      <div className="grid grid-cols-2 gap-0.5">
+                        <img
+                          src={post.media_urls[0]}
+                          alt="Media 1"
+                          onClick={() => handleImageClick(post.media_urls!, 0)}
+                          className="row-span-2 w-full h-full object-cover cursor-pointer"
+                        />
+                        {post.media_urls.slice(1).map((url: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt={`Media ${idx + 2}`}
+                            onClick={() => handleImageClick(post.media_urls!, idx + 1)}
+                            className="w-full aspect-square object-cover cursor-pointer"
+                          />
+                        ))}
+                      </div>
+                    ) : post.media_urls.length === 4 ? (
+                      <div className="grid grid-cols-2 gap-0.5">
+                        {post.media_urls.map((url: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt={`Media ${idx + 1}`}
+                            onClick={() => handleImageClick(post.media_urls!, idx)}
+                            className="w-full aspect-square object-cover cursor-pointer"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-0.5">
+                        <img
+                          src={post.media_urls[0]}
+                          alt="Media 1"
+                          onClick={() => handleImageClick(post.media_urls!, 0)}
+                          className="col-span-2 w-full aspect-video object-cover cursor-pointer"
+                        />
+                        {post.media_urls.slice(1, 5).map((url: string, idx: number) => {
+                          const actualIdx = idx + 1;
+                          const isLast = actualIdx === 4 && post.media_urls!.length > 5;
+                          return (
+                            <div key={idx} className="relative">
+                              <img
+                                src={url}
+                                alt={`Media ${actualIdx + 1}`}
+                                onClick={() => handleImageClick(post.media_urls!, actualIdx)}
+                                className="w-full aspect-square object-cover cursor-pointer"
+                              />
+                              {isLast && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                                  <span className="text-white text-3xl font-bold">+{post.media_urls!.length - 5}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {post.image_url && !post.media_urls && (
                   <img
                     src={post.image_url}
                     alt="Post"
@@ -385,15 +407,39 @@ export default function Comments() {
               </div>
             </Card>
 
-            {/* Comments */}
-            <div className="px-4 pb-4 space-y-4">
-              {comments.map((comment) => renderComment(comment))}
+            {/* Seção de Comentários */}
+            <div className="bg-card border-t border-border mt-4">
+              <div className="p-4">
+                <h3 className="font-bold text-lg mb-1">Mais relevantes</h3>
+                <button className="text-sm text-muted-foreground hover:underline mb-4">
+                  ▼
+                </button>
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <CommentCard
+                      key={comment.id}
+                      comment={comment}
+                      onLike={handleLikeComment}
+                      onReply={setReplyingTo}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </ScrollArea>
 
+        {/* Image Gallery */}
+        {galleryImages && (
+          <ImageGalleryViewer
+            images={galleryImages}
+            initialIndex={galleryIndex}
+            onClose={() => setGalleryImages(null)}
+          />
+        )}
+
         {/* Input de comentário */}
-        <div className="border-t p-4 bg-background">
+        <div className="border-t p-3 bg-background">
           <form
             onSubmit={(e) => {
               e.preventDefault();
