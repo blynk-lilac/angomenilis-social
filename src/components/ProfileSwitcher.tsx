@@ -76,7 +76,7 @@ export default function ProfileSwitcher() {
   const handleSelectProfile = (profileId: string) => {
     setSelectedProfileId(profileId);
     localStorage.setItem("selectedProfileId", profileId);
-    window.location.reload(); // Recarregar para aplicar o perfil
+    // Não recarrega a página, apenas atualiza o estado
   };
 
   const getCurrentProfile = () => {

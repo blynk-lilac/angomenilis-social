@@ -33,6 +33,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
 import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
+import AssociatedAccounts from "@/components/AssociatedAccounts";
 
 interface Profile {
   id: string;
@@ -474,6 +475,11 @@ export default function Profile() {
 
                 {profile.bio && (
                   <p className="mt-3 text-sm">{profile.bio}</p>
+                )}
+
+                {/* Contas Associadas */}
+                {isOwnProfile && (
+                  <AssociatedAccounts userId={currentUserId} />
                 )}
 
                 {!isOwnProfile && (

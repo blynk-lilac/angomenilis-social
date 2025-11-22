@@ -58,6 +58,9 @@ export default function CreatePageProfile() {
         avatarUrl = publicUrl;
       }
 
+      // Gerar email único para a conta
+      const pageEmail = `${name.toLowerCase().replace(/\s+/g, '')}+${user.id.substring(0, 8)}@blynk.page`;
+
       // Criar o perfil de página
       const { error } = await supabase
         .from("page_profiles")
@@ -65,13 +68,15 @@ export default function CreatePageProfile() {
           user_id: user.id,
           name: name.trim(),
           avatar_url: avatarUrl,
-          page_type: "page"
+          page_type: "page",
+          is_authenticated: true,
+          email: pageEmail
         });
 
       if (error) throw error;
 
-      toast.success("Perfil criado com sucesso!");
-      navigate(-1);
+      toast.success(`Perfil criado! Email: ${pageEmail} (use a mesma senha da sua conta principal)`);
+      navigate("/profile");
     } catch (error: any) {
       console.error("Error creating page profile:", error);
       toast.error(error.message || "Erro ao criar perfil");
