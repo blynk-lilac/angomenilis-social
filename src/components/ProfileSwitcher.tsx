@@ -114,17 +114,17 @@ export default function ProfileSwitcher() {
         <ChevronDown className="h-5 w-5 text-foreground" />
       </SheetTrigger>
       
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-0">
+      <SheetContent side="bottom" className="h-[70vh] max-h-[600px] rounded-t-3xl p-0 border-t-2">
         {/* Handle para arrastar */}
         <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
         
-        <SheetHeader className="px-6 pb-4">
+        <SheetHeader className="px-6 pb-2 pt-0">
           <SheetTitle className="text-2xl font-bold text-left">
             Perfis
           </SheetTitle>
         </SheetHeader>
 
-        <div className="overflow-y-auto h-[calc(100%-5rem)] px-4">
+        <div className="overflow-y-auto h-[calc(100%-4rem)] px-4">
           {/* Perfil Principal */}
           {mainProfile && (
             <div
