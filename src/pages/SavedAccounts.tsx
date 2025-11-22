@@ -74,9 +74,9 @@ export default function SavedAccounts() {
             <img 
               src={logo} 
               alt="Blynk" 
-              className="h-24 w-24 mx-auto rounded-full shadow-xl ring-4 ring-primary/30 animate-in zoom-in duration-500" 
+              className="h-16 w-16 mx-auto rounded-full shadow-lg ring-2 ring-primary/20 animate-in zoom-in duration-500" 
             />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/30 to-transparent animate-pulse" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent animate-pulse" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">
             Selecione uma conta
