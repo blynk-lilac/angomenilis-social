@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { 
   Menu, 
   User, 
@@ -15,7 +16,7 @@ import {
   Gift,
   Bookmark,
   Clock,
-  Settings,
+  Settings as SettingsIcon,
   HelpCircle,
   FileText,
   LogOut,
@@ -24,8 +25,8 @@ import {
   ChevronRight
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 interface Profile {
   username: string;
@@ -37,6 +38,7 @@ export default function SideMenu() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -182,12 +184,24 @@ export default function SideMenu() {
                 </Link>
               )}
               
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors group w-full"
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
+                  <SettingsIcon className="h-5 w-5 text-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  Configurações do App
+                </span>
+              </button>
+              
               <Link
                 to="/settings"
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors group"
               >
                 <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-foreground" />
+                  <Shield className="h-5 w-5 text-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                   Definições e privacidade
@@ -239,6 +253,7 @@ export default function SideMenu() {
           </div>
         </ScrollArea>
       </SheetContent>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sheet>
   );
 }

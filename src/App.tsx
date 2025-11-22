@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useStoryReactions } from "@/hooks/useStoryReactions";
+import { useGlobalUserPresence } from "@/hooks/useGlobalUserPresence";
 import { MessageNotification } from "@/components/MessageNotification";
 import Auth from "./pages/Auth";
 import SavedAccounts from "./pages/SavedAccounts";
@@ -69,6 +71,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   useStoryReactions();
+  useGlobalUserPresence();
   return (
     <>
       <MessageNotification />
@@ -394,7 +397,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppContent />
+          <SettingsProvider>
+            <AppContent />
+          </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
