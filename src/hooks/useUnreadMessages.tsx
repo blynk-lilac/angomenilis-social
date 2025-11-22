@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useUnreadMessages = () => {
   const { user } = useAuth();
   const [count, setCount] = useState(0);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -21,8 +22,20 @@ export const useUnreadMessages = () => {
 
     loadCount();
 
+    const loadNotifications = async () => {
+      const { count: unreadNotifs } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      setNotificationCount(unreadNotifs || 0);
+    };
+
+    loadNotifications();
+
     // Listen for new messages
-    const channel = supabase
+    const messagesChannel = supabase
       .channel('unread-messages-count')
       .on(
         'postgres_changes',
@@ -36,10 +49,26 @@ export const useUnreadMessages = () => {
       )
       .subscribe();
 
+    // Listen for notifications
+    const notificationsChannel = supabase
+      .channel('unread-notifications-count')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => loadNotifications()
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(notificationsChannel);
     };
   }, [user]);
 
-  return count;
+  return { messageCount: count, notificationCount };
 };

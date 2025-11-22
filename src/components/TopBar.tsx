@@ -9,7 +9,7 @@ import { NotificationBadge } from "@/components/NotificationBadge";
 
 export const TopBar = () => {
   const notificationCount = useNotificationCount();
-  const unreadMessages = useUnreadMessages();
+  const { messageCount } = useUnreadMessages();
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md border-b border-border z-50">
@@ -30,7 +30,7 @@ export const TopBar = () => {
           <Button variant="ghost" size="icon" asChild className="relative">
             <Link to="/messages">
               <MessageCircle className="h-5 w-5" />
-              <NotificationBadge count={unreadMessages} />
+              <NotificationBadge count={messageCount} />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild className="relative">
