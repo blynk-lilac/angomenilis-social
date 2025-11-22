@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useStoryReactions } from "@/hooks/useStoryReactions";
 import { MessageNotification } from "@/components/MessageNotification";
 import Auth from "./pages/Auth";
+import SavedAccounts from "./pages/SavedAccounts";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import TwoFactorVerification from "./pages/TwoFactorVerification";
@@ -63,19 +64,12 @@ const AppContent = () => {
     <>
       <MessageNotification />
       <Routes>
+        <Route path="/" element={<SavedAccounts />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/two-factor-verification" element={<TwoFactorVerification />} />
         
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Feed />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/feed"
           element={

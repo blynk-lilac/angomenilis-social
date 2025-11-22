@@ -32,7 +32,7 @@ export default function Auth() {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/feed" replace />;
   }
 
   const updateFormData = (data: Partial<typeof formData>) => {
