@@ -34,16 +34,27 @@ export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="text-center space-y-4">
-        <img src={logo} alt="Blynk" className="h-20 w-20 mx-auto rounded-full" />
-        <h1 className="text-3xl font-bold text-foreground">Bem-vindo ao Blynk</h1>
-        <p className="text-muted-foreground">Conecte-se com seus amigos</p>
+        <div className="relative inline-block">
+          <img 
+            src={logo} 
+            alt="Blynk" 
+            className="h-24 w-24 mx-auto rounded-full shadow-xl ring-4 ring-primary/30 animate-in zoom-in duration-500" 
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/30 to-transparent animate-pulse" />
+        </div>
+        <h1 className="text-4xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
+          Bem-vindo ao Blynk
+        </h1>
+        <p className="text-lg text-muted-foreground animate-in slide-in-from-bottom-3 duration-500">
+          Conecte-se com seus amigos
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             Qual é o seu primeiro nome?
           </label>
           <Input
@@ -51,7 +62,7 @@ export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="Digite seu primeiro nome"
-            className="h-14 text-lg rounded-2xl border-2"
+            className="h-14 text-lg rounded-2xl border-2 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
             required
             autoFocus
           />
@@ -59,7 +70,7 @@ export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
 
         <Button
           type="submit"
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-bottom-5 duration-500"
           disabled={!firstName.trim()}
         >
           Continuar
