@@ -13,9 +13,10 @@ import { requestNotificationPermission, showNotification } from '@/utils/pushNot
 interface AuthLoginProps {
   onBack: () => void;
   onForgotPassword: (email: string) => void;
+  onSwitchToSignup?: () => void;
 }
 
-export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
+export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLoginProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [credential, setCredential] = useState('');
@@ -335,6 +336,19 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
+
+        {onSwitchToSignup && (
+          <div className="text-center animate-in slide-in-from-bottom-8 duration-500">
+            <Button
+              type="button"
+              variant="link"
+              onClick={onSwitchToSignup}
+              className="text-foreground hover:text-primary"
+            >
+              Não tem conta? <span className="font-semibold ml-1">Criar conta</span>
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
