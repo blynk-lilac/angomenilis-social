@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { AuthMode } from '@/components/auth/AuthMode';
@@ -17,6 +17,7 @@ type SignupStep = 'firstName' | 'credentials' | 'phoneVerification' | 'password'
 
 export default function Auth() {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [mode, setMode] = useState<AuthMode>('selection');
   const [signupStep, setSignupStep] = useState<SignupStep>('firstName');
   const [resetEmail, setResetEmail] = useState('');
@@ -26,6 +27,13 @@ export default function Auth() {
     password: '',
     username: '',
   });
+
+  // Se vier com email pré-preenchido, ir direto para login
+  useEffect(() => {
+    if (location.state?.prefilledEmail) {
+      setMode('login');
+    }
+  }, [location]);
 
   if (loading) {
     return <AuthLoading isInitial />;
