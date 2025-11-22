@@ -44,6 +44,7 @@ import Notifications from './pages/Notifications';
 import InstallPWA from './pages/InstallPWA';
 import Hashtag from './pages/Hashtag';
 import CreateAd from "./pages/CreateAd";
+import AppSettings from "./pages/AppSettings";
 import NotFound from "./pages/NotFound";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
@@ -380,6 +381,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <CreateAd />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* App Settings Route */}
+        <Route
+          path="/app-settings"
+          element={
+            <ProtectedRoute>
+              <AppSettings />
             </ProtectedRoute>
           }
         />
