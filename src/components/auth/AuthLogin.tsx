@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +17,7 @@ interface AuthLoginProps {
 
 export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [credential, setCredential] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,16 +26,67 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   const [tempUserId, setTempUserId] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Carregar credenciais salvas ao montar
+  // Carregar credenciais salvas ou email pré-preenchido
   useEffect(() => {
-    const savedCredential = localStorage.getItem('blynk_saved_credential');
-    if (savedCredential) {
-      setCredential(savedCredential);
+    const prefilledEmail = location.state?.prefilledEmail;
+    if (prefilledEmail) {
+      setCredential(prefilledEmail);
       setRememberMe(true);
+    } else {
+      const savedCredential = localStorage.getItem('blynk_saved_credential');
+      if (savedCredential) {
+        setCredential(savedCredential);
+        setRememberMe(true);
+      }
     }
-  }, []);
+  }, [location]);
 
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credential);
+
+  const saveAccount = async (userId: string, email: string) => {
+    try {
+      // Buscar dados do perfil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, username, avatar_url')
+        .eq('id', userId)
+        .single();
+
+      if (profile) {
+        // Salvar conta na lista
+        const accounts = JSON.parse(localStorage.getItem('blynk_saved_accounts') || '[]');
+        const existingIndex = accounts.findIndex((acc: any) => acc.userId === userId);
+        
+        const accountData = {
+          userId,
+          email,
+          firstName: profile.first_name,
+          username: profile.username,
+          avatarUrl: profile.avatar_url,
+        };
+
+        if (existingIndex >= 0) {
+          accounts[existingIndex] = accountData;
+        } else {
+          accounts.push(accountData);
+        }
+
+        localStorage.setItem('blynk_saved_accounts', JSON.stringify(accounts));
+        localStorage.setItem('blynk_saved_credential', email);
+
+        // Salvar sessão
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          localStorage.setItem(`blynk_session_${userId}`, JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao salvar conta:', error);
+    }
+  };
 
   const generateTwoFactorCode = () => {
     return Math.floor(10 + Math.random() * 90).toString();
@@ -126,13 +178,14 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         setTempUserId(data.user.id);
         setShowPhoneVerification(true);
       } else {
-        // Salvar credencial se "lembrar-me" estiver marcado
+        // Salvar conta se "lembrar-me" estiver marcado
         if (rememberMe) {
-          localStorage.setItem('blynk_saved_credential', credential.trim());
+          await saveAccount(data.user.id, credential.trim());
         } else {
           localStorage.removeItem('blynk_saved_credential');
         }
         toast.success('Login realizado com sucesso!');
+        navigate('/feed');
       }
     } catch (error) {
       toast.error('Erro ao fazer login. Verifique sua conexão.');

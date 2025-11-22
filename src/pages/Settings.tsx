@@ -93,8 +93,51 @@ export default function Settings() {
 
 
   const handleLogout = async () => {
+    if (!user) return;
+    
+    try {
+      // Salvar conta antes de fazer logout
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, username, avatar_url, email')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData) {
+        const accounts = JSON.parse(localStorage.getItem('blynk_saved_accounts') || '[]');
+        const existingIndex = accounts.findIndex((acc: any) => acc.userId === user.id);
+        
+        const accountData = {
+          userId: user.id,
+          email: profileData.email || user.email || '',
+          firstName: profileData.first_name,
+          username: profileData.username,
+          avatarUrl: profileData.avatar_url,
+        };
+
+        if (existingIndex >= 0) {
+          accounts[existingIndex] = accountData;
+        } else {
+          accounts.push(accountData);
+        }
+
+        localStorage.setItem('blynk_saved_accounts', JSON.stringify(accounts));
+
+        // Salvar sessão
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          localStorage.setItem(`blynk_session_${user.id}`, JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao salvar conta:', error);
+    }
+
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const menuItems = [
