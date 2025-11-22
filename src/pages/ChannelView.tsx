@@ -1,14 +1,29 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import MessageBubble from '@/components/chat/MessageBubble';
-import MediaPicker from '@/components/chat/MediaPicker';
-import { Hash, Send, MoreVertical, Settings } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Bell, Settings, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Reaction {
+  emoji: string;
+  count: number;
+  users: string[];
+}
+
+interface Message {
+  id: string;
+  content: string;
+  sender_id: string;
+  created_at: string;
+  media_url: string | null;
+  sender: {
+    first_name: string;
+    avatar_url: string | null;
+  };
+  reactions?: Reaction[];
+}
 
 interface Channel {
   id: string;
@@ -16,128 +31,115 @@ interface Channel {
   description: string | null;
   avatar_url: string | null;
   follower_count: number;
-  created_by: string;
-}
-
-interface Message {
-  id: string;
-  content: string;
-  media_url: string | null;
-  message_type: string;
-  duration: number | null;
-  created_at: string;
-  sender_id: string;
-  profiles: {
-    first_name: string;
-    avatar_url: string | null;
-  };
 }
 
 export default function ChannelView() {
   const { channelId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (channelId && user) {
-      loadChannel();
-      loadMessages();
+    if (channelId) {
+      fetchChannel();
+      fetchMessages();
       checkFollowing();
-      checkAdmin();
       subscribeToMessages();
     }
-  }, [channelId, user]);
+  }, [channelId]);
 
-  const loadChannel = async () => {
-    if (!channelId) return;
+  const fetchChannel = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("channels")
+        .select("*")
+        .eq("id", channelId)
+        .single();
 
-    const { data } = await supabase
-      .from('channels')
-      .select('*')
-      .eq('id', channelId)
-      .single();
-
-    if (data) setChannel(data);
+      if (error) throw error;
+      setChannel(data);
+    } catch (error) {
+      console.error("Error fetching channel:", error);
+    }
   };
 
-  const loadMessages = async () => {
-    if (!channelId) return;
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("channel_messages")
+        .select(`
+          *,
+          profiles!channel_messages_sender_id_fkey (
+            first_name,
+            avatar_url
+          )
+        `)
+        .eq("channel_id", channelId)
+        .order("created_at", { ascending: true });
 
-    const { data: messagesData } = await supabase
-      .from('channel_messages')
-      .select('*')
-      .eq('channel_id', channelId)
-      .order('created_at', { ascending: true });
+      if (error) throw error;
 
-    if (messagesData) {
-      const messagesWithProfiles = await Promise.all(
-        messagesData.map(async (msg) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('first_name, avatar_url')
-            .eq('id', msg.sender_id)
-            .single();
+      const formattedMessages = data?.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        sender_id: msg.sender_id,
+        created_at: msg.created_at,
+        media_url: msg.media_url,
+        sender: msg.profiles,
+        reactions: generateMockReactions()
+      })) || [];
 
-          return {
-            ...msg,
-            profiles: profile || { first_name: 'Usuário', avatar_url: null },
-          };
-        })
-      );
-      setMessages(messagesWithProfiles);
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
     }
+  };
+
+  const generateMockReactions = (): Reaction[] => {
+    const reactionTypes = [
+      { emoji: "❤️", count: Math.floor(Math.random() * 100), users: [] },
+      { emoji: "👍", count: Math.floor(Math.random() * 50), users: [] },
+      { emoji: "😂", count: Math.floor(Math.random() * 30), users: [] }
+    ];
+    
+    return reactionTypes
+      .filter(r => r.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
   };
 
   const checkFollowing = async () => {
-    if (!channelId || !user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { data } = await supabase
-      .from('channel_followers')
-      .select('id')
-      .eq('channel_id', channelId)
-      .eq('user_id', user.id)
-      .single();
+      const { data } = await supabase
+        .from("channel_followers")
+        .select("id")
+        .eq("channel_id", channelId)
+        .eq("user_id", user.id)
+        .single();
 
-    setIsFollowing(!!data);
-  };
-
-  const checkAdmin = async () => {
-    if (!channelId || !user) return;
-
-    const { data: adminData } = await supabase
-      .from('channel_admins')
-      .select('id')
-      .eq('channel_id', channelId)
-      .eq('user_id', user.id)
-      .single();
-
-    const isCreator = channel?.created_by === user.id;
-    setIsAdmin(!!adminData || isCreator);
+      setIsFollowing(!!data);
+    } catch (error) {
+      console.error("Error checking following:", error);
+    }
   };
 
   const subscribeToMessages = () => {
-    if (!channelId) return;
-
     const channel = supabase
       .channel(`channel-messages-${channelId}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'channel_messages',
-          filter: `channel_id=eq.${channelId}`,
+          event: "*",
+          schema: "public",
+          table: "channel_messages",
+          filter: `channel_id=eq.${channelId}`
         },
-        (payload) => {
-          loadMessages();
+        () => {
+          fetchMessages();
         }
       )
       .subscribe();
@@ -148,174 +150,178 @@ export default function ChannelView() {
   };
 
   const toggleFollow = async () => {
-    if (!channelId || !user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (isFollowing) {
-      const { error } = await supabase
-        .from('channel_followers')
-        .delete()
-        .eq('channel_id', channelId)
-        .eq('user_id', user.id);
+      if (isFollowing) {
+        const { error } = await supabase
+          .from("channel_followers")
+          .delete()
+          .eq("channel_id", channelId)
+          .eq("user_id", user.id);
 
-      if (!error) {
+        if (error) throw error;
         setIsFollowing(false);
-        toast({ title: 'Deixou de seguir o canal' });
-      }
-    } else {
-      const { error } = await supabase
-        .from('channel_followers')
-        .insert({
-          channel_id: channelId,
-          user_id: user.id,
-        });
+        toast.success("Deixaste de seguir o canal");
+      } else {
+        const { error } = await supabase
+          .from("channel_followers")
+          .insert({
+            channel_id: channelId,
+            user_id: user.id
+          });
 
-      if (!error) {
+        if (error) throw error;
         setIsFollowing(true);
-        toast({ title: 'Seguindo o canal!' });
+        toast.success("A seguir o canal!");
       }
-    }
 
-    loadChannel();
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !channelId || !user || !isAdmin) return;
-
-    setSending(true);
-
-    const { error } = await supabase
-      .from('channel_messages')
-      .insert({
-        channel_id: channelId,
-        sender_id: user.id,
-        content: newMessage.trim(),
-        message_type: 'text',
-      });
-
-    setSending(false);
-
-    if (error) {
-      toast({
-        title: 'Erro ao enviar',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      setNewMessage('');
+      fetchChannel();
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
-  const handleMediaSelect = async (url: string, type: 'image' | 'video' | 'audio', duration?: number) => {
-    if (!channelId || !user || !isAdmin) return;
-
-    const { error } = await supabase
-      .from('channel_messages')
-      .insert({
-        channel_id: channelId,
-        sender_id: user.id,
-        content: type === 'audio' ? 'Mensagem de voz' : 'Mídia',
-        media_url: url,
-        message_type: type,
-        duration: duration || null,
-      });
-
-    if (error) {
-      toast({
-        title: 'Erro ao enviar mídia',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (!channel) return null;
+  if (!channel) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
 
   return (
-    <MainLayout title={channel.name}>
-      <div className="flex flex-col h-full">
-        {/* Channel Info */}
-        <div className="p-4 border-b space-y-3">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={channel.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                <Hash className="h-8 w-8" />
-              </AvatarFallback>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={channel.avatar_url || ""} />
+              <AvatarFallback>{channel.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h2 className="font-semibold text-lg">{channel.name}</h2>
+            <div>
+              <h1 className="font-semibold text-lg">{channel.name}</h1>
               <p className="text-sm text-muted-foreground">
-                {channel.follower_count.toLocaleString()} seguidores
+                Canal · {channel.follower_count.toLocaleString()} membro(s)
               </p>
             </div>
           </div>
-
-          {channel.description && (
-            <p className="text-sm">{channel.description}</p>
-          )}
-
-          <Button
-            onClick={toggleFollow}
-            variant={isFollowing ? 'secondary' : 'default'}
-            className="w-full"
-          >
-            {isFollowing ? 'A seguir' : 'Seguir'}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => navigate(`/channels/${channelId}/invites`)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 message-container">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
-              <div className="message-bubble">
-                <MessageBubble
-                  message={message}
-                  isSent={message.sender_id === user?.id}
-                  isGroupMessage="channel"
-                  contextType="channel"
-                  contextId={channelId || ''}
-                  onDeleteLocal={(id) =>
-                    setMessages((prev) => prev.filter((m) => m.id !== id))
-                  }
-                />
+      {/* Messages */}
+      <div className="p-4 space-y-4 pb-24">
+        {messages.map((message, index) => {
+          const showAvatar = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+          
+          return (
+            <div key={message.id} className="space-y-2">
+              <div className="flex gap-2">
+                {showAvatar ? (
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={message.sender.avatar_url || ""} />
+                    <AvatarFallback>
+                      {message.sender.first_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <div className="w-8 flex-shrink-0" />
+                )}
+                
+                <div className="flex-1 space-y-2">
+                  {showAvatar && (
+                    <p className="text-sm font-semibold text-foreground">
+                      {message.sender.first_name}
+                    </p>
+                  )}
+                  
+                  {message.media_url && (
+                    <img
+                      src={message.media_url}
+                      alt="Message media"
+                      className="rounded-xl max-w-md w-full"
+                    />
+                  )}
+                  
+                  {message.content && (
+                    <div className="bg-muted/60 rounded-2xl px-4 py-2.5 inline-block max-w-md">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Reactions */}
+                  {message.reactions && message.reactions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {message.reactions.map((reaction, idx) => (
+                        <button
+                          key={idx}
+                          className="flex items-center gap-1.5 bg-background border border-border hover:border-primary/50 rounded-full px-3 py-1.5 transition-all"
+                        >
+                          <span className="text-base">{reaction.emoji}</span>
+                          <span className="text-sm font-medium text-foreground">
+                            {reaction.count}
+                          </span>
+                        </button>
+                      ))}
+                      {message.reactions.length > 3 && (
+                        <button className="flex items-center justify-center h-8 w-8 bg-background border border-border hover:border-primary/50 rounded-full text-xs font-medium">
+                          +{message.reactions.length - 3}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(message.created_at).toLocaleString("pt-PT", {
+                      month: "short",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </p>
+                </div>
+
+                {/* Share Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input - Only for admins */}
-        {isAdmin && (
-          <div className="p-4 border-t">
-            <div className="flex items-center space-x-2">
-              <MediaPicker onMediaSelect={handleMediaSelect} />
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Escrever mensagem..."
-                disabled={sending}
-                className="flex-1 px-4 py-2 bg-secondary rounded-full focus:outline-none message-input"
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || sending}
-                size="icon"
-                className="rounded-full"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {!isFollowing && !isAdmin && (
-          <div className="p-4 bg-muted text-center text-sm">
-            Siga o canal para ver todas as mensagens
-          </div>
-        )}
+          );
+        })}
       </div>
-    </MainLayout>
+
+      {/* Bottom notice */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4">
+        <p className="text-sm text-center text-muted-foreground">
+          Só {channel.name} pode enviar mensagens. Podes reagir e votar em sondagens.
+        </p>
+      </div>
+    </div>
   );
 }

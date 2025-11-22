@@ -14,6 +14,14 @@ import TwoFactorVerification from "./pages/TwoFactorVerification";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
 import ChatSettings from "./pages/ChatSettings";
+import GroupChat from "./pages/GroupChat";
+import Groups from "./pages/Groups";
+import GroupSettings from "./pages/GroupSettings";
+import Channels from "./pages/Channels";
+import ChannelView from "./pages/ChannelView";
+import CreateChannel from "./pages/CreateChannel";
+import CreatePageProfile from "./pages/CreatePageProfile";
+import ChannelInvites from "./pages/ChannelInvites";
 import Stories from "./pages/Stories";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
@@ -149,6 +157,74 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <ChatSettings />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Groups Routes */}
+        <Route
+          path="/groups"
+          element={
+            <ProtectedRoute>
+              <Groups />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group/:groupId"
+          element={
+            <ProtectedRoute>
+              <GroupChat />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group/:groupId/settings"
+          element={
+            <ProtectedRoute>
+              <GroupSettings />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Channels Routes */}
+        <Route
+          path="/channels"
+          element={
+            <ProtectedRoute>
+              <Channels />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/channels/:channelId"
+          element={
+            <ProtectedRoute>
+              <ChannelView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/channels/:channelId/invites"
+          element={
+            <ProtectedRoute>
+              <ChannelInvites />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-channel"
+          element={
+            <ProtectedRoute>
+              <CreateChannel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-page-profile"
+          element={
+            <ProtectedRoute>
+              <CreatePageProfile />
             </ProtectedRoute>
           }
         />
