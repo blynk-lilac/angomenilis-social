@@ -65,23 +65,27 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-      <div className="space-y-2">
+    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
+      <div className="space-y-3">
         <Button
           variant="ghost"
           onClick={onBack}
-          className="mb-4"
+          className="mb-4 hover:scale-105 transition-transform duration-200"
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
           Voltar
         </Button>
-        <h2 className="text-2xl font-bold text-foreground">Seus dados</h2>
-        <p className="text-muted-foreground">Digite seu e-mail ou número e escolha um nome de usuário</p>
+        <h2 className="text-3xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
+          Seus dados
+        </h2>
+        <p className="text-lg text-muted-foreground animate-in slide-in-from-bottom-3 duration-500">
+          Digite seu e-mail ou número e escolha um nome de usuário
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             E-mail ou Número de Telefone
           </label>
           <Input
@@ -89,14 +93,14 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
             value={credential}
             onChange={(e) => setCredential(e.target.value)}
             placeholder="exemplo@email.com ou +244..."
-            className="h-14 text-lg rounded-2xl border-2"
+            className="h-14 text-lg rounded-2xl border-2 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
             required
             autoFocus
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             Nome de Usuário
           </label>
           <Input
@@ -104,17 +108,17 @@ export const AuthCredentials = ({ onNext, onBack }: AuthCredentialsProps) => {
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
             placeholder="seunome"
-            className="h-14 text-lg rounded-2xl border-2"
+            className="h-14 text-lg rounded-2xl border-2 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
             required
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-medium">
             Este será seu @{username || 'seunome'}
           </p>
         </div>
 
         <Button
           type="submit"
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-bottom-6 duration-500"
           disabled={!isValid}
         >
           Continuar

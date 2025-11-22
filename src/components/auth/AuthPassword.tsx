@@ -74,24 +74,28 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-      <div className="space-y-2">
+    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
+      <div className="space-y-3">
         <Button
           variant="ghost"
           onClick={onBack}
-          className="mb-4"
+          className="mb-4 hover:scale-105 transition-transform duration-200"
           disabled={loading}
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
           Voltar
         </Button>
-        <h2 className="text-2xl font-bold text-foreground">Crie uma senha</h2>
-        <p className="text-muted-foreground">Proteja sua conta com uma senha forte</p>
+        <h2 className="text-3xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
+          Crie uma senha
+        </h2>
+        <p className="text-lg text-muted-foreground animate-in slide-in-from-bottom-3 duration-500">
+          Proteja sua conta com uma senha forte
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             Senha
           </label>
           <div className="relative">
@@ -100,7 +104,7 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres, com letras e números"
-              className="h-14 text-lg rounded-2xl border-2 pr-12"
+              className="h-14 text-lg rounded-2xl border-2 pr-12 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
               required
               autoFocus
               minLength={6}
@@ -108,19 +112,19 @@ export const AuthPassword = ({ firstName, credential, username, onNext, onBack }
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-200"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-medium">
             A senha deve conter letras e números
           </p>
         </div>
 
         <Button
           type="submit"
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-bottom-5 duration-500"
           disabled={password.length < 6 || loading}
         >
           {loading ? 'Criando conta...' : 'Criar Conta'}

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,6 +23,16 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   const [loading, setLoading] = useState(false);
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [tempUserId, setTempUserId] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Carregar credenciais salvas ao montar
+  useEffect(() => {
+    const savedCredential = localStorage.getItem('blynk_saved_credential');
+    if (savedCredential) {
+      setCredential(savedCredential);
+      setRememberMe(true);
+    }
+  }, []);
 
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credential);
 
@@ -115,6 +126,12 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
         setTempUserId(data.user.id);
         setShowPhoneVerification(true);
       } else {
+        // Salvar credencial se "lembrar-me" estiver marcado
+        if (rememberMe) {
+          localStorage.setItem('blynk_saved_credential', credential.trim());
+        } else {
+          localStorage.removeItem('blynk_saved_credential');
+        }
         toast.success('Login realizado com sucesso!');
       }
     } catch (error) {
@@ -156,28 +173,39 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
   }
 
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
       <div className="space-y-4">
         <Button
           variant="ghost"
           onClick={onBack}
-          className="mb-4"
+          className="mb-4 hover:scale-105 transition-transform duration-200"
           disabled={loading}
         >
           <ArrowLeft className="mr-2 h-5 w-5" />
           Voltar
         </Button>
         
-        <div className="text-center space-y-2">
-          <img src={logo} alt="Blynk" className="h-16 w-16 mx-auto rounded-full" />
-          <h2 className="text-3xl font-bold text-foreground">Bem-vindo de volta!</h2>
-          <p className="text-muted-foreground">Entre no Blynk</p>
+        <div className="text-center space-y-3">
+          <div className="relative inline-block">
+            <img 
+              src={logo} 
+              alt="Blynk" 
+              className="h-20 w-20 mx-auto rounded-full shadow-lg ring-4 ring-primary/20 animate-in zoom-in duration-500" 
+            />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent animate-pulse" />
+          </div>
+          <h2 className="text-4xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
+            Bem-vindo de volta!
+          </h2>
+          <p className="text-lg text-muted-foreground animate-in slide-in-from-bottom-3 duration-500">
+            Entre no Blynk
+          </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             E-mail ou Telefone
           </label>
           <Input
@@ -185,14 +213,14 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
             value={credential}
             onChange={(e) => setCredential(e.target.value)}
             placeholder="exemplo@email.com ou +244..."
-            className="h-14 text-lg rounded-2xl border-2"
+            className="h-14 text-lg rounded-2xl border-2 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
             required
             autoFocus
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-500">
+          <label className="text-sm font-semibold text-foreground">
             Senha
           </label>
           <div className="relative">
@@ -201,38 +229,55 @@ export const AuthLogin = ({ onBack, onForgotPassword }: AuthLoginProps) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Digite sua senha"
-              className="h-14 text-lg rounded-2xl border-2 pr-12"
+              className="h-14 text-lg rounded-2xl border-2 pr-12 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
               required
               minLength={6}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-200"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="link"
-          className="w-full text-primary"
-          onClick={() => {
-            if (credential && isEmail) {
-              onForgotPassword(credential);
-            } else {
-              toast.error('Digite um e-mail válido primeiro');
-            }
-          }}
-        >
-          Esqueci minha senha
-        </Button>
+        <div className="flex items-center justify-between animate-in slide-in-from-bottom-6 duration-500">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="remember" 
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              className="transition-all duration-200 hover:scale-110"
+            />
+            <label
+              htmlFor="remember"
+              className="text-sm font-medium text-foreground cursor-pointer select-none hover:text-primary transition-colors"
+            >
+              Lembrar-me
+            </label>
+          </div>
+          
+          <Button
+            type="button"
+            variant="link"
+            className="text-primary hover:underline p-0 h-auto font-medium"
+            onClick={() => {
+              if (credential && isEmail) {
+                onForgotPassword(credential);
+              } else {
+                toast.error('Digite um e-mail válido primeiro');
+              }
+            }}
+          >
+            Esqueci minha senha
+          </Button>
+        </div>
 
         <Button
           type="submit"
-          className="w-full h-14 text-lg rounded-2xl"
+          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-bottom-7 duration-500"
           disabled={!credential || password.length < 6 || loading}
         >
           {loading ? 'Entrando...' : 'Entrar'}
