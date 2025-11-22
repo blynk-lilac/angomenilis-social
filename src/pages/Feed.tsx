@@ -23,6 +23,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
+import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 
 interface LiveStream {
   id: string;
@@ -70,6 +71,8 @@ export default function Feed() {
   const [loading, setLoading] = useState(true);
   const [sponsoredAds, setSponsoredAds] = useState<any[]>([]);
   const [adLikes, setAdLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({});
+  const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -306,10 +309,18 @@ export default function Feed() {
       return url.includes(".mp4") || url.includes(".webm") || url.includes(".mov");
     };
 
+    const handleImageClick = (index: number) => {
+      setGalleryImages(mediaUrls);
+      setGalleryIndex(index);
+    };
+
     if (mediaUrls.length === 1) {
       const url = mediaUrls[0];
       return (
-        <div className="w-full">
+        <div 
+          className="w-full cursor-pointer" 
+          onClick={() => !isVideo(url) && handleImageClick(0)}
+        >
           {isVideo(url) ? (
             <video 
               src={url} 
@@ -331,9 +342,13 @@ export default function Feed() {
       return (
         <div className="grid grid-cols-2 gap-0.5">
           {mediaUrls.map((url, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden">
+            <div 
+              key={idx} 
+              className="aspect-square overflow-hidden cursor-pointer"
+              onClick={() => handleImageClick(idx)}
+            >
               {isVideo(url) ? (
-                <video src={url} controls className="w-full h-full object-cover" />
+                <video src={url} className="w-full h-full object-cover" />
               ) : (
                 <img src={url} alt="Post" className="w-full h-full object-cover" />
               )}
@@ -346,17 +361,24 @@ export default function Feed() {
     if (mediaUrls.length === 3) {
       return (
         <div className="grid grid-cols-2 gap-0.5">
-          <div className="row-span-2">
+          <div 
+            className="row-span-2 cursor-pointer"
+            onClick={() => handleImageClick(0)}
+          >
             {isVideo(mediaUrls[0]) ? (
-              <video src={mediaUrls[0]} controls className="w-full h-full object-cover" />
+              <video src={mediaUrls[0]} className="w-full h-full object-cover" />
             ) : (
               <img src={mediaUrls[0]} alt="Post" className="w-full h-full object-cover" />
             )}
           </div>
           {mediaUrls.slice(1).map((url, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden">
+            <div 
+              key={idx} 
+              className="aspect-square overflow-hidden cursor-pointer"
+              onClick={() => handleImageClick(idx + 1)}
+            >
               {isVideo(url) ? (
-                <video src={url} controls className="w-full h-full object-cover" />
+                <video src={url} className="w-full h-full object-cover" />
               ) : (
                 <img src={url} alt="Post" className="w-full h-full object-cover" />
               )}
@@ -370,9 +392,13 @@ export default function Feed() {
       return (
         <div className="grid grid-cols-2 gap-0.5">
           {mediaUrls.map((url, idx) => (
-            <div key={idx} className="aspect-square overflow-hidden">
+            <div 
+              key={idx} 
+              className="aspect-square overflow-hidden cursor-pointer"
+              onClick={() => handleImageClick(idx)}
+            >
               {isVideo(url) ? (
-                <video src={url} controls className="w-full h-full object-cover" />
+                <video src={url} className="w-full h-full object-cover" />
               ) : (
                 <img src={url} alt="Post" className="w-full h-full object-cover" />
               )}
@@ -383,55 +409,40 @@ export default function Feed() {
     }
 
     if (mediaUrls.length >= 5) {
-      const displayMedia = mediaUrls.slice(0, 5);
-      const count = mediaUrls.length;
       return (
-        <div className="grid grid-cols-3 gap-0.5">
-          <div className="col-span-2 row-span-2">
-            {isVideo(displayMedia[0]) ? (
-              <video src={displayMedia[0]} controls className="w-full h-full object-cover" />
+        <div className="grid grid-cols-2 gap-0.5">
+          <div 
+            className="col-span-2 aspect-video cursor-pointer"
+            onClick={() => handleImageClick(0)}
+          >
+            {isVideo(mediaUrls[0]) ? (
+              <video src={mediaUrls[0]} className="w-full h-full object-cover" />
             ) : (
-              <img src={displayMedia[0]} alt="Post" className="w-full h-full object-cover" />
+              <img src={mediaUrls[0]} alt="Post" className="w-full h-full object-cover" />
             )}
           </div>
-          <div className="space-y-0.5">
-            {displayMedia.slice(1, 3).map((url, idx) => {
-              const isLast = idx === 1 && count > 5;
-              return (
-                <div key={idx} className="aspect-square overflow-hidden relative">
-                  {isVideo(url) ? (
-                    <video src={url} controls className="w-full h-full object-cover" />
-                  ) : (
-                    <img src={url} alt="Post" className="w-full h-full object-cover" />
-                  )}
-                  {isLast && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="text-white text-2xl font-bold">+{count - 5}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="col-span-3 grid grid-cols-2 gap-0.5">
-            {displayMedia.slice(3).map((url, idx) => {
-              const isLast = idx === displayMedia.slice(3).length - 1 && count > 5;
-              return (
-                <div key={idx} className="aspect-square overflow-hidden relative">
-                  {isVideo(url) ? (
-                    <video src={url} controls className="w-full h-[150px] object-cover" />
-                  ) : (
-                    <img src={url} alt="Post" className="w-full h-[150px] object-cover" />
-                  )}
-                  {isLast && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="text-white text-2xl font-bold">+{count - 5}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {mediaUrls.slice(1, 5).map((url, idx) => {
+            const actualIdx = idx + 1;
+            const isLast = actualIdx === 4 && mediaUrls.length > 5;
+            return (
+              <div 
+                key={idx} 
+                className="aspect-square overflow-hidden relative cursor-pointer"
+                onClick={() => handleImageClick(actualIdx)}
+              >
+                {isVideo(url) ? (
+                  <video src={url} className="w-full h-full object-cover" />
+                ) : (
+                  <img src={url} alt="Post" className="w-full h-full object-cover" />
+                )}
+                {isLast && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                    <span className="text-white text-3xl font-bold">+{mediaUrls.length - 5}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -704,6 +715,15 @@ export default function Feed() {
 
         {/* Create Story Dialog */}
         <CreateStory open={createStoryOpen} onOpenChange={setCreateStoryOpen} />
+        
+        {/* Image Gallery Viewer */}
+        {galleryImages && (
+          <ImageGalleryViewer
+            images={galleryImages}
+            initialIndex={galleryIndex}
+            onClose={() => setGalleryImages(null)}
+          />
+        )}
         
         {/* Bottom Navigation */}
         <BottomNav />
