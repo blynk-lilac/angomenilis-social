@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import nuvexLogo from "@/assets/nuvex-logo.png";
+import { useAdBoost } from "@/hooks/useAdBoost";
 
 interface SponsoredAdProps {
   ad: {
@@ -25,6 +26,40 @@ interface SponsoredAdProps {
 export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProps) => {
   const [liked, setLiked] = useState(isLiked);
   const [likes, setLikes] = useState(likesCount);
+
+  // Ativar boost automático de likes
+  useAdBoost(ad.id, true);
+
+  // Atualizar contador de likes em tempo real
+  useEffect(() => {
+    const channel = supabase
+      .channel(`ad-likes-${ad.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ad_likes',
+          filter: `ad_id=eq.${ad.id}`,
+        },
+        async () => {
+          // Buscar contador atualizado
+          const { data, error } = await supabase
+            .from('ad_likes')
+            .select('id')
+            .eq('ad_id', ad.id);
+          
+          if (!error && data) {
+            setLikes(data.length);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ad.id]);
 
   const handleLike = async () => {
     if (!userId) {

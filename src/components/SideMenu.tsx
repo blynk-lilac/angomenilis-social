@@ -82,6 +82,12 @@ export default function SideMenu() {
       ]
     },
     {
+      title: "Profissional",
+      items: [
+        { icon: FileText, label: "Criar Anúncio", path: "/create-ad", bgColor: "bg-orange-100 dark:bg-orange-900/20" },
+      ]
+    },
+    {
       title: "Pessoal",
       items: [
         { icon: Bookmark, label: "Guardados", path: "/saved", bgColor: "bg-purple-100 dark:bg-purple-900/20" },
