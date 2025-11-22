@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Plus, Settings } from 'lucide-react';
+import { Search, Plus, Settings, UserPlus } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { toast } from 'sonner';
 import { MessagesSkeleton } from '@/components/loading/MessagesSkeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Friend {
   id: string;
@@ -48,6 +50,8 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [channels, setChannels] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("chats");
 
   useEffect(() => {
     if (user) {
@@ -56,7 +60,7 @@ export default function Messages() {
   }, [user]);
 
   const loadData = async () => {
-    await Promise.all([loadProfile(), loadFriends(), loadStories()]);
+    await Promise.all([loadProfile(), loadFriends(), loadStories(), loadChannels()]);
     setLoading(false);
   };
 
@@ -69,6 +73,20 @@ export default function Messages() {
       .single();
     
     if (data) setMyProfile(data);
+  };
+
+  const loadChannels = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('channels')
+      .select(`
+        *,
+        channel_followers!inner(user_id),
+        profiles:created_by(username, avatar_url)
+      `)
+      .eq('channel_followers.user_id', user.id);
+    
+    if (data) setChannels(data);
   };
 
   const loadStories = async () => {
@@ -193,7 +211,6 @@ export default function Messages() {
     friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group stories by user
   const groupedStories = Object.values(
     stories.reduce((acc: Record<string, Story[]>, story) => {
       if (!acc[story.user_id]) acc[story.user_id] = [];
@@ -212,166 +229,225 @@ export default function Messages() {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card border-b border-border safe-area-top">
-        <div className="flex items-center justify-between h-16 px-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 cursor-pointer hover-scale" onClick={() => navigate('/profile')}>
-              <AvatarImage src={myProfile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                {myProfile?.first_name?.[0] || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <h1 className="text-2xl font-bold">Chats</h1>
+        <div className="flex items-center justify-between h-14 px-4">
+          <h1 className="text-2xl font-bold">Mensagens</h1>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+            >
+              <Settings className="h-6 w-6" />
+            </button>
+            <button 
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+            >
+              <Search className="h-6 w-6" />
+            </button>
           </div>
-          <button 
-            onClick={() => navigate('/profile')}
-            className="p-2 hover:bg-muted rounded-full transition-colors"
-          >
-            <Settings className="h-6 w-6" />
-          </button>
         </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent h-12 px-4 gap-6">
+            <TabsTrigger 
+              value="chats" 
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3"
+            >
+              Chats
+            </TabsTrigger>
+            <TabsTrigger 
+              value="canais" 
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3"
+            >
+              Canais
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </header>
 
-      {/* Search Bar */}
-      <div className="px-4 pt-3 pb-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-muted/50 border-none rounded-full h-11"
-          />
-        </div>
-      </div>
-
-      {/* Stories */}
-      <div className="px-4 py-3 border-b border-border">
-        <ScrollArea className="w-full">
-          <div className="flex gap-3 pb-2">
-            {/* Your Story */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0">
-              <label htmlFor="story-upload" className="cursor-pointer">
-                <div className="relative">
-                  <Avatar className="h-16 w-16 border-2 border-muted">
-                    <AvatarImage src={myProfile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-muted">
-                      {myProfile?.first_name?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute bottom-0 right-0 h-6 w-6 bg-primary rounded-full flex items-center justify-center border-2 border-card">
-                    <Plus className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-                <p className="text-xs text-center mt-1 w-16 truncate font-medium">Your Story</p>
-              </label>
-              <Input
-                id="story-upload"
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleStoryUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-            </div>
-
-            {/* Friends Stories */}
-            {groupedStories.filter(stories => stories[0].user_id !== user?.id).map((userStories) => {
-              const story = userStories[0];
-              return (
-                <div
-                  key={story.user_id}
-                  onClick={() => navigate('/stories')}
-                  className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer hover-scale"
-                >
-                  <div className="relative">
-                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-accent to-primary">
-                      <Avatar className="h-16 w-16 border-[3px] border-card">
-                        <AvatarImage src={story.profile.avatar_url || undefined} />
+      <Tabs value={activeTab} className="flex-1 flex flex-col">
+        {/* Chats Tab */}
+        <TabsContent value="chats" className="flex-1 mt-0 flex flex-col">
+          {/* Stories */}
+          <div className="px-4 py-3 border-b border-border">
+            <ScrollArea className="w-full">
+              <div className="flex gap-3 pb-2">
+                {/* Your Story */}
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <label htmlFor="story-upload" className="cursor-pointer">
+                    <div className="relative">
+                      <Avatar className="h-16 w-16 border-2 border-muted">
+                        <AvatarImage src={myProfile?.avatar_url || undefined} />
                         <AvatarFallback className="bg-muted">
-                          {story.profile.first_name[0]}
+                          {myProfile?.first_name?.[0] || 'U'}
                         </AvatarFallback>
                       </Avatar>
+                      <div className="absolute bottom-0 right-0 h-6 w-6 bg-primary rounded-full flex items-center justify-center border-2 border-card">
+                        <Plus className="h-4 w-4 text-white" />
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-center mt-1 w-16 truncate font-medium">
-                    {story.profile.first_name}
-                  </p>
+                    <p className="text-xs text-center mt-1 w-16 truncate font-medium">A tua nota</p>
+                  </label>
+                  <Input
+                    id="story-upload"
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleStoryUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-      </div>
 
-      {/* Conversations */}
-      <ScrollArea className="flex-1 pb-16">
-        {filteredFriends.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
-            <p className="text-muted-foreground mb-2">
-              Nenhuma conversa
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Adicione amigos para começar a conversar
-            </p>
-          </div>
-        ) : (
-          <div>
-            {filteredFriends.map((friend) => {
-              const isUnread = friend.lastMessage && 
-                             !friend.lastMessage.read && 
-                             friend.lastMessage.sender_id === friend.id;
-              
-              return (
-                <button
-                  key={friend.id}
-                  onClick={() => navigate(`/chat/${friend.id}`)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors active:bg-muted"
-                >
-                  <div className="relative">
-                    <Avatar className="h-14 w-14">
-                      <AvatarImage src={friend.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
-                        {friend.first_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    {/* Online indicator - você pode adicionar lógica real aqui */}
-                    <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-[3px] border-card" />
-                  </div>
-                  
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className={`font-semibold truncate ${isUnread ? 'text-foreground' : 'text-foreground'}`}>
-                        {friend.first_name}
+                {/* Friends Stories */}
+                {groupedStories.filter(stories => stories[0].user_id !== user?.id).map((userStories) => {
+                  const story = userStories[0];
+                  return (
+                    <div
+                      key={story.user_id}
+                      onClick={() => navigate('/stories')}
+                      className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer hover-scale"
+                    >
+                      <div className="relative">
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-accent to-primary">
+                          <Avatar className="h-16 w-16 border-[3px] border-card">
+                            <AvatarImage src={story.profile.avatar_url || undefined} />
+                            <AvatarFallback className="bg-muted">
+                              {story.profile.first_name[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                      <p className="text-xs text-center mt-1 w-16 truncate font-medium">
+                        {story.profile.first_name}
                       </p>
-                      {friend.lastMessage && (
-                        <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                          {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
-                            locale: ptBR,
-                            addSuffix: false
-                          }).replace('cerca de ', '').replace('aproximadamente ', '')}
-                        </span>
-                      )}
                     </div>
-                    {friend.lastMessage && (
-                      <div className="flex items-center gap-2">
-                        <p className={`text-sm truncate flex-1 ${isUnread ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                          {friend.lastMessage.content}
-                        </p>
-                        {friend.unreadCount > 0 && (
-                          <div className="min-w-[20px] h-5 px-1.5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {friend.unreadCount > 15 ? '15+' : friend.unreadCount}
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Conversations */}
+          <ScrollArea className="flex-1">
+            {filteredFriends.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
+                <p className="text-muted-foreground mb-2">
+                  Nenhuma conversa
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Adicione amigos para começar a conversar
+                </p>
+              </div>
+            ) : (
+              <div>
+                {filteredFriends.map((friend) => {
+                  const isUnread = friend.lastMessage && 
+                                 !friend.lastMessage.read && 
+                                 friend.lastMessage.sender_id === friend.id;
+                  
+                  return (
+                    <button
+                      key={friend.id}
+                      onClick={() => navigate(`/chat/${friend.id}`)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors active:bg-muted"
+                    >
+                      <div className="relative">
+                        <Avatar className="h-14 w-14">
+                          <AvatarImage src={friend.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                            {friend.first_name[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-[3px] border-card" />
+                      </div>
+                      
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className={`font-semibold truncate ${isUnread ? 'text-foreground' : 'text-foreground'}`}>
+                            {friend.first_name}
+                          </p>
+                          {friend.lastMessage && (
+                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                              {formatDistanceToNow(new Date(friend.lastMessage.created_at), {
+                                locale: ptBR,
+                                addSuffix: false
+                              }).replace('cerca de ', '').replace('aproximadamente ', '')}
+                            </span>
+                          )}
+                        </div>
+                        {friend.lastMessage && (
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm truncate flex-1 ${isUnread ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                              {friend.lastMessage.content}
+                            </p>
+                            {friend.unreadCount > 0 && (
+                              <div className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                {friend.unreadCount > 15 ? '15+' : friend.unreadCount}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </ScrollArea>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Canais Tab */}
+        <TabsContent value="canais" className="flex-1 mt-0 flex flex-col">
+          <ScrollArea className="flex-1">
+            {channels.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
+                <p className="text-muted-foreground mb-2">
+                  Nenhum canal
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Entre num canal para começar a receber atualizações
+                </p>
+                <Button onClick={() => navigate('/channels')} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Explorar Canais
+                </Button>
+              </div>
+            ) : (
+              <div>
+                {channels.map((channel) => (
+                  <button
+                    key={channel.id}
+                    onClick={() => navigate(`/channel/${channel.id}`)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors active:bg-muted"
+                  >
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage src={channel.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                        {channel.name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-semibold truncate">{channel.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        Canal · {channel.follower_count || 0} membro(s)
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+
+      {/* FAB - Floating Action Button */}
+      <button
+        onClick={() => navigate(activeTab === 'chats' ? '/groups/new' : '/channels/create')}
+        className="fixed bottom-20 right-6 h-14 w-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center z-20 transition-transform hover:scale-110 active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       <BottomNav />
     </div>
