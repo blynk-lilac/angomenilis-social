@@ -3,19 +3,11 @@ import { Link } from "react-router-dom";
 export const parseTextWithLinksAndMentions = (text: string) => {
   if (!text) return null;
 
-  // Regex para detectar URLs, hashtags e menções
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const hashtagRegex = /#([a-zA-Z0-9_\u00C0-\u017F]+)/g;
-  const mentionRegex = /@([a-zA-Z0-9_]+)/g;
-
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
 
   // Combina todos os padrões em um único regex
-  const combinedRegex = new RegExp(
-    `(${urlRegex.source}|${hashtagRegex.source}|${mentionRegex.source})`,
-    'g'
-  );
+  const combinedRegex = /(https?:\/\/[^\s]+)|(#[a-zA-Z0-9_\u00C0-\u017F]+)|(@[a-zA-Z0-9_]+)/g;
 
   let match;
   while ((match = combinedRegex.exec(text)) !== null) {
@@ -37,30 +29,33 @@ export const parseTextWithLinksAndMentions = (text: string) => {
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
         >
           {matchedText}
         </a>
       );
     } else if (matchedText.startsWith('#')) {
       // Hashtag
-      const hashtag = matchedText.slice(1);
+      const hashtag = matchedText.slice(1).toLowerCase();
       parts.push(
         <Link
           key={matchIndex}
           to={`/hashtag/${hashtag}`}
           className="text-primary font-semibold hover:underline"
+          onClick={(e) => e.stopPropagation()}
         >
           {matchedText}
         </Link>
       );
     } else if (matchedText.startsWith('@')) {
       // Menção
-      const username = matchedText.slice(1);
+      const username = matchedText.slice(1).toLowerCase();
       parts.push(
         <Link
           key={matchIndex}
-          to={`/profile/${username}`}
+          to={`/perfil/${username}`}
           className="text-primary font-semibold hover:underline"
+          onClick={(e) => e.stopPropagation()}
         >
           {matchedText}
         </Link>
