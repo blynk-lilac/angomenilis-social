@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_likes: {
+        Row: {
+          ad_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_likes_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "sponsored_ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_accounts: {
         Row: {
           blocked_by: string | null
@@ -1355,6 +1384,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sponsored_ads: {
+        Row: {
+          company_logo: string
+          company_name: string
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          link_description: string | null
+          link_image: string | null
+          link_title: string | null
+          link_url: string
+        }
+        Insert: {
+          company_logo: string
+          company_name: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_description?: string | null
+          link_image?: string | null
+          link_title?: string | null
+          link_url: string
+        }
+        Update: {
+          company_logo?: string
+          company_name?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_description?: string | null
+          link_image?: string | null
+          link_title?: string | null
+          link_url?: string
+        }
+        Relationships: []
       }
       stories: {
         Row: {

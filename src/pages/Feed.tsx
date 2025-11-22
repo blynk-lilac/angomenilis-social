@@ -22,6 +22,7 @@ import PostMenu from "@/components/PostMenu";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
+import { SponsoredAd } from "@/components/SponsoredAd";
 
 interface LiveStream {
   id: string;
@@ -67,6 +68,8 @@ export default function Feed() {
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sponsoredAds, setSponsoredAds] = useState<any[]>([]);
+  const [adLikes, setAdLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({});
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -77,7 +80,7 @@ export default function Feed() {
     };
     const loadData = async () => {
       await loadUser();
-      await Promise.all([loadPosts(), loadLiveStreams()]);
+      await Promise.all([loadPosts(), loadLiveStreams(), loadSponsoredAds()]);
       setLoading(false);
     };
     loadData();
@@ -176,6 +179,36 @@ export default function Feed() {
     }
 
     setLiveStreams(data || []);
+  };
+
+  const loadSponsoredAds = async () => {
+    const { data: ads, error } = await supabase
+      .from("sponsored_ads")
+      .select("*")
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("Erro ao carregar anúncios:", error);
+      return;
+    }
+
+    setSponsoredAds(ads || []);
+
+    // Buscar curtidas dos anúncios
+    if (ads && ads.length > 0 && currentUserId) {
+      const adIds = ads.map(ad => ad.id);
+      const { data: likesData } = await supabase
+        .from("ad_likes")
+        .select("ad_id, user_id");
+
+      const likesMap: Record<string, { count: number; isLiked: boolean }> = {};
+      ads.forEach(ad => {
+        const adLikesCount = likesData?.filter(l => l.ad_id === ad.id).length || 0;
+        const userLiked = likesData?.some(l => l.ad_id === ad.id && l.user_id === currentUserId) || false;
+        likesMap[ad.id] = { count: adLikesCount, isLiked: userLiked };
+      });
+      setAdLikes(likesMap);
+    }
   };
 
   const handleLike = async (postId: string, reaction?: string) => {
@@ -473,194 +506,26 @@ export default function Feed() {
                 </p>
               </div>
             ) : (
-              posts.map((post) => (
-                <Card key={post.id} className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
-                {/* Header do Post */}
-                <div className="p-4 pb-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar 
-                      className="h-11 w-11 ring-2 ring-border hover:ring-primary/30 transition-all cursor-pointer"
-                      onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                    >
-                      <AvatarImage src={post.profiles?.avatar_url} />
-                      <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
-                        {post.profiles?.username?.[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+              <>
+                {posts.map((post, index) => (
+                  <div key={`post-${post.id}`}>
+                    <Card className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
+...
+                    </Card>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span 
-                          className="font-semibold text-[15px] truncate text-foreground cursor-pointer hover:underline"
-                          onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                        >
-                          {post.profiles?.full_name || post.profiles?.username}
-                        </span>
-                        {post.profiles?.verified && (
-                          <VerificationBadge 
-                            verified={post.profiles?.verified}
-                            badgeType={post.profiles?.badge_type} 
-                            className="w-4 h-4 flex-shrink-0" 
-                          />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                        <span>
-                          {formatDistanceToNow(new Date(post.created_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </span>
-                        <span>•</span>
-                        <Globe className="h-3 w-3" />
-                      </div>
-                    </div>
-
-                    <PostMenu
-                      postId={post.id}
-                      postUserId={post.user_id}
-                      currentUserId={currentUserId}
-                      onUpdate={loadPosts}
-                    />
-                  </div>
-
-                  {/* Conteúdo do Post */}
-                  {post.content && (
-                    <div className="mt-3 text-[15px] text-foreground break-words whitespace-pre-wrap leading-relaxed">
-                      {parseTextWithLinksAndMentions(post.content)}
-                    </div>
-                  )}
-                </div>
-
-                {/* Mídia - Grid Layout Estilo Facebook */}
-                {post.media_urls && post.media_urls.length > 0 && renderMediaGrid(post.media_urls)}
-                
-                {post.image_url && !post.media_urls && (
-                  <div className="w-full bg-black/5">
-                    <img 
-                      src={post.image_url} 
-                      alt="Post" 
-                      className="w-full max-h-[600px] object-cover"
-                    />
-                  </div>
-                )}
-
-                {post.video_url && !post.media_urls && (
-                  <div className="w-full bg-black/5">
-                    <video 
-                      src={post.video_url} 
-                      controls 
-                      className="w-full max-h-[600px] object-contain"
-                    />
-                  </div>
-                )}
-
-                {/* Estatísticas e Ações */}
-                <div className="px-4 pb-3">
-                  {/* Contadores */}
-                  <div className="flex items-center justify-between py-2.5 text-[13px] text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      {post.post_reactions && post.post_reactions.length > 0 && (
-                        <>
-                          <div className="flex items-center -space-x-1">
-                            {Array.from(new Set(post.post_reactions.map((r: any) => r.reaction_type)))
-                              .slice(0, 3)
-                              .map((type: string) => {
-                                const reaction = reactions.find(r => r.type === type);
-                                return reaction ? (
-                                  <div 
-                                    key={type}
-                                    className="w-5 h-5 rounded-full border-2 border-card bg-card overflow-hidden"
-                                  >
-                                    <img 
-                                      src={reaction.icon} 
-                                      alt={type} 
-                                      className="w-full h-full"
-                                    />
-                                  </div>
-                                ) : null;
-                              })}
-                          </div>
-                          <span className="hover:underline cursor-pointer font-medium">
-                            {post.post_reactions.length}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {post.comments && post.comments.length > 0 && (
-                        <button
-                          onClick={() => navigate(`/comments/${post.id}`)}
-                          className="hover:underline font-medium"
-                        >
-                          {post.comments.length} {post.comments.length === 1 ? 'comentário' : 'comentários'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator className="mb-2" />
-
-                  {/* Botões de Ação */}
-                  <div className="flex items-center justify-around gap-1">
-                    <div className="flex-1 relative">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
-                        onClick={() => handleLike(post.id)}
-                        onMouseDown={() => handlePressStart(post.id)}
-                        onMouseUp={handlePressEnd}
-                        onMouseLeave={handlePressEnd}
-                        onTouchStart={() => handlePressStart(post.id)}
-                        onTouchEnd={handlePressEnd}
-                      >
-                        {post.post_reactions?.find((r: any) => r.user_id === currentUserId) ? (
-                          <>
-                            <img 
-                              src={reactions.find(r => r.type === post.post_reactions.find((re: any) => re.user_id === currentUserId)?.reaction_type)?.icon}
-                              alt="reaction"
-                              className="h-[18px] w-[18px]"
-                            />
-                            <span className="text-[15px] text-primary">
-                              {reactions.find(r => r.type === post.post_reactions.find((re: any) => re.user_id === currentUserId)?.reaction_type)?.label}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Heart className="h-[18px] w-[18px] text-muted-foreground" />
-                            <span className="text-[15px] text-muted-foreground">Gosto</span>
-                          </>
-                        )}
-                      </Button>
-                      <ReactionPicker 
-                        show={showReactions === post.id}
-                        onSelect={(reaction) => handleLike(post.id, reaction)}
-                        onClose={() => setShowReactions(null)}
+                    {/* Inserir anúncio após o terceiro post */}
+                    {index === 2 && sponsoredAds.length > 0 && sponsoredAds.map(ad => (
+                      <SponsoredAd
+                        key={ad.id}
+                        ad={ad}
+                        likesCount={adLikes[ad.id]?.count || 0}
+                        isLiked={adLikes[ad.id]?.isLiked || false}
+                        userId={currentUserId}
                       />
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
-                      onClick={() => navigate(`/comments/${post.id}`)}
-                    >
-                      <MessageSquare className="h-[18px] w-[18px] text-muted-foreground" />
-                      <span className="text-[15px] text-muted-foreground">Comentar</span>
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex-1 gap-2 hover:bg-primary/5 rounded-lg h-10 font-semibold transition-colors"
-                      onClick={() => handleRepost(post.id)}
-                    >
-                      <Share2 className="h-[18px] w-[18px] text-muted-foreground" />
-                      <span className="text-[15px] text-muted-foreground">Partilhar</span>
-                    </Button>
+                    ))}
                   </div>
-                </div>
-              </Card>
-            ))
+                ))}
+              </>
             )}
           </div>
         </div>
