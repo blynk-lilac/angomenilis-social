@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 import logo from '@/assets/blynk-logo.jpg';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface AuthFirstNameProps {
   onNext: (firstName: string) => void;
+  onBack?: () => void;
 }
 
-export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
+export const AuthFirstName = ({ onNext, onBack }: AuthFirstNameProps) => {
   const [firstName, setFirstName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +37,16 @@ export const AuthFirstName = ({ onNext }: AuthFirstNameProps) => {
   return (
     <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="text-center space-y-4">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="absolute top-4 left-4 hover:bg-accent transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
         <div className="relative inline-block">
           <img 
             src={logo} 

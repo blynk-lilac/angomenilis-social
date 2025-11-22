@@ -18,7 +18,7 @@ type SignupStep = 'firstName' | 'credentials' | 'phoneVerification' | 'password'
 export default function Auth() {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [mode, setMode] = useState<AuthMode>('selection');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [signupStep, setSignupStep] = useState<SignupStep>('firstName');
   const [resetEmail, setResetEmail] = useState('');
   const [formData, setFormData] = useState({
@@ -28,9 +28,11 @@ export default function Auth() {
     username: '',
   });
 
-  // Se vier com email pré-preenchido, ir direto para login
+  // Detectar se deve ir para login ou signup
   useEffect(() => {
-    if (location.state?.prefilledEmail) {
+    if (location.state?.mode === 'signup') {
+      setMode('signup');
+    } else {
       setMode('login');
     }
   }, [location]);
@@ -49,19 +51,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      {/* Mode Selection */}
-      {mode === 'selection' && (
-        <AuthMode onSelectMode={(selectedMode) => setMode(selectedMode)} />
-      )}
-
       {/* Login Flow */}
       {mode === 'login' && (
         <AuthLogin
-          onBack={() => setMode('selection')}
+          onBack={() => window.history.back()}
           onForgotPassword={(email) => {
             setResetEmail(email);
             setMode('forgotPassword');
           }}
+          onSwitchToSignup={() => setMode('signup')}
         />
       )}
 
@@ -89,11 +87,11 @@ export default function Auth() {
             Clique no link recebido no e-mail para criar uma nova senha
           </p>
           <Button
-            variant="outline"
-            className="w-full h-14 text-lg rounded-2xl"
+            variant="link"
             onClick={() => setMode('login')}
+            className="text-foreground hover:text-primary"
           >
-            Voltar para Login
+            Já tem conta? <span className="font-semibold ml-1">Entrar</span>
           </Button>
         </div>
       )}
@@ -107,6 +105,7 @@ export default function Auth() {
                 updateFormData({ firstName });
                 setSignupStep('credentials');
               }}
+              onBack={() => window.history.back()}
             />
           )}
           

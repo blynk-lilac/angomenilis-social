@@ -93,6 +93,14 @@ export default function SavedAccounts() {
               >
                 Entrar em uma conta
               </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
+                className="w-full h-14 text-lg rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-2"
+              >
+                Criar conta nova
+              </Button>
             </div>
           ) : (
             <>
@@ -143,7 +151,7 @@ export default function SavedAccounts() {
         <div className="text-center">
           <Button
             variant="link"
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/auth', { state: { mode: 'signup' } })}
             className="text-primary"
           >
             Criar conta nova
