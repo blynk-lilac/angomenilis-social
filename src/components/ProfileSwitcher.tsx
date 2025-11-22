@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, Plus, Check } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface PageProfile {
   id: string;
@@ -100,8 +101,8 @@ export default function ProfileSwitcher() {
   const current = getCurrentProfile();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+    <Sheet>
+      <SheetTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
         <span className="font-semibold text-foreground text-lg">
           {current.name}
         </span>
@@ -111,87 +112,104 @@ export default function ProfileSwitcher() {
           </Badge>
         )}
         <ChevronDown className="h-5 w-5 text-foreground" />
-      </DropdownMenuTrigger>
+      </SheetTrigger>
       
-      <DropdownMenuContent align="start" className="w-[400px] p-4">
-        {/* Perfil Principal */}
-        {mainProfile && (
-          <div
-            onClick={() => handleSelectProfile(mainProfile.id)}
-            className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl cursor-pointer transition-colors mb-2"
-          >
-            <Avatar className="h-14 w-14 border-2 border-border">
-              <AvatarImage src={mainProfile.avatar_url || ""} />
-              <AvatarFallback>
-                {mainProfile.first_name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="font-semibold text-base">{mainProfile.first_name}</div>
-            </div>
-            {selectedProfileId === mainProfile.id && (
-              <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                <Check className="h-4 w-4 text-primary-foreground" />
-              </div>
-            )}
-          </div>
-        )}
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-0">
+        {/* Handle para arrastar */}
+        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
+        
+        <SheetHeader className="px-6 pb-4">
+          <SheetTitle className="text-2xl font-bold text-left">
+            Perfis
+          </SheetTitle>
+        </SheetHeader>
 
-        {/* Páginas Criadas */}
-        {pageProfiles.length > 0 && (
-          <>
-            <DropdownMenuSeparator className="my-3" />
-            <div className="mb-2">
-              <h3 className="text-sm font-semibold text-muted-foreground px-3 mb-2">
-                Os teus perfis do Blynk
-              </h3>
-              {pageProfiles.map((page) => (
-                <div
-                  key={page.id}
-                  onClick={() => handleSelectProfile(page.id)}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl cursor-pointer transition-colors mb-1"
-                >
-                  <Avatar className="h-14 w-14 border-2 border-border">
-                    <AvatarImage src={page.avatar_url || ""} />
-                    <AvatarFallback>{page.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="font-semibold text-base">{page.name}</div>
-                  </div>
-                  {selectedProfileId === page.id && (
-                    <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
+        <div className="overflow-y-auto h-[calc(100%-5rem)] px-4">
+          {/* Perfil Principal */}
+          {mainProfile && (
+            <div
+              onClick={() => handleSelectProfile(mainProfile.id)}
+              className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-2xl cursor-pointer transition-colors mb-3"
+            >
+              <Avatar className="h-16 w-16 border-2 border-border">
+                <AvatarImage src={mainProfile.avatar_url || ""} />
+                <AvatarFallback className="text-xl">
+                  {mainProfile.first_name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-lg truncate">
+                  {mainProfile.first_name}
                 </div>
-              ))}
+              </div>
+              {selectedProfileId === mainProfile.id && (
+                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <Check className="h-4 w-4 text-primary-foreground" />
+                </div>
+              )}
             </div>
-          </>
-        )}
+          )}
 
-        <DropdownMenuSeparator className="my-3" />
+          {/* Páginas Criadas */}
+          {pageProfiles.length > 0 && (
+            <>
+              <Separator className="my-4" />
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground px-4 mb-3">
+                  Os teus perfis do Blynk
+                </h3>
+                {pageProfiles.map((page) => (
+                  <div
+                    key={page.id}
+                    onClick={() => handleSelectProfile(page.id)}
+                    className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-2xl cursor-pointer transition-colors mb-2"
+                  >
+                    <Avatar className="h-16 w-16 border-2 border-border">
+                      <AvatarImage src={page.avatar_url || ""} />
+                      <AvatarFallback className="text-xl">
+                        {page.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-lg truncate">
+                        {page.name}
+                      </div>
+                    </div>
+                    {selectedProfileId === page.id && (
+                      <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                        <Check className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-        {/* Criar Novo Perfil */}
-        <div
-          onClick={() => navigate("/create-page-profile")}
-          className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl cursor-pointer transition-colors"
-        >
-          <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-            <Plus className="h-6 w-6" />
+          <Separator className="my-4" />
+
+          {/* Criar Novo Perfil */}
+          <div
+            onClick={() => navigate("/create-page-profile")}
+            className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-2xl cursor-pointer transition-colors mb-3"
+          >
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+              <Plus className="h-7 w-7" />
+            </div>
+            <span className="font-semibold text-lg">Criar perfil do Blynk</span>
           </div>
-          <span className="font-semibold text-base">Criar perfil do Blynk</span>
-        </div>
 
-        <DropdownMenuSeparator className="my-3" />
+          <Separator className="my-4" />
 
-        {/* Centro de Contas */}
-        <div
-          onClick={() => navigate("/settings")}
-          className="p-3 hover:bg-muted/50 rounded-xl cursor-pointer text-center transition-colors"
-        >
-          <span className="font-medium text-base">Ir para o Centro de Contas</span>
+          {/* Centro de Contas */}
+          <div
+            onClick={() => navigate("/settings")}
+            className="p-4 hover:bg-muted/50 rounded-2xl cursor-pointer text-center transition-colors mb-4"
+          >
+            <span className="font-semibold text-base">Ir para o Centro de Contas</span>
+          </div>
         </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </SheetContent>
+    </Sheet>
   );
 }
