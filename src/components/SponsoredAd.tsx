@@ -68,9 +68,9 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
   };
 
   return (
-    <Card className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden mb-3">
+    <Card className="bg-card border border-border/30 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 my-4">
       {/* Header */}
-      <div className="p-4 pb-3">
+      <div className="p-3 sm:p-4 pb-3">
         <div className="flex items-center gap-3 mb-3">
           <img
             src={nuvexLogo}

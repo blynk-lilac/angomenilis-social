@@ -254,30 +254,28 @@ export default function Feed() {
         });
       }
 
+      // Reload posts
       loadPosts();
-      setShowReactions(null);
-    } catch (error: any) {
-      toast.error("Erro ao reagir ao post");
+    } catch (error) {
+      console.error("Erro ao reagir:", error);
     }
   };
 
   const handleLongPress = (postId: string) => {
-    setShowReactions(postId);
+    longPressTimer.current = setTimeout(() => {
+      setShowReactions(postId);
+    }, 500);
   };
 
   const handlePressStart = (postId: string) => {
-    longPressTimer.current = setTimeout(() => {
-      handleLongPress(postId);
-    }, 500);
+    handleLongPress(postId);
   };
 
   const handlePressEnd = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
     }
   };
-
 
   const handleRepost = async (postId: string) => {
     try {
@@ -287,117 +285,140 @@ export default function Feed() {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
-      const { error } = await supabase
-        .from("posts")
-        .insert({
-          user_id: user.id,
-          content: post.content,
-          media_urls: post.media_urls,
-          image_url: post.image_url,
-          video_url: post.video_url,
-        });
+      await supabase.from("posts").insert({
+        content: post.content,
+        user_id: user.id,
+        media_urls: post.media_urls,
+      });
 
-      if (error) throw error;
-
-      toast.success("Publicação compartilhada!");
+      toast.success("Post compartilhado!");
       loadPosts();
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
       toast.error("Erro ao compartilhar");
     }
   };
 
   const renderMediaGrid = (mediaUrls: string[]) => {
-    const count = mediaUrls.length;
+    if (!mediaUrls || mediaUrls.length === 0) return null;
 
-    if (count === 1) {
-      const isVideo = mediaUrls[0].includes('.mp4') || mediaUrls[0].includes('.webm') || mediaUrls[0].includes('.mov');
+    const isVideo = (url: string) => {
+      return url.includes(".mp4") || url.includes(".webm") || url.includes(".mov");
+    };
+
+    if (mediaUrls.length === 1) {
+      const url = mediaUrls[0];
       return (
-        <div className="w-full bg-black/5">
-          {isVideo ? (
-            <video src={mediaUrls[0]} controls className="w-full max-h-[600px] object-contain" />
+        <div className="w-full">
+          {isVideo(url) ? (
+            <video 
+              src={url} 
+              controls 
+              className="w-full max-h-[600px] object-contain bg-black"
+            />
           ) : (
-            <img src={mediaUrls[0]} alt="Post" className="w-full max-h-[600px] object-cover" />
+            <img 
+              src={url} 
+              alt="Post" 
+              className="w-full max-h-[600px] object-contain bg-muted" 
+            />
           )}
         </div>
       );
     }
 
-    if (count === 2) {
+    if (mediaUrls.length === 2) {
       return (
-        <div className="grid grid-cols-2 gap-0.5 bg-black/5">
-          {mediaUrls.map((url, idx) => {
-            const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-            return isVideo ? (
-              <video key={idx} src={url} controls className="w-full h-[300px] object-cover" />
-            ) : (
-              <img key={idx} src={url} alt="Post" className="w-full h-[300px] object-cover" />
-            );
-          })}
+        <div className="grid grid-cols-2 gap-0.5">
+          {mediaUrls.map((url, idx) => (
+            <div key={idx} className="aspect-square overflow-hidden">
+              {isVideo(url) ? (
+                <video src={url} controls className="w-full h-full object-cover" />
+              ) : (
+                <img src={url} alt="Post" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
         </div>
       );
     }
 
-    if (count === 3) {
-      // Layout: 1 grande à esquerda, 2 pequenas à direita
+    if (mediaUrls.length === 3) {
       return (
-        <div className="grid grid-cols-2 gap-0.5 bg-black/5 h-[400px]">
+        <div className="grid grid-cols-2 gap-0.5">
           <div className="row-span-2">
-            {mediaUrls[0].includes('.mp4') || mediaUrls[0].includes('.webm') || mediaUrls[0].includes('.mov') ? (
+            {isVideo(mediaUrls[0]) ? (
               <video src={mediaUrls[0]} controls className="w-full h-full object-cover" />
             ) : (
               <img src={mediaUrls[0]} alt="Post" className="w-full h-full object-cover" />
             )}
           </div>
-          <div className="space-y-0.5">
-            {mediaUrls.slice(1).map((url, idx) => {
-              const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-              return isVideo ? (
-                <video key={idx} src={url} controls className="w-full h-[199px] object-cover" />
+          {mediaUrls.slice(1).map((url, idx) => (
+            <div key={idx} className="aspect-square overflow-hidden">
+              {isVideo(url) ? (
+                <video src={url} controls className="w-full h-full object-cover" />
               ) : (
-                <img key={idx} src={url} alt="Post" className="w-full h-[199px] object-cover" />
-              );
-            })}
-          </div>
+                <img src={url} alt="Post" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
         </div>
       );
     }
 
-    if (count === 4) {
+    if (mediaUrls.length === 4) {
       return (
-        <div className="grid grid-cols-2 gap-0.5 bg-black/5">
-          {mediaUrls.map((url, idx) => {
-            const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-            return isVideo ? (
-              <video key={idx} src={url} controls className="w-full h-[250px] object-cover" />
+        <div className="grid grid-cols-2 gap-0.5">
+          {mediaUrls.map((url, idx) => (
+            <div key={idx} className="aspect-square overflow-hidden">
+              {isVideo(url) ? (
+                <video src={url} controls className="w-full h-full object-cover" />
+              ) : (
+                <img src={url} alt="Post" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (mediaUrls.length >= 5) {
+      const displayMedia = mediaUrls.slice(0, 5);
+      const count = mediaUrls.length;
+      return (
+        <div className="grid grid-cols-3 gap-0.5">
+          <div className="col-span-2 row-span-2">
+            {isVideo(displayMedia[0]) ? (
+              <video src={displayMedia[0]} controls className="w-full h-full object-cover" />
             ) : (
-              <img key={idx} src={url} alt="Post" className="w-full h-[250px] object-cover" />
-            );
-          })}
-        </div>
-      );
-    }
-
-    if (count >= 5) {
-      // Layout: 2 em cima, 3 embaixo (ou +3 embaixo com indicador)
-      return (
-        <div className="bg-black/5">
-          <div className="grid grid-cols-2 gap-0.5 mb-0.5">
-            {mediaUrls.slice(0, 2).map((url, idx) => {
-              const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-              return isVideo ? (
-                <video key={idx} src={url} controls className="w-full h-[200px] object-cover" />
-              ) : (
-                <img key={idx} src={url} alt="Post" className="w-full h-[200px] object-cover" />
+              <img src={displayMedia[0]} alt="Post" className="w-full h-full object-cover" />
+            )}
+          </div>
+          <div className="space-y-0.5">
+            {displayMedia.slice(1, 3).map((url, idx) => {
+              const isLast = idx === 1 && count > 5;
+              return (
+                <div key={idx} className="aspect-square overflow-hidden relative">
+                  {isVideo(url) ? (
+                    <video src={url} controls className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={url} alt="Post" className="w-full h-full object-cover" />
+                  )}
+                  {isLast && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white text-2xl font-bold">+{count - 5}</span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
-          <div className="grid grid-cols-3 gap-0.5">
-            {mediaUrls.slice(2, 5).map((url, idx) => {
-              const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-              const isLast = idx === 2 && count > 5;
+          <div className="col-span-3 grid grid-cols-2 gap-0.5">
+            {displayMedia.slice(3).map((url, idx) => {
+              const isLast = idx === displayMedia.slice(3).length - 1 && count > 5;
               return (
-                <div key={idx} className="relative">
-                  {isVideo ? (
+                <div key={idx} className="aspect-square overflow-hidden relative">
+                  {isVideo(url) ? (
                     <video src={url} controls className="w-full h-[150px] object-cover" />
                   ) : (
                     <img src={url} alt="Post" className="w-full h-[150px] object-cover" />
@@ -495,8 +516,8 @@ export default function Feed() {
             </div>
           )}
 
-          {/* Feed - Design Moderno e Limpo */}
-          <div className="space-y-3 mt-4">
+          {/* Feed - Design Facebook */}
+          <div className="space-y-4 mt-4">
             {loading ? (
               <FeedSkeleton />
             ) : posts.length === 0 ? (
@@ -509,8 +530,159 @@ export default function Feed() {
               <>
                 {posts.map((post, index) => (
                   <div key={`post-${post.id}`}>
-                    <Card className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-sm hover:sm:shadow-lg hover:sm:border-border transition-all duration-200">
-...
+                    <Card className="bg-card border border-border/30 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+                      {/* Header do Post */}
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar 
+                            className="h-10 w-10 cursor-pointer ring-2 ring-background hover:ring-primary/20 transition-all"
+                            onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                          >
+                            <AvatarImage src={post.profiles?.avatar_url} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {post.profiles?.username?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span 
+                                className="font-semibold text-[15px] text-foreground cursor-pointer hover:underline truncate"
+                                onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                              >
+                                {post.profiles?.full_name || post.profiles?.username}
+                              </span>
+                              {post.profiles?.verified && (
+                                <VerificationBadge 
+                                  verified={post.profiles?.verified}
+                                  badgeType={post.profiles?.badge_type} 
+                                  className="w-4 h-4 flex-shrink-0" 
+                                />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span>
+                                {formatDistanceToNow(new Date(post.created_at), {
+                                  addSuffix: true,
+                                  locale: ptBR,
+                                })}
+                              </span>
+                              <span>•</span>
+                              <Globe className="h-3 w-3" />
+                            </div>
+                          </div>
+
+                          <PostMenu
+                            postId={post.id}
+                            postUserId={post.user_id}
+                            currentUserId={currentUserId}
+                            onUpdate={loadPosts}
+                          />
+                        </div>
+
+                        {/* Conteúdo do Post */}
+                        {post.content && (
+                          <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                            {parseTextWithLinksAndMentions(post.content)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mídia */}
+                      {post.media_urls && post.media_urls.length > 0 && (
+                        <div className="w-full">
+                          {renderMediaGrid(post.media_urls)}
+                        </div>
+                      )}
+
+                      {/* Stats */}
+                      <div className="px-3 sm:px-4 py-2">
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            {post.post_reactions && post.post_reactions.length > 0 ? (
+                              <>
+                                <div className="flex -space-x-1">
+                                  {Array.from(new Set(post.post_reactions.map(r => r.reaction_type)))
+                                    .slice(0, 3)
+                                    .map((type, idx) => {
+                                      const reaction = reactions.find(r => r.type === type);
+                                      return reaction ? (
+                                        <div 
+                                          key={idx}
+                                          className="w-5 h-5 rounded-full bg-background flex items-center justify-center border border-background"
+                                        >
+                                          <img src={reaction.icon} alt={reaction.type} className="w-4 h-4 object-contain" />
+                                        </div>
+                                      ) : null;
+                                    })}
+                                </div>
+                                <span className="ml-1">{post.post_reactions.length}</span>
+                              </>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {post.comments && post.comments.length > 0 && (
+                              <span>{post.comments.length} comentários</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator className="bg-border/50" />
+
+                      {/* Actions */}
+                      <div className="p-1.5 sm:p-2 flex gap-1">
+                        <div className="relative flex-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={`w-full gap-2 hover:bg-muted rounded-md h-9 font-medium transition-colors ${
+                              post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
+                            }`}
+                            onClick={() => handleLike(post.id)}
+                            onTouchStart={() => handlePressStart(post.id)}
+                            onTouchEnd={handlePressEnd}
+                            onMouseDown={() => handlePressStart(post.id)}
+                            onMouseUp={handlePressEnd}
+                            onMouseLeave={handlePressEnd}
+                          >
+                            <Heart className={`h-[18px] w-[18px] ${
+                              post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
+                            }`} />
+                            <span className="text-sm sm:text-[15px]">Curtir</span>
+                          </Button>
+                          {showReactions === post.id && (
+                            <div className="absolute bottom-full left-0 mb-2 z-50">
+                              <ReactionPicker
+                                show={true}
+                                onSelect={(reaction) => {
+                                  handleLike(post.id, reaction);
+                                  setShowReactions(null);
+                                }}
+                                onClose={() => setShowReactions(null)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex-1 gap-2 hover:bg-muted rounded-md h-9 font-medium text-muted-foreground transition-colors"
+                          onClick={() => navigate(`/comments/${post.id}`)}
+                        >
+                          <MessageSquare className="h-[18px] w-[18px]" />
+                          <span className="text-sm sm:text-[15px]">Comentar</span>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex-1 gap-2 hover:bg-muted rounded-md h-9 font-medium text-muted-foreground transition-colors"
+                          onClick={() => handleRepost(post.id)}
+                        >
+                          <Share2 className="h-[18px] w-[18px]" />
+                          <span className="text-sm sm:text-[15px]">Partilhar</span>
+                        </Button>
+                      </div>
                     </Card>
 
                     {/* Inserir anúncio após o terceiro post */}
