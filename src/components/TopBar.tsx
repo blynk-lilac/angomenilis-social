@@ -3,7 +3,6 @@ import { Bell, Search, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import blynkLogo from "@/assets/blynk-logo.jpg";
 import SideMenu from "@/components/SideMenu";
-import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { NotificationBadge } from "@/components/NotificationBadge";
@@ -20,7 +19,6 @@ export const TopBar = () => {
           <Link to="/feed" className="flex items-center gap-2">
             <img src={blynkLogo} alt="Blynk" className="h-8 w-auto" />
           </Link>
-          <ProfileSwitcher />
         </div>
 
         <div className="flex items-center gap-2">

@@ -32,6 +32,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
 import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 interface Profile {
   id: string;
@@ -449,6 +450,9 @@ export default function Profile() {
                       badgeType={profile.badge_type} 
                       className="w-5 h-5" 
                     />
+                  )}
+                  {isOwnProfile && (
+                    <ProfileSwitcher />
                   )}
                 </div>
                 

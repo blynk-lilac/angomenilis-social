@@ -32,7 +32,6 @@ export default function ProfileSwitcher() {
   const [mainProfile, setMainProfile] = useState<Profile | null>(null);
   const [pageProfiles, setPageProfiles] = useState<PageProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     fetchProfiles();
@@ -69,9 +68,6 @@ export default function ProfileSwitcher() {
         .order("created_at", { ascending: false });
 
       if (pages) setPageProfiles(pages);
-
-      // Buscar notificações (simulado)
-      setNotificationCount(7);
     } catch (error) {
       console.error("Error fetching profiles:", error);
     }
@@ -148,24 +144,6 @@ export default function ProfileSwitcher() {
           </DropdownMenuItem>
         )}
 
-        {/* Blynk. Rede Social */}
-        <DropdownMenuItem className="p-4 cursor-pointer">
-          <div className="flex items-center gap-3 w-full">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src="/logo-192.png" />
-              <AvatarFallback>B</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="font-semibold">Blynk. Rede Social</div>
-              <div className="flex items-center gap-1 text-sm text-destructive">
-                <div className="h-2 w-2 rounded-full bg-destructive" />
-                {notificationCount} notificações
-              </div>
-            </div>
-          </div>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
 
         {/* Páginas Criadas */}
         {pageProfiles.map((page) => (
@@ -198,7 +176,7 @@ export default function ProfileSwitcher() {
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
               <Plus className="h-6 w-6" />
             </div>
-            <span className="font-semibold">Criar perfil do Facebook</span>
+            <span className="font-semibold">Criar perfil do Blynk</span>
           </div>
         </DropdownMenuItem>
 
