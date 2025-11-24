@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, Plus, Check } from "lucide-react";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import {
   Sheet,
   SheetContent,
@@ -30,15 +31,12 @@ interface Profile {
 
 export default function ProfileSwitcher() {
   const navigate = useNavigate();
+  const { activeProfile, setActiveProfile } = useActiveProfile();
   const [mainProfile, setMainProfile] = useState<Profile | null>(null);
   const [pageProfiles, setPageProfiles] = useState<PageProfile[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
 
   useEffect(() => {
     fetchProfiles();
-    // Recuperar perfil selecionado do localStorage
-    const saved = localStorage.getItem("selectedProfileId");
-    if (saved) setSelectedProfileId(saved);
   }, []);
 
   const fetchProfiles = async () => {
@@ -55,10 +53,6 @@ export default function ProfileSwitcher() {
 
       if (profile) {
         setMainProfile(profile);
-        if (!selectedProfileId) {
-          setSelectedProfileId(user.id);
-          localStorage.setItem("selectedProfileId", user.id);
-        }
       }
 
       // Buscar perfis de páginas
@@ -74,25 +68,46 @@ export default function ProfileSwitcher() {
     }
   };
 
-  const handleSelectProfile = (profileId: string) => {
-    setSelectedProfileId(profileId);
-    localStorage.setItem("selectedProfileId", profileId);
-    // Não recarrega a página, apenas atualiza o estado
+  const handleSelectProfile = (profileId: string, isPage: boolean, name: string, avatar: string | null) => {
+    if (isPage) {
+      setActiveProfile({
+        id: profileId,
+        name: name,
+        type: 'page',
+        avatar_url: avatar,
+      });
+    } else {
+      setActiveProfile({
+        id: profileId,
+        name: name,
+        type: 'user',
+        avatar_url: avatar,
+      });
+    }
   };
 
   const getCurrentProfile = () => {
-    if (selectedProfileId === mainProfile?.id) {
+    if (!activeProfile) {
       return {
-        name: mainProfile.first_name,
-        avatar: mainProfile.avatar_url,
-        verified: mainProfile.verified,
-        badge_type: mainProfile.badge_type
+        name: mainProfile?.first_name || "",
+        avatar: mainProfile?.avatar_url || null,
+        verified: mainProfile?.verified || false,
+        badge_type: mainProfile?.badge_type || null
       };
     }
-    const page = pageProfiles.find(p => p.id === selectedProfileId);
+    
+    if (activeProfile.type === 'user') {
+      return {
+        name: mainProfile?.first_name || activeProfile.name,
+        avatar: mainProfile?.avatar_url || activeProfile.avatar_url,
+        verified: mainProfile?.verified || false,
+        badge_type: mainProfile?.badge_type || null
+      };
+    }
+    
     return {
-      name: page?.name || mainProfile?.first_name || "",
-      avatar: page?.avatar_url || mainProfile?.avatar_url || null,
+      name: activeProfile.name,
+      avatar: activeProfile.avatar_url,
       verified: false,
       badge_type: null
     };
@@ -128,7 +143,7 @@ export default function ProfileSwitcher() {
           {/* Perfil Principal */}
           {mainProfile && (
             <div
-              onClick={() => handleSelectProfile(mainProfile.id)}
+              onClick={() => handleSelectProfile(mainProfile.id, false, mainProfile.first_name, mainProfile.avatar_url)}
               className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-2xl cursor-pointer transition-colors mb-3"
             >
               <Avatar className="h-16 w-16 border-2 border-border">
@@ -142,7 +157,7 @@ export default function ProfileSwitcher() {
                   {mainProfile.first_name}
                 </div>
               </div>
-              {selectedProfileId === mainProfile.id && (
+              {activeProfile?.id === mainProfile.id && activeProfile?.type === 'user' && (
                 <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                   <Check className="h-4 w-4 text-primary-foreground" />
                 </div>
@@ -161,7 +176,7 @@ export default function ProfileSwitcher() {
                 {pageProfiles.map((page) => (
                   <div
                     key={page.id}
-                    onClick={() => handleSelectProfile(page.id)}
+                    onClick={() => handleSelectProfile(page.id, true, page.name, page.avatar_url)}
                     className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-2xl cursor-pointer transition-colors mb-2"
                   >
                     <Avatar className="h-16 w-16 border-2 border-border">
@@ -175,7 +190,7 @@ export default function ProfileSwitcher() {
                         {page.name}
                       </div>
                     </div>
-                    {selectedProfileId === page.id && (
+                    {activeProfile?.id === page.id && activeProfile?.type === 'page' && (
                       <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                         <Check className="h-4 w-4 text-primary-foreground" />
                       </div>
