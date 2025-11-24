@@ -163,13 +163,13 @@ export default function WallpaperPicker({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Escolher Papel de Parede</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="h-[500px] pr-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <ScrollArea className="flex-1 h-[60vh] pr-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-4">
             {wallpapers.map((wallpaper) => (
               <div
                 key={wallpaper.id}
