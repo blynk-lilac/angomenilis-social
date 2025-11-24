@@ -16,6 +16,21 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+      
+      // Verificar se a conta está bloqueada
+      if (session?.user) {
+        const { data: blocked } = await supabase
+          .from('blocked_accounts')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (blocked && window.location.pathname !== '/blocked') {
+          window.location.href = '/blocked';
+          return;
+        }
+      }
+      
       setIsLoading(false);
     };
 
