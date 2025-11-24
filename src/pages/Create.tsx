@@ -3,8 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Image as ImageIcon, Video, X } from "lucide-react";
+import MentionTextarea from "@/components/MentionTextarea";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import { MainNav } from "@/components/MainNav";
@@ -128,10 +128,11 @@ export default function Create() {
           <h1 className="text-2xl font-bold mb-6">Criar Publicação</h1>
 
           <Card className="p-6 bg-card border border-border rounded-xl">
-            <Textarea
-              placeholder="No que você está pensando?"
+            <MentionTextarea
+              placeholder="No que você está pensando? Use @ para mencionar amigos e # para hashtags"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={setContent}
+              rows={6}
               className="min-h-[150px] bg-transparent border-0 text-foreground resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
             />
 

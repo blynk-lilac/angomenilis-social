@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import MentionTextarea from "@/components/MentionTextarea";
+import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Heart, MessageCircle, Share2, Send, ArrowLeft, MoreHorizontal, Smile, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -68,6 +70,7 @@ export default function Comments() {
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [translatedContent, setTranslatedContent] = useState("");
+  const { processCommentHashtagsAndMentions } = useHashtagsAndMentions();
 
   useEffect(() => {
     loadPost();
@@ -159,17 +162,27 @@ export default function Comments() {
   const handleComment = async (audioUrl?: string) => {
     if (!newComment.trim() && !audioUrl) return;
 
-    const { error } = await supabase.from("comments").insert({
+    const { data: newCommentData, error } = await supabase.from("comments").insert({
       post_id: postId,
       user_id: currentUserId,
       content: audioUrl ? "🎤 Comentário de voz" : newComment,
       audio_url: audioUrl,
       parent_comment_id: replyingTo,
-    });
+    }).select().single();
 
     if (error) {
       toast.error("Erro ao comentar");
       return;
+    }
+
+    // Processar menções no comentário
+    if (newCommentData && !audioUrl) {
+      await processCommentHashtagsAndMentions(
+        newCommentData.id,
+        newComment,
+        currentUserId,
+        postId!
+      );
     }
 
     setNewComment("");
@@ -459,15 +472,16 @@ export default function Comments() {
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
             <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
-              <Input
+              <MentionTextarea
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={setNewComment}
                 placeholder={
                   replyingTo
-                    ? "Escrever uma resposta..."
-                    : `Comentar como ${post.profiles.username}`
+                    ? "Escrever uma resposta... Use @ para mencionar"
+                    : `Comentar como ${post.profiles.username}. Use @ para mencionar`
                 }
-                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0"
+                rows={1}
               />
               <VoiceRecorder onAudioRecorded={(audioUrl) => handleComment(audioUrl)} />
               <Button
