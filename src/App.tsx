@@ -53,6 +53,7 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, session } = useAuth();
   
+  // CRITICAL: Wait for auth to fully initialize before checking user/session
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -64,11 +65,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  if (!user || !session) {
+  // Only redirect if auth is loaded and there's no valid session
+  if (!loading && (!user || !session)) {
     return <Navigate to="/auth" replace />;
   }
 
-  requestNotificationPermission();
+  // Request notification permission for logged in users
+  if (user) {
+    requestNotificationPermission();
+  }
   
   return <>{children}</>;
 };

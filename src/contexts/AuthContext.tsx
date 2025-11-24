@@ -30,15 +30,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session first
+    // Get initial session from localStorage
     const initializeAuth = async () => {
       try {
+        // First check if we have a session in localStorage
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
           if (error) {
             console.error('Error getting session:', error);
           }
+          
+          // Set the session and user state
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
@@ -53,12 +56,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initializeAuth();
 
-    // Listen for auth changes
+    // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
+          console.log('Auth state changed:', event);
+          
+          // Only redirect on explicit SIGNED_OUT event
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+            setUser(null);
+          } else {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+          
           setLoading(false);
         }
       }
