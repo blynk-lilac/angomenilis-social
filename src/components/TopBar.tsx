@@ -6,6 +6,7 @@ import SideMenu from "@/components/SideMenu";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { NotificationBadge } from "@/components/NotificationBadge";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 export const TopBar = () => {
   const notificationCount = useNotificationCount();
@@ -14,11 +15,12 @@ export const TopBar = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-md border-b border-border z-50">
       <div className="flex items-center justify-between h-16 px-4 max-w-screen-xl mx-auto">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <SideMenu />
           <Link to="/feed" className="flex items-center gap-2">
             <img src={blynkLogo} alt="Blynk" className="h-8 w-auto" />
           </Link>
+          <ProfileSwitcher />
         </div>
 
         <div className="flex items-center gap-2">
