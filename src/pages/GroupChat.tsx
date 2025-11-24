@@ -5,10 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Users, Phone, Lock, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Users, Phone, Lock, MoreVertical, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
+import WallpaperPicker from '@/components/chat/WallpaperPicker';
 
 interface Message {
   id: string;
@@ -37,6 +38,8 @@ export default function GroupChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [wallpaper, setWallpaper] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -194,6 +197,9 @@ export default function GroupChat() {
             <Button variant="ghost" size="icon" className="rounded-full">
               <Phone className="h-5 w-5" />
             </Button>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowWallpaperPicker(true)}>
+              <ImageIcon className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Lock className="h-5 w-5" />
             </Button>
@@ -209,7 +215,19 @@ export default function GroupChat() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div 
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 relative"
+        style={wallpaper ? {
+          backgroundImage: `url(${wallpaper})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        } : undefined}
+      >
+        {wallpaper && (
+          <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+        )}
+        <div className="relative z-10 space-y-4">
         {messages.map((message) => {
           const isSent = message.sender_id === user?.id;
           return (
@@ -233,8 +251,17 @@ export default function GroupChat() {
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
+
+      <WallpaperPicker
+        open={showWallpaperPicker}
+        onClose={() => setShowWallpaperPicker(false)}
+        chatPartnerId={groupId || ''}
+        currentWallpaper={wallpaper}
+        onWallpaperChange={setWallpaper}
+      />
 
       <form
         onSubmit={sendMessage}

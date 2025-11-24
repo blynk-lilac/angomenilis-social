@@ -1,8 +1,9 @@
-import { Image, Video, Mic, X } from 'lucide-react';
+import { Image, Video, Mic, X, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import GifPicker from './GifPicker';
 
 interface MediaPickerProps {
   onMediaSelect: (url: string, type: 'image' | 'video' | 'audio', duration?: number) => void;
@@ -11,6 +12,7 @@ interface MediaPickerProps {
 export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,60 +148,82 @@ export default function MediaPicker({ onMediaSelect }: MediaPickerProps) {
     }
   };
 
+  const handleGifSelect = (gifUrl: string) => {
+    onMediaSelect(gifUrl, 'image'); // Treat GIF as image
+  };
+
   return (
-    <div className="flex gap-2 items-center">
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        id="image-upload"
-        onChange={handleImageSelect}
-      />
-      <label htmlFor="image-upload">
-        <Button type="button" variant="ghost" size="icon" className="h-10 w-10" asChild>
-          <span>
-            <Image className="h-5 w-5" />
-          </span>
-        </Button>
-      </label>
+    <>
+      <div className="flex gap-2 items-center">
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          id="image-upload"
+          onChange={handleImageSelect}
+        />
+        <label htmlFor="image-upload">
+          <Button type="button" variant="ghost" size="icon" className="h-10 w-10" asChild>
+            <span>
+              <Image className="h-5 w-5" />
+            </span>
+          </Button>
+        </label>
 
-      <input
-        type="file"
-        accept="video/*"
-        className="hidden"
-        id="video-upload"
-        onChange={handleVideoSelect}
-      />
-      <label htmlFor="video-upload">
-        <Button type="button" variant="ghost" size="icon" className="h-10 w-10" asChild>
-          <span>
-            <Video className="h-5 w-5" />
-          </span>
-        </Button>
-      </label>
+        <input
+          type="file"
+          accept="video/*"
+          className="hidden"
+          id="video-upload"
+          onChange={handleVideoSelect}
+        />
+        <label htmlFor="video-upload">
+          <Button type="button" variant="ghost" size="icon" className="h-10 w-10" asChild>
+            <span>
+              <Video className="h-5 w-5" />
+            </span>
+          </Button>
+        </label>
 
-      {!isRecording ? (
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="h-10 w-10"
-          onClick={startRecording}
+          onClick={() => setShowGifPicker(true)}
         >
-          <Mic className="h-5 w-5" />
+          <Smile className="h-5 w-5" />
         </Button>
-      ) : (
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="h-10 w-10 animate-pulse"
-          onClick={stopRecording}
-        >
-          <X className="h-5 w-5" />
-          <span className="ml-1 text-xs">{recordingTime}s</span>
-        </Button>
-      )}
-    </div>
+
+        {!isRecording ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10"
+            onClick={startRecording}
+          >
+            <Mic className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="destructive"
+            size="icon"
+            className="h-10 w-10 animate-pulse"
+            onClick={stopRecording}
+          >
+            <X className="h-5 w-5" />
+            <span className="ml-1 text-xs">{recordingTime}s</span>
+          </Button>
+        )}
+      </div>
+
+      <GifPicker
+        open={showGifPicker}
+        onClose={() => setShowGifPicker(false)}
+        onGifSelect={handleGifSelect}
+      />
+    </>
   );
 }

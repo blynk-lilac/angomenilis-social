@@ -362,6 +362,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_wallpapers: {
+        Row: {
+          chat_partner_id: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+          wallpaper_url: string
+        }
+        Insert: {
+          chat_partner_id: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          wallpaper_url: string
+        }
+        Update: {
+          chat_partner_id?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          wallpaper_url?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string

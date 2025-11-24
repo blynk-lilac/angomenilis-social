@@ -5,12 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video, Lock } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, Lock, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
 import ChatPinProtection from '@/components/chat/ChatPinProtection';
+import WallpaperPicker from '@/components/chat/WallpaperPicker';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -48,6 +49,8 @@ export default function Chat() {
   const [chatSettings, setChatSettings] = useState<any>(null);
   const [sendingMessages, setSendingMessages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [wallpaper, setWallpaper] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -69,7 +72,7 @@ export default function Chat() {
 
     const loadData = async () => {
       const startTime = Date.now();
-      await Promise.all([loadFriend(), loadChatSettings(), loadMessages()]);
+      await Promise.all([loadFriend(), loadChatSettings(), loadMessages(), loadWallpaper()]);
       
       // Garantir no mínimo 3 segundos de loading
       const elapsed = Date.now() - startTime;
@@ -167,6 +170,21 @@ export default function Chat() {
       .single();
     
     if (data) setFriend(data);
+  };
+
+  const loadWallpaper = async () => {
+    if (!user || !friendId) return;
+
+    const { data } = await supabase
+      .from('chat_wallpapers')
+      .select('wallpaper_url')
+      .eq('user_id', user.id)
+      .eq('chat_partner_id', friendId)
+      .single();
+
+    if (data) {
+      setWallpaper(data.wallpaper_url);
+    }
   };
 
   const loadMessages = async () => {
@@ -413,6 +431,14 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-full"
+            onClick={() => setShowWallpaperPicker(true)}
+          >
+            <ImageIcon className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full"
             onClick={() => navigate(`/chat/${friendId}/settings`)}
           >
             <Lock className="h-5 w-5" />
@@ -421,29 +447,42 @@ export default function Chat() {
       </header>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 bg-chat-bg">
-        {messages.map((message) => {
-          const isSent = message.sender_id === user?.id;
-          const hideMedia = chatSettings && !chatSettings.media_visibility;
-          return (
-            <div
-              key={message.id}
-              className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
-            >
-              <MessageBubble
-                message={message}
-                isSent={isSent}
-                hideMedia={hideMedia}
-                contextType="chat"
-                contextId={friendId || ''}
-                onDeleteLocal={(id) =>
-                  setMessages((prev) => prev.filter((m) => m.id !== id))
-                }
-              />
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 bg-chat-bg relative"
+        style={wallpaper ? {
+          backgroundImage: `url(${wallpaper})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        } : undefined}
+      >
+        {wallpaper && (
+          <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+        )}
+        <div className="relative z-10 space-y-3">
+          {messages.map((message) => {
+            const isSent = message.sender_id === user?.id;
+            const hideMedia = chatSettings && !chatSettings.media_visibility;
+            return (
+              <div
+                key={message.id}
+                className={`flex ${isSent ? 'justify-end' : 'justify-start'} animate-fade-in`}
+              >
+                <MessageBubble
+                  message={message}
+                  isSent={isSent}
+                  hideMedia={hideMedia}
+                  contextType="chat"
+                  contextId={friendId || ''}
+                  onDeleteLocal={(id) =>
+                    setMessages((prev) => prev.filter((m) => m.id !== id))
+                  }
+                />
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input - Fixed */}
@@ -469,6 +508,14 @@ export default function Chat() {
           </Button>
         </div>
       </form>
+
+      <WallpaperPicker
+        open={showWallpaperPicker}
+        onClose={() => setShowWallpaperPicker(false)}
+        chatPartnerId={friendId || ''}
+        currentWallpaper={wallpaper}
+        onWallpaperChange={setWallpaper}
+      />
     </div>
   );
 }
