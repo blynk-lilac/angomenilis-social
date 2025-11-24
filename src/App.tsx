@@ -47,6 +47,7 @@ import Hashtag from './pages/Hashtag';
 import CreateAd from "./pages/CreateAd";
 import AppSettings from "./pages/AppSettings";
 import NotFound from "./pages/NotFound";
+import Blocked from "./pages/Blocked";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -91,6 +92,7 @@ const AppContent = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/two-factor-verification" element={<TwoFactorVerification />} />
+        <Route path="/blocked" element={<Blocked />} />
         
         <Route
           path="/feed"

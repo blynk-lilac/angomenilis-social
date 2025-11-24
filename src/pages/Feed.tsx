@@ -547,167 +547,167 @@ export default function Feed() {
               <>
                 {posts.map((post, index) => (
                   <div key={`post-${post.id}`}>
-                    <Card className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm hover:shadow-md transition-shadow duration-200">
-                      {/* Header do Post */}
-                      <div className="p-3 sm:p-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar 
-                            className="h-10 w-10 cursor-pointer ring-2 ring-background hover:ring-primary/20 transition-all"
-                            onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                          >
-                            <AvatarImage src={post.profiles?.avatar_url} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                              {post.profiles?.username?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                     <Card className="bg-card border-0 sm:border sm:border-border/30 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-lg hover:shadow-xl transition-all duration-300">
+                       {/* Header do Post */}
+                       <div className="p-3 sm:p-4 hover:bg-accent/5 transition-colors duration-200">
+                         <div className="flex items-center gap-3">
+                           <Avatar 
+                             className="h-11 w-11 cursor-pointer ring-2 ring-transparent hover:ring-primary/30 transition-all duration-200"
+                             onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                           >
+                             <AvatarImage src={post.profiles?.avatar_url} />
+                             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
+                               {post.profiles?.username?.[0]?.toUpperCase()}
+                             </AvatarFallback>
+                           </Avatar>
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span 
-                                className="font-semibold text-[15px] text-foreground cursor-pointer hover:underline truncate"
-                                onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                              >
-                                {post.profiles?.full_name || post.profiles?.username}
-                              </span>
-                              {post.profiles?.verified && (
-                                <VerificationBadge 
-                                  verified={post.profiles?.verified}
-                                  badgeType={post.profiles?.badge_type} 
-                                  className="w-4 h-4 flex-shrink-0" 
-                                />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <span>
-                                {formatDistanceToNow(new Date(post.created_at), {
-                                  addSuffix: true,
-                                  locale: ptBR,
-                                })}
-                              </span>
-                              <span>•</span>
-                              <Globe className="h-3 w-3" />
-                            </div>
-                          </div>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-1.5">
+                               <span 
+                                 className="font-bold text-[15px] text-foreground cursor-pointer hover:underline hover:text-primary transition-colors truncate"
+                                 onClick={() => navigate(`/profile/${post.profiles?.username}`)}
+                               >
+                                 {post.profiles?.full_name || post.profiles?.username}
+                               </span>
+                               {post.profiles?.verified && (
+                                 <VerificationBadge 
+                                   verified={post.profiles?.verified}
+                                   badgeType={post.profiles?.badge_type} 
+                                   className="w-4 h-4 flex-shrink-0" 
+                                 />
+                               )}
+                             </div>
+                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                               <span>
+                                 {formatDistanceToNow(new Date(post.created_at), {
+                                   addSuffix: true,
+                                   locale: ptBR,
+                                 })}
+                               </span>
+                               <span>•</span>
+                               <Globe className="h-3 w-3" />
+                             </div>
+                           </div>
 
-                          <PostMenu
-                            postId={post.id}
-                            postUserId={post.user_id}
-                            currentUserId={currentUserId}
-                            onUpdate={loadPosts}
-                          />
-                        </div>
+                           <PostMenu
+                             postId={post.id}
+                             postUserId={post.user_id}
+                             currentUserId={currentUserId}
+                             onUpdate={loadPosts}
+                           />
+                         </div>
 
-                        {/* Conteúdo do Post */}
-                        {post.content && (
-                          <div className="space-y-2">
-                            <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                              {parseTextWithLinksAndMentions(translatedPosts[post.id] || post.content)}
-                            </div>
-                            <TranslateButton
-                              text={post.content}
-                              onTranslated={(translated) => {
-                                setTranslatedPosts(prev => ({ ...prev, [post.id]: translated }));
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
+                         {/* Conteúdo do Post */}
+                         {post.content && (
+                           <div className="space-y-2">
+                             <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                               {parseTextWithLinksAndMentions(translatedPosts[post.id] || post.content)}
+                             </div>
+                             <TranslateButton
+                               text={post.content}
+                               onTranslated={(translated) => {
+                                 setTranslatedPosts(prev => ({ ...prev, [post.id]: translated }));
+                               }}
+                             />
+                           </div>
+                         )}
+                       </div>
 
-                      {/* Mídia */}
-                      {post.media_urls && post.media_urls.length > 0 && (
-                        <div className="w-full">
-                          {renderMediaGrid(post.media_urls)}
-                        </div>
-                      )}
+                       {/* Mídia */}
+                       {post.media_urls && post.media_urls.length > 0 && (
+                         <div className="w-full">
+                           {renderMediaGrid(post.media_urls)}
+                         </div>
+                       )}
 
-                      {/* Stats */}
-                      <div className="px-3 sm:px-4 py-2">
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            {post.post_reactions && post.post_reactions.length > 0 ? (
-                              <>
-                                <div className="flex -space-x-1">
-                                  {Array.from(new Set(post.post_reactions.map(r => r.reaction_type)))
-                                    .slice(0, 3)
-                                    .map((type, idx) => {
-                                      const reaction = reactions.find(r => r.type === type);
-                                      return reaction ? (
-                                        <div 
-                                          key={idx}
-                                          className="w-5 h-5 rounded-full bg-background flex items-center justify-center border border-background"
-                                        >
-                                          <img src={reaction.icon} alt={reaction.type} className="w-4 h-4 object-contain" />
-                                        </div>
-                                      ) : null;
-                                    })}
-                                </div>
-                                <span className="ml-1">{post.post_reactions.length}</span>
-                              </>
-                            ) : null}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {post.comments && post.comments.length > 0 && (
-                              <span>{post.comments.length} comentários</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                       {/* Stats */}
+                       <div className="px-3 sm:px-4 py-2.5">
+                         <div className="flex items-center justify-between text-sm text-muted-foreground">
+                           <div className="flex items-center gap-1.5">
+                             {post.post_reactions && post.post_reactions.length > 0 ? (
+                               <>
+                                 <div className="flex -space-x-1">
+                                   {Array.from(new Set(post.post_reactions.map(r => r.reaction_type)))
+                                     .slice(0, 3)
+                                     .map((type, idx) => {
+                                       const reaction = reactions.find(r => r.type === type);
+                                       return reaction ? (
+                                         <div 
+                                           key={idx}
+                                           className="w-5 h-5 rounded-full bg-background flex items-center justify-center border-2 border-card shadow-sm"
+                                         >
+                                           <img src={reaction.icon} alt={reaction.type} className="w-4 h-4 object-contain" />
+                                         </div>
+                                       ) : null;
+                                     })}
+                                 </div>
+                                 <span className="ml-1 font-semibold">{post.post_reactions.length}</span>
+                               </>
+                             ) : null}
+                           </div>
+                           <div className="flex items-center gap-3 font-medium">
+                             {post.comments && post.comments.length > 0 && (
+                               <span>{post.comments.length} comentários</span>
+                             )}
+                           </div>
+                         </div>
+                       </div>
 
-                      <Separator className="bg-border/50" />
+                       <Separator className="bg-border/30" />
 
-                      {/* Actions */}
-                      <div className="p-1.5 sm:p-2 flex gap-1">
-                        <div className="relative flex-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={`w-full gap-2 hover:bg-muted rounded-md h-9 font-medium transition-colors ${
-                              post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
-                            }`}
-                            onClick={() => handleLike(post.id)}
-                            onTouchStart={() => handlePressStart(post.id)}
-                            onTouchEnd={handlePressEnd}
-                            onMouseDown={() => handlePressStart(post.id)}
-                            onMouseUp={handlePressEnd}
-                            onMouseLeave={handlePressEnd}
-                          >
-                            <Heart className={`h-[18px] w-[18px] ${
-                              post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
-                            }`} />
-                            <span className="text-sm sm:text-[15px]">Curtir</span>
-                          </Button>
-                          {showReactions === post.id && (
-                            <div className="absolute bottom-full left-0 mb-2 z-50">
-                              <ReactionPicker
-                                show={true}
-                                onSelect={(reaction) => {
-                                  handleLike(post.id, reaction);
-                                  setShowReactions(null);
-                                }}
-                                onClose={() => setShowReactions(null)}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex-1 gap-2 hover:bg-muted rounded-md h-9 font-medium text-muted-foreground transition-colors"
-                          onClick={() => navigate(`/comments/${post.id}`)}
-                        >
-                          <MessageSquare className="h-[18px] w-[18px]" />
-                          <span className="text-sm sm:text-[15px]">Comentar</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex-1 gap-2 hover:bg-muted rounded-md h-9 font-medium text-muted-foreground transition-colors"
-                          onClick={() => handleRepost(post.id)}
-                        >
-                          <Share2 className="h-[18px] w-[18px]" />
-                          <span className="text-sm sm:text-[15px]">Partilhar</span>
-                        </Button>
-                      </div>
+                       {/* Actions */}
+                       <div className="p-1.5 sm:p-2 flex gap-1 bg-gradient-to-b from-transparent to-accent/5">
+                         <div className="relative flex-1">
+                           <Button 
+                             variant="ghost" 
+                             size="sm" 
+                             className={`w-full gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold transition-all duration-200 hover:scale-105 ${
+                               post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
+                             }`}
+                             onClick={() => handleLike(post.id)}
+                             onTouchStart={() => handlePressStart(post.id)}
+                             onTouchEnd={handlePressEnd}
+                             onMouseDown={() => handlePressStart(post.id)}
+                             onMouseUp={handlePressEnd}
+                             onMouseLeave={handlePressEnd}
+                           >
+                             <Heart className={`h-5 w-5 ${
+                               post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
+                             }`} />
+                             <span className="text-sm sm:text-[15px]">Curtir</span>
+                           </Button>
+                           {showReactions === post.id && (
+                             <div className="absolute bottom-full left-0 mb-2 z-50">
+                               <ReactionPicker
+                                 show={true}
+                                 onSelect={(reaction) => {
+                                   handleLike(post.id, reaction);
+                                   setShowReactions(null);
+                                 }}
+                                 onClose={() => setShowReactions(null)}
+                               />
+                             </div>
+                           )}
+                         </div>
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           className="flex-1 gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold text-muted-foreground transition-all duration-200 hover:scale-105"
+                           onClick={() => navigate(`/comments/${post.id}`)}
+                         >
+                           <MessageSquare className="h-5 w-5" />
+                           <span className="text-sm sm:text-[15px]">Comentar</span>
+                         </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           className="flex-1 gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold text-muted-foreground transition-all duration-200 hover:scale-105"
+                           onClick={() => handleRepost(post.id)}
+                         >
+                           <Share2 className="h-5 w-5" />
+                           <span className="text-sm sm:text-[15px]">Partilhar</span>
+                         </Button>
+                       </div>
                     </Card>
 
                     {/* Inserir anúncio após o terceiro post */}
