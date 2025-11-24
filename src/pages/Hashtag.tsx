@@ -209,26 +209,26 @@ export default function Hashtag() {
 
   return (
     <MainLayout title={`#${hashtag.name}`}>
-      <div className="max-w-4xl mx-auto">
-        {/* Header da Hashtag - Estilo Facebook */}
-        <div className="bg-card border rounded-lg overflow-hidden mb-4">
+      <div className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
+        {/* Header da Hashtag - Estilo Facebook - Fixo */}
+        <div className="bg-card border rounded-lg overflow-hidden flex-shrink-0">
           {/* Banner */}
-          <div className="h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-background relative">
+          <div className="h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-background relative">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-primary/10 border-4 border-background mb-4">
-                  <span className="text-5xl font-bold text-primary">#</span>
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-4 border-background">
+                  <span className="text-4xl font-bold text-primary">#</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Info da Hashtag */}
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="p-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold mb-2">#{hashtag.name}</h1>
-                <div className="flex items-center gap-4 text-muted-foreground">
+                <h1 className="text-2xl font-bold mb-1">#{hashtag.name}</h1>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span className="font-semibold">
                     {hashtag.post_count} {hashtag.post_count === 1 ? "publicação" : "publicações"}
                   </span>
@@ -242,17 +242,17 @@ export default function Hashtag() {
                 <Button
                   onClick={handleFollowToggle}
                   variant={isFollowing ? "outline" : "default"}
-                  size="lg"
-                  className="gap-2 min-w-[140px]"
+                  size="default"
+                  className="gap-2"
                 >
                   {isFollowing ? (
                     <>
-                      <UserCheck className="h-5 w-5" />
+                      <UserCheck className="h-4 w-4" />
                       A seguir
                     </>
                   ) : (
                     <>
-                      <UserPlus className="h-5 w-5" />
+                      <UserPlus className="h-4 w-4" />
                       Seguir
                     </>
                   )}
@@ -261,26 +261,28 @@ export default function Hashtag() {
             </div>
 
             {/* Stats adicionais */}
-            <div className="flex gap-6 pt-4 border-t">
+            <div className="flex gap-6 pt-3 border-t">
               <div className="text-center">
-                <div className="text-2xl font-bold">{hashtag.post_count}</div>
-                <div className="text-sm text-muted-foreground">Publicações</div>
+                <div className="text-xl font-bold">{hashtag.post_count}</div>
+                <div className="text-xs text-muted-foreground">Publicações</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{followerCount}</div>
-                <div className="text-sm text-muted-foreground">Seguidores</div>
+                <div className="text-xl font-bold">{followerCount}</div>
+                <div className="text-xs text-muted-foreground">Seguidores</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Posts */}
-        {posts.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhuma publicação com esta hashtag ainda
-          </div>
-        ) : (
-          <div className="space-y-4">
+        {/* Posts - Com Scroll */}
+        <div className="flex-1 overflow-y-auto mt-4 px-1">
+          <div className="max-w-2xl mx-auto">
+            {posts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Nenhuma publicação com esta hashtag ainda
+              </div>
+            ) : (
+              <div className="space-y-4">
             {posts.map((post) => (
               <div key={post.id} className="bg-card border rounded-lg p-4">
                 {/* Header do Post */}
@@ -374,9 +376,11 @@ export default function Hashtag() {
                   </Button>
                 </div>
               </div>
-            ))}
+              ))}
+            </div>
+          )}
           </div>
-        )}
+        </div>
       </div>
     </MainLayout>
   );
