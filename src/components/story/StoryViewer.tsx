@@ -82,8 +82,8 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       });
     }
 
-    // Auto progress - 10 segundos para todos os tipos
-    const duration = 10000;
+    // Auto progress - 30 segundos para todos os stories
+    const duration = 30000;
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {

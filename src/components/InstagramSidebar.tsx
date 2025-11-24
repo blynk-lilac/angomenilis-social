@@ -56,67 +56,76 @@ export default function InstagramSidebar() {
 
   return (
     <aside className={cn(
-      "hidden md:flex flex-col fixed left-0 top-0 h-screen bg-background border-r border-border transition-all duration-300 z-50",
-      collapsed ? "w-20" : "w-64"
+      "hidden md:flex flex-col fixed left-0 top-0 h-screen bg-card/50 backdrop-blur-xl border-r border-border/40 transition-all duration-300 z-50 shadow-sm",
+      collapsed ? "w-20" : "w-[280px]"
     )}>
-      <div className="flex-1 flex flex-col py-8 px-3">
+      <div className="flex-1 flex flex-col py-6 px-2">
         {/* Logo */}
-        <div className="mb-10 px-3">
+        <div className="mb-8 px-4">
           <h1 className={cn(
-            "text-2xl font-bold transition-opacity",
+            "text-3xl font-extrabold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent transition-opacity",
             collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
           )}>
             Blynk
           </h1>
-          {collapsed && <Menu className="h-6 w-6 mx-auto" />}
+          {collapsed && <Menu className="h-7 w-7 mx-auto text-primary" />}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-4 px-3 py-3 rounded-lg transition-all group",
-                isActive(item.path)
-                  ? "font-bold"
-                  : "hover:bg-muted/50"
-              )}
-            >
-              <item.icon 
+        <nav className="flex-1 space-y-0.5">
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
                 className={cn(
-                  "h-6 w-6 transition-all",
-                  isActive(item.path) ? "stroke-[2.5]" : "stroke-[1.5]"
-                )} 
-              />
-              <span className={cn(
-                "text-base transition-opacity",
-                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              )}>
-                {item.label}
-              </span>
-            </Link>
-          ))}
+                  "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden",
+                  active
+                    ? "bg-foreground/10 font-bold text-foreground shadow-sm"
+                    : "hover:bg-muted/70 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {active && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+                )}
+                <item.icon 
+                  className={cn(
+                    "h-[26px] w-[26px] transition-all flex-shrink-0",
+                    active ? "stroke-[2.5] text-foreground" : "stroke-[2] group-hover:scale-110"
+                  )} 
+                />
+                <span className={cn(
+                  "text-[15px] transition-opacity font-medium",
+                  collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+                )}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
 
           {/* Profile */}
           <Link
             to="/profile"
             className={cn(
-              "flex items-center gap-4 px-3 py-3 rounded-lg transition-all group",
+              "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden",
               isActive("/profile")
-                ? "font-bold"
-                : "hover:bg-muted/50"
+                ? "bg-foreground/10 font-bold text-foreground shadow-sm"
+                : "hover:bg-muted/70 text-muted-foreground hover:text-foreground"
             )}
           >
-            <Avatar className="h-6 w-6">
+            {isActive("/profile") && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+            )}
+            <Avatar className="h-[26px] w-[26px] border-2 border-border/50 group-hover:scale-110 transition-transform">
               <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold">
                 {profile?.username?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <span className={cn(
-              "text-base transition-opacity",
+              "text-[15px] transition-opacity font-medium",
               collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
             )}>
               Perfil
@@ -125,15 +134,18 @@ export default function InstagramSidebar() {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="space-y-1 pt-4 border-t border-border">
+        <div className="space-y-0.5 pt-4 border-t border-border/40 mt-4">
           <Button
             variant="ghost"
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full justify-start gap-4 px-3 py-3 h-auto"
+            className={cn(
+              "w-full justify-start gap-4 px-4 py-3.5 h-auto rounded-xl hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all",
+              collapsed && "justify-center"
+            )}
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-[26px] w-[26px]" />
             <span className={cn(
-              "text-base transition-opacity",
+              "text-[15px] transition-opacity font-medium",
               collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
             )}>
               Mais
@@ -143,11 +155,15 @@ export default function InstagramSidebar() {
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className="w-full justify-start gap-4 px-3 py-3 h-auto text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className={cn(
+              "w-full justify-start gap-4 px-4 py-3.5 h-auto rounded-xl transition-all",
+              "text-destructive hover:text-destructive hover:bg-destructive/10",
+              collapsed && "justify-center"
+            )}
           >
-            <LogOut className="h-6 w-6" />
+            <LogOut className="h-[26px] w-[26px]" />
             <span className={cn(
-              "text-base transition-opacity",
+              "text-[15px] transition-opacity font-medium",
               collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
             )}>
               Sair
