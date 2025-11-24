@@ -443,19 +443,17 @@ export default function Profile() {
               </div>
 
               <div className="mt-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-2xl font-bold">{profile.full_name || profile.username}</h2>
-                  {profile.verified && (
+                  {(profile.verified || profile.badge_type) && (
                     <VerificationBadge 
                       verified={profile.verified}
                       badgeType={profile.badge_type} 
-                      className="w-5 h-5" 
+                      className="w-6 h-6" 
                     />
                   )}
-                  {isOwnProfile && (
-                    <ProfileSwitcher />
-                  )}
                 </div>
+                <p className="text-sm text-muted-foreground">@{profile.username}</p>
                 
                 <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                   <button
