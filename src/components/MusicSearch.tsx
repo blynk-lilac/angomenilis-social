@@ -67,6 +67,10 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
 
   const loadTrendingMusic = async () => {
     setLoading(true);
+    
+    // Loading mínimo de 3 segundos
+    const loadingStart = Date.now();
+    
     try {
       const allMusic: Music[] = [];
 
@@ -98,7 +102,12 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
       toast.error("Erro ao carregar músicas");
       setMusic([]);
     } finally {
-      setLoading(false);
+      // Garantir loading de 3s
+      const elapsed = Date.now() - loadingStart;
+      const remaining = Math.max(0, 3000 - elapsed);
+      setTimeout(() => {
+        setLoading(false);
+      }, remaining);
     }
   };
 
