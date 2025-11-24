@@ -66,16 +66,20 @@ const handler = async (req: Request): Promise<Response> => {
     const data: DeezerResponse = await deezerResponse.json();
     console.log("Deezer data:", JSON.stringify(data).substring(0, 200));
 
-    const tracks = (data.data || []).map((item) => ({
-      id: item.id.toString(),
-      name: item.title,
-      artist: item.artist?.name || "",
-      cover: item.album?.cover_medium || item.album?.cover_big || "",
-      duration: formatDuration(item.duration || 0),
-      preview: item.preview,
-    }));
+    // IMPORTANTE: Apenas retornar músicas que TÊM preview disponível
+    const tracks = (data.data || [])
+      .filter((item) => item.preview) // Filtrar apenas músicas com preview
+      .map((item) => ({
+        id: item.id.toString(),
+        name: item.title,
+        artist: item.artist?.name || "",
+        cover: item.album?.cover_medium || item.album?.cover_big || "",
+        duration: formatDuration(item.duration || 0),
+        preview: item.preview,
+      }));
 
-    console.log("Returning tracks count:", tracks.length);
+    console.log("Total tracks found:", data.data?.length || 0);
+    console.log("Tracks with preview:", tracks.length);
 
     return new Response(JSON.stringify({ tracks }), {
       status: 200,
