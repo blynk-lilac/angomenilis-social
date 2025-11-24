@@ -1,13 +1,13 @@
 import { NavLink } from '@/components/NavLink';
-import { Home, Users, MessageSquare, Video, User, Plus } from 'lucide-react';
+import { Home, Users, MessageSquare, Video, User, Plus, Sparkles, Heart, TrendingUp, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const BottomNav = () => {
   const navItems = [
-    { to: '/feed', icon: Home, label: 'Feed' },
-    { to: '/friends', icon: Users, label: 'Amigos' },
+    { to: '/feed', icon: Sparkles, label: 'Feed' },
+    { to: '/friends', icon: Heart, label: 'Amigos' },
     { to: '/messages', icon: MessageSquare, label: 'Mensagens' },
-    { to: '/videos', icon: Video, label: 'Vídeos' },
+    { to: '/videos', icon: TrendingUp, label: 'Vídeos' },
     { to: '/profile', icon: User, label: 'Perfil' },
   ];
 
@@ -33,10 +33,10 @@ export const BottomNav = () => {
         {/* Botão de Criar no Centro */}
         <Link
           to="/create"
-          className="flex flex-col items-center justify-center flex-1 h-full -mt-8"
+          className="flex flex-col items-center justify-center flex-1 h-full -mt-8 group"
         >
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all">
-            <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 animate-pulse-glow group-hover:rotate-90">
+            <Zap className="h-7 w-7 text-white animate-bounce-subtle" strokeWidth={2.5} />
           </div>
         </Link>
 

@@ -56,9 +56,19 @@ const GLOBAL_QUERIES = [
   "disco", "funk", "soul music", "gospel", "spiritual"
 ];
 
+// Música trending principal - no topo sempre
+const TRENDING_MUSIC: Music = {
+  id: "trending-cold-keys",
+  name: "Cold Keys Warm Steel",
+  artist: "Trending Hit",
+  cover: "/music/cold-keys-warm-steel-cover.jpg",
+  duration: "3:45",
+  preview: "/music/cold-keys-warm-steel.mp3"
+};
+
 export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
   const [search, setSearch] = useState("");
-  const [music, setMusic] = useState<Music[]>([]);
+  const [music, setMusic] = useState<Music[]>([TRENDING_MUSIC]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -79,9 +89,10 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
       if (allMusic.length > 0) {
         // Embaralhar para ter variedade
         const shuffled = allMusic.sort(() => Math.random() - 0.5);
-        setMusic(shuffled);
+        // SEMPRE manter a trending music no topo
+        setMusic([TRENDING_MUSIC, ...shuffled]);
       } else {
-        toast.error("Nenhuma música encontrada");
+        setMusic([TRENDING_MUSIC]);
       }
     } catch (error) {
       console.error(error);
@@ -105,15 +116,16 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
       const results = await searchDeezerMusic(trimmed);
 
       if (results.length > 0) {
-        setMusic(results);
+        // SEMPRE manter a trending music no topo, mesmo na busca
+        setMusic([TRENDING_MUSIC, ...results]);
       } else {
         toast.info("Nenhuma música encontrada");
-        setMusic([]);
+        setMusic([TRENDING_MUSIC]);
       }
     } catch (error) {
       console.error(error);
       toast.error("Erro ao buscar músicas");
-      setMusic([]);
+      setMusic([TRENDING_MUSIC]);
     } finally {
       setLoading(false);
     }
@@ -165,13 +177,17 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
         ) : (
           <ScrollArea className="h-full">
             <div className="p-2">
-              {music.map((track) => (
+              {music.map((track, index) => (
                 <div
                   key={track.id}
                   onClick={() => onSelect(track)}
-                  className="flex items-center gap-3 p-3 hover:bg-accent/50 rounded-lg cursor-pointer transition-colors active:bg-accent"
+                  className={`flex items-center gap-3 p-3 hover:bg-accent/50 rounded-lg cursor-pointer transition-all active:scale-98 ${
+                    index === 0 ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-4 border-primary mb-2 animate-pulse-subtle' : ''
+                  }`}
                 >
-                  <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 relative bg-secondary">
+                  <div className={`rounded-lg overflow-hidden flex-shrink-0 relative ${
+                    index === 0 ? 'w-16 h-16 ring-2 ring-primary' : 'w-14 h-14 bg-secondary'
+                  }`}>
                     {track.cover ? (
                       <img 
                         src={track.cover} 
@@ -183,9 +199,16 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
                         <div className="w-8 h-8 rounded-full bg-background/50" />
                       </div>
                     )}
+                    {index === 0 && (
+                      <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-bl">
+                        TREND
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-foreground">{track.name}</p>
+                    <p className={`font-medium truncate ${index === 0 ? 'text-primary font-bold' : 'text-foreground'}`}>
+                      {track.name}
+                    </p>
                     <p className="text-sm text-muted-foreground truncate">
                       {track.artist} · {track.duration}
                     </p>
@@ -193,9 +216,11 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="flex-shrink-0 rounded-full bg-secondary/50 hover:bg-secondary"
+                    className={`flex-shrink-0 rounded-full ${
+                      index === 0 ? 'bg-primary/20 hover:bg-primary/30' : 'bg-secondary/50 hover:bg-secondary'
+                    }`}
                   >
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className={`h-5 w-5 ${index === 0 ? 'text-primary' : ''}`} />
                   </Button>
                 </div>
               ))}
