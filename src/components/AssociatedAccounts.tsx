@@ -2,21 +2,9 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, Plus, LogIn } from "lucide-react";
+import { Plus, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface PageProfile {
   id: string;
@@ -35,9 +23,6 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<PageProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<PageProfile | null>(null);
-  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (userId) {
@@ -62,44 +47,20 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
     }
   };
 
-  const handleLoginClick = (account: PageProfile) => {
-    if (account.is_authenticated && account.email) {
-      setSelectedAccount(account);
-      setLoginDialogOpen(true);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!selectedAccount || !password) {
-      toast.error("Por favor, insira a senha");
-      return;
-    }
-
+  const handleSwitchProfile = async (account: PageProfile) => {
     try {
-      if (!selectedAccount.email) {
-        toast.error("Esta conta não tem email configurado");
-        return;
-      }
-
-      // Fazer login com o email e senha da conta associada
-      const { error } = await supabase.auth.signInWithPassword({
-        email: selectedAccount.email,
-        password: password,
-      });
-
-      if (error) {
-        console.error("Login error:", error);
-        toast.error("Senha incorreta ou erro ao fazer login");
-        return;
-      }
-
-      toast.success(`Conectado como ${selectedAccount.name}`);
-      setLoginDialogOpen(false);
-      setPassword("");
-      navigate("/feed");
+      // Salvar o ID da conta associada no localStorage para manter o contexto
+      localStorage.setItem("active_profile_id", account.id);
+      localStorage.setItem("active_profile_name", account.name);
+      localStorage.setItem("active_profile_type", "page");
+      
+      toast.success(`Trocado para ${account.name}`);
+      
+      // Recarregar a página para aplicar o novo perfil
+      window.location.reload();
     } catch (error: any) {
-      console.error("Login error:", error);
-      toast.error("Erro ao fazer login");
+      console.error("Switch profile error:", error);
+      toast.error("Erro ao trocar de perfil");
     }
   };
 
@@ -139,58 +100,22 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
                 </p>
               )}
             </div>
-            {account.is_authenticated && account.email ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleLoginClick(account)}
-                className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <LogIn className="h-4 w-4 mr-1" />
-                Entrar
-              </Button>
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSwitchProfile(account)}
+              className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <LogIn className="h-4 w-4 mr-1" />
+              Trocar
+            </Button>
           </div>
         ))}
       </div>
       
-      {accounts.some(a => a.is_authenticated) && (
-        <p className="text-xs text-muted-foreground mt-3 px-2">
-          💡 Clica em "Entrar" para mudar para esta conta. Usa a senha desta conta associada.
-        </p>
-      )}
-
-      <AlertDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Iniciar sessão como {selectedAccount?.name}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Insira a senha desta conta ({selectedAccount?.email}) para entrar.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite sua senha"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleLogin();
-                }
-              }}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPassword("")}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogin}>Entrar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <p className="text-xs text-muted-foreground mt-3 px-2">
+        💡 Clica em "Trocar" para mudar para esta conta.
+      </p>
     </div>
   );
 }
