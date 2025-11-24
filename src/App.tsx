@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { ActiveProfileProvider } from "@/contexts/ActiveProfileContext";
 import { useStoryReactions } from "@/hooks/useStoryReactions";
 import { useGlobalUserPresence } from "@/hooks/useGlobalUserPresence";
 import { MessageNotification } from "@/components/MessageNotification";
@@ -416,9 +417,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <SettingsProvider>
-            <AppContent />
-          </SettingsProvider>
+          <ActiveProfileProvider>
+            <SettingsProvider>
+              <AppContent />
+            </SettingsProvider>
+          </ActiveProfileProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

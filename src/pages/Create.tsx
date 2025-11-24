@@ -10,6 +10,8 @@ import { TopBar } from "@/components/TopBar";
 import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Create() {
   const [content, setContent] = useState("");
@@ -18,6 +20,8 @@ export default function Create() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { processPostHashtagsAndMentions } = useHashtagsAndMentions();
+  const { activeProfile } = useActiveProfile();
+  const { user } = useAuth();
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -65,14 +69,16 @@ export default function Create() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
+
+      // Usar o perfil ativo (pode ser perfil principal ou página associada)
+      const postUserId = activeProfile?.type === 'page' ? activeProfile.id : user.id;
 
       const mediaUrls: string[] = [];
 
       for (const file of mediaFiles) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+        const fileName = `${postUserId}/${Date.now()}-${Math.random()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('post-images')
@@ -90,8 +96,23 @@ export default function Create() {
         mediaUrls.push(publicUrl);
       }
 
+      // Se for página associada, criar post como página
+      if (activeProfile?.type === 'page') {
+        // Verificar se a página existe e pertence ao usuário
+        const { data: pageProfile } = await supabase
+          .from('page_profiles')
+          .select('*')
+          .eq('id', activeProfile.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!pageProfile) {
+          throw new Error("Página não encontrada ou sem permissão");
+        }
+      }
+
       const { data: newPost, error } = await supabase.from("posts").insert({
-        user_id: user.id,
+        user_id: postUserId,
         content,
         media_urls: mediaUrls.length > 0 ? mediaUrls : null,
       }).select().single();
@@ -100,7 +121,7 @@ export default function Create() {
 
       // Processar hashtags e menções
       if (newPost) {
-        await processPostHashtagsAndMentions(newPost.id, content, user.id);
+        await processPostHashtagsAndMentions(newPost.id, content, postUserId);
       }
 
       toast.success("Post criado!");

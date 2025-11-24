@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, LogIn } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 interface PageProfile {
   id: string;
@@ -21,6 +22,7 @@ interface AssociatedAccountsProps {
 
 export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) {
   const navigate = useNavigate();
+  const { activeProfile, setActiveProfile } = useActiveProfile();
   const [accounts, setAccounts] = useState<PageProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,19 +51,23 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
 
   const handleSwitchProfile = async (account: PageProfile) => {
     try {
-      // Salvar o ID da conta associada no localStorage para manter o contexto
-      localStorage.setItem("active_profile_id", account.id);
-      localStorage.setItem("active_profile_name", account.name);
-      localStorage.setItem("active_profile_type", "page");
+      setActiveProfile({
+        id: account.id,
+        name: account.name,
+        type: 'page',
+        avatar_url: account.avatar_url || undefined,
+      });
       
       toast.success(`Trocado para ${account.name}`);
-      
-      // Recarregar a página para aplicar o novo perfil
       window.location.reload();
     } catch (error: any) {
       console.error("Switch profile error:", error);
       toast.error("Erro ao trocar de perfil");
     }
+  };
+
+  const isActiveAccount = (accountId: string) => {
+    return activeProfile?.type === 'page' && activeProfile?.id === accountId;
   };
 
   if (loading) return null;
@@ -86,7 +92,12 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
         {accounts.map((account) => (
           <div
             key={account.id}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
+            onClick={() => handleSwitchProfile(account)}
+            className={`flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer ${
+              isActiveAccount(account.id) 
+                ? 'bg-primary/10 border border-primary/20' 
+                : 'hover:bg-muted/50'
+            }`}
           >
             <Avatar className="h-10 w-10">
               <AvatarImage src={account.avatar_url || ""} />
@@ -100,21 +111,17 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleSwitchProfile(account)}
-              className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <LogIn className="h-4 w-4 mr-1" />
-              Trocar
-            </Button>
+            {isActiveAccount(account.id) && (
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary">
+                <Check className="h-4 w-4 text-primary-foreground" />
+              </div>
+            )}
           </div>
         ))}
       </div>
       
       <p className="text-xs text-muted-foreground mt-3 px-2">
-        💡 Clica em "Trocar" para mudar para esta conta.
+        💡 Clica na conta para trocar de perfil.
       </p>
     </div>
   );
