@@ -71,14 +71,14 @@ export default function Create() {
     try {
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Usar o perfil ativo (pode ser perfil principal ou página associada)
+      // Usar perfil ativo ou usuário principal
       const postUserId = activeProfile?.type === 'page' ? activeProfile.id : user.id;
 
       const mediaUrls: string[] = [];
 
       for (const file of mediaFiles) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${postUserId}/${Date.now()}-${Math.random()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('post-images')
@@ -94,21 +94,6 @@ export default function Create() {
           .getPublicUrl(fileName);
 
         mediaUrls.push(publicUrl);
-      }
-
-      // Se for página associada, criar post como página
-      if (activeProfile?.type === 'page') {
-        // Verificar se a página existe e pertence ao usuário
-        const { data: pageProfile } = await supabase
-          .from('page_profiles')
-          .select('*')
-          .eq('id', activeProfile.id)
-          .eq('user_id', user.id)
-          .single();
-
-        if (!pageProfile) {
-          throw new Error("Página não encontrada ou sem permissão");
-        }
       }
 
       const { data: newPost, error } = await supabase.from("posts").insert({
