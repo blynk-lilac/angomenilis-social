@@ -547,7 +547,7 @@ export default function Feed() {
               <>
                 {posts.map((post, index) => (
                   <div key={`post-${post.id}`}>
-                    <Card className="bg-card border border-border/30 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+                    <Card className="bg-card border-0 sm:border sm:border-border/50 rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm hover:shadow-md transition-shadow duration-200">
                       {/* Header do Post */}
                       <div className="p-3 sm:p-4">
                         <div className="flex items-center gap-3">
