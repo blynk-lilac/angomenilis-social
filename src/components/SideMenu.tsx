@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 
 interface Profile {
   username: string;
@@ -40,23 +41,42 @@ export default function SideMenu() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { activeProfile } = useActiveProfile();
 
   useEffect(() => {
     loadProfile();
     checkAdmin();
-  }, []);
+  }, [activeProfile]);
 
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("username, full_name, avatar_url")
-      .eq("id", user.id)
-      .single();
+    // Se há perfil ativo e é uma página
+    if (activeProfile?.type === 'page') {
+      const { data } = await supabase
+        .from("page_profiles")
+        .select("name, avatar_url")
+        .eq("id", activeProfile.id)
+        .single();
 
-    if (data) setProfile(data);
+      if (data) {
+        setProfile({
+          username: data.name,
+          full_name: data.name,
+          avatar_url: data.avatar_url
+        });
+      }
+    } else {
+      // Usar perfil do usuário principal
+      const { data } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (data) setProfile(data);
+    }
   };
 
   const checkAdmin = async () => {
@@ -73,11 +93,13 @@ export default function SideMenu() {
     navigate("/auth");
   };
 
+  const profilePath = activeProfile?.type === 'page' ? `/profile/${activeProfile.id}` : "/profile";
+
   const menuSections = [
     {
       title: "Seus atalhos",
       items: [
-        { icon: User, label: "Meu Perfil", path: "/profile", color: "text-blue-600", bgColor: "bg-gradient-to-br from-blue-500/10 to-blue-600/10" },
+        { icon: User, label: "Meu Perfil", path: profilePath, color: "text-blue-600", bgColor: "bg-gradient-to-br from-blue-500/10 to-blue-600/10" },
         { icon: Users, label: "Amigos", path: "/friends", color: "text-cyan-600", bgColor: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/10" },
         { icon: MessageCircle, label: "Mensagens", path: "/messages", color: "text-pink-600", bgColor: "bg-gradient-to-br from-pink-500/10 to-pink-600/10" },
         { icon: Video, label: "Vídeos", path: "/videos", color: "text-purple-600", bgColor: "bg-gradient-to-br from-purple-500/10 to-purple-600/10" },
@@ -126,7 +148,7 @@ export default function SideMenu() {
 
             {/* Profile Card - Design Moderno */}
             <Link 
-              to="/profile" 
+              to={activeProfile?.type === 'page' ? `/profile/${activeProfile.id}` : "/profile"}
               className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 transition-all duration-300 mb-6 group border border-border/50 shadow-sm"
             >
               <Avatar className="h-16 w-16 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
