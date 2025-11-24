@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+facebookbookrt { Link, useLocation } from "react-router-dom";
 import { Home, Users, MessageSquare, Video, Bell, Menu, Search, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ export const TopBar = () => {
         {/* Logo */}
         <Link to="/feed" className="flex items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            facebook
+      Blynk
           </h1>
         </Link>
 
