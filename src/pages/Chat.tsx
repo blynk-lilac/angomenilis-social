@@ -68,8 +68,15 @@ export default function Chat() {
     if (!friendId) return;
 
     const loadData = async () => {
+      const startTime = Date.now();
       await Promise.all([loadFriend(), loadChatSettings(), loadMessages()]);
-      setLoading(false);
+      
+      // Garantir no mínimo 3 segundos de loading
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 3000 - elapsed);
+      setTimeout(() => {
+        setLoading(false);
+      }, remaining);
     };
     
     loadData();
