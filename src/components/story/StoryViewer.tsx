@@ -55,6 +55,14 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     setMusicCover(null);
     setAudioEnabled(false);
 
+    // Limpar áudio anterior completamente
+    if (audio) {
+      audio.pause();
+      audio.src = '';
+      audio.load();
+      setAudio(null);
+    }
+
     // Record view if not own story
     if (!isOwnStory) {
       recordView();
@@ -64,9 +72,14 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     loadViewCount();
     loadUserReaction();
 
-    // Carregar dados da música quando o story abre
+    // Carregar música automaticamente quando o story abre
     if (currentStory.music_name) {
-      loadMusicData();
+      console.log('🎵 Story tem música, carregando automaticamente...');
+      loadMusicData().then(loadedAudio => {
+        if (loadedAudio) {
+          console.log('✅ Música carregada, pronta para tocar');
+        }
+      });
     }
 
     // Auto progress - 10 segundos para todos os tipos
@@ -85,21 +98,14 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       clearInterval(interval);
       if (audio) {
         audio.pause();
-        audio.currentTime = 0;
+        audio.src = '';
+        audio.load();
       }
     };
   }, [currentIndex, currentStory, user]);
 
   const loadMusicData = async (): Promise<HTMLAudioElement | null> => {
     try {
-      // Parar e limpar áudio anterior
-      if (audio) {
-        audio.pause();
-        audio.src = '';
-        audio.remove();
-        setAudio(null);
-      }
-
       if (!currentStory.music_name) {
         console.log('Story sem música definida');
         return null;
@@ -111,8 +117,10 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`,
         {
+          method: 'GET',
           headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -127,56 +135,62 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       if (data.tracks && data.tracks.length > 0) {
         const track = data.tracks[0];
         
-        // VERIFICAR se a música TEM preview antes de tentar carregar
         if (!track.preview) {
-          console.warn('❌ Música sem preview disponível:', track.name);
-          toast.error('Esta música não tem preview disponível');
+          console.warn('❌ Música sem preview:', track.name);
           return null;
         }
 
-        console.log('✅ Música encontrada:', track.name, '- Preview:', track.preview);
+        console.log('✅ Música encontrada:', track.name);
+        console.log('🔗 Preview URL:', track.preview);
         
-        // Criar e preparar o áudio
+        // Criar elemento de áudio
         const newAudio = new Audio();
         newAudio.crossOrigin = "anonymous";
         newAudio.preload = "auto";
         newAudio.volume = 0.7;
         
-        // Event listeners importantes
-        newAudio.addEventListener('loadeddata', () => {
-          console.log('✅ Áudio carregado com sucesso');
-        });
+        // Handlers de eventos
+        newAudio.onloadeddata = () => {
+          console.log('✅ Áudio carregado e pronto');
+        };
 
-        newAudio.addEventListener('error', (e) => {
+        newAudio.onerror = (e) => {
           console.error('❌ Erro ao carregar áudio:', e);
-          toast.error('Erro ao carregar música. Tente outra.');
           setAudioEnabled(false);
-        });
+        };
         
-        newAudio.addEventListener('ended', () => {
+        newAudio.onended = () => {
           console.log('🎵 Preview terminou');
           setAudioEnabled(false);
-        });
+        };
 
-        // Carregar a URL
+        newAudio.onplay = () => {
+          console.log('▶️ Áudio começou a tocar');
+          setAudioEnabled(true);
+        };
+
+        newAudio.onpause = () => {
+          console.log('⏸️ Áudio pausado');
+        };
+
+        // Carregar URL
         newAudio.src = track.preview;
+        newAudio.load();
         
         setAudio(newAudio);
         
-        // Armazenar capa do álbum
+        // Armazenar capa
         if (track.cover) {
           setMusicCover(track.cover);
         }
 
         return newAudio;
       } else {
-        console.warn('❌ Nenhuma música encontrada para:', searchQuery);
-        toast.error('Música não encontrada');
+        console.warn('❌ Nenhuma música encontrada');
         return null;
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar dados da música:', error);
-      toast.error('Erro ao buscar música');
+      console.error('❌ Erro ao carregar música:', error);
       return null;
     }
   };
@@ -184,58 +198,79 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const playMusic = async () => {
     console.log('🔊 Tentando tocar música...');
     
-    let audioToPlay = audio;
-
-    // Se não tem áudio carregado, tentar carregar primeiro
-    if (!audioToPlay) {
-      console.log('⚠️ Áudio não carregado, tentando carregar...');
-      toast.info('Carregando música...');
-      audioToPlay = await loadMusicData();
+    if (!audio) {
+      console.log('⚠️ Áudio não carregado, carregando agora...');
+      const loadedAudio = await loadMusicData();
       
-      if (!audioToPlay) {
+      if (!loadedAudio) {
         console.error('❌ Falha ao carregar áudio');
+        toast.error('Não foi possível carregar a música');
         return;
       }
-    }
-
-    try {
-      // Garantir que o áudio está pronto para tocar
-      if (audioToPlay.readyState < 2) {
-        console.log('⏳ Aguardando áudio carregar...');
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('Timeout ao carregar áudio'));
-          }, 10000);
-
-          audioToPlay!.addEventListener('loadeddata', () => {
-            clearTimeout(timeout);
-            resolve();
-          }, { once: true });
-
-          audioToPlay!.addEventListener('error', () => {
-            clearTimeout(timeout);
-            reject(new Error('Erro ao carregar áudio'));
-          }, { once: true });
+      
+      // Usar o áudio recém carregado
+      setAudio(loadedAudio);
+      
+      // Aguardar o áudio estar pronto
+      if (loadedAudio.readyState < 2) {
+        await new Promise<void>((resolve) => {
+          loadedAudio.onloadeddata = () => resolve();
         });
       }
+      
+      try {
+        await loadedAudio.play();
+        console.log('✅ Música tocando!');
+        setAudioEnabled(true);
+        toast.success('🎵 Som ativado!');
+      } catch (error) {
+        console.error('❌ Erro ao tocar:', error);
+        toast.error('Toque novamente para ativar o som');
+      }
+      
+      return;
+    }
 
-      // Tocar o áudio
-      await audioToPlay.play();
-      console.log('✅ Música tocando!');
-      setAudioEnabled(true);
-      toast.success('🎵 Som ativado!');
-    } catch (playError) {
-      console.error('❌ Erro ao tocar música:', playError);
+    // Se já tem áudio carregado
+    try {
+      // Se estiver pausado, retomar
+      if (audio.paused) {
+        // Garantir que está carregado
+        if (audio.readyState < 2) {
+          console.log('⏳ Aguardando áudio carregar...');
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Timeout')), 8000);
+            
+            audio.onloadeddata = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            
+            audio.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Erro ao carregar'));
+            };
+          });
+        }
+        
+        await audio.play();
+        console.log('✅ Música tocando!');
+        setAudioEnabled(true);
+        toast.success('🎵 Som ativado!');
+      } else {
+        // Se já está tocando, pausar
+        audio.pause();
+        setAudioEnabled(false);
+        console.log('⏸️ Música pausada');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao tocar música:', error);
       setAudioEnabled(false);
       
-      if (playError instanceof Error) {
-        if (playError.message.includes('Timeout')) {
-          toast.error('Música demorou muito para carregar. Tente outra.');
-        } else if (playError.message.includes('NotAllowedError')) {
-          toast.error('Clique novamente para ativar o som');
-        } else {
-          toast.error('Erro ao tocar música. Tente outra.');
-        }
+      if (error instanceof Error && error.message.includes('Timeout')) {
+        toast.error('Música demorou muito para carregar');
+      } else {
+        toast.error('Toque novamente para ativar o som');
       }
     }
   };
