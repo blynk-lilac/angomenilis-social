@@ -92,10 +92,11 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
   const loadMusicData = async (): Promise<HTMLAudioElement | null> => {
     try {
-      // Parar áudio anterior se estiver a tocar
+      // Parar e limpar áudio anterior
       if (audio) {
         audio.pause();
         audio.src = '';
+        audio.remove();
         setAudio(null);
       }
 
@@ -105,41 +106,63 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       }
 
       const searchQuery = `${currentStory.music_artist || ''} ${currentStory.music_name}`.trim();
-      console.log('Loading music data for:', searchQuery);
+      console.log('🎵 Buscando música:', searchQuery);
       
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(searchQuery)}`,
+        {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+          }
+        }
       );
       
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('🎵 API retornou:', data.tracks?.length || 0, 'músicas');
       
       if (data.tracks && data.tracks.length > 0) {
         const track = data.tracks[0];
-        console.log('Found track with preview:', track.preview);
         
-        let newAudio: HTMLAudioElement | null = null;
-
-        // Preparar o áudio mas não tocar ainda (preview de 30s do Deezer)
-        if (track.preview) {
-          newAudio = new Audio(track.preview);
-          newAudio.volume = 0.7;
-          newAudio.loop = false; // Preview de 30s não deve dar loop
-          
-          // Event listener para quando o preview acabar
-          newAudio.addEventListener('ended', () => {
-            console.log('Preview de 30s terminou');
-            setAudioEnabled(false);
-          });
-
-          setAudio(newAudio);
-          console.log('Audio preparado, pronto para tocar');
+        // VERIFICAR se a música TEM preview antes de tentar carregar
+        if (!track.preview) {
+          console.warn('❌ Música sem preview disponível:', track.name);
+          toast.error('Esta música não tem preview disponível');
+          return null;
         }
 
-        // Armazenar informações da música
-        if (track.name && track.artist) {
-          console.log('Music info:', { name: track.name, artist: track.artist });
-        }
+        console.log('✅ Música encontrada:', track.name, '- Preview:', track.preview);
+        
+        // Criar e preparar o áudio
+        const newAudio = new Audio();
+        newAudio.crossOrigin = "anonymous";
+        newAudio.preload = "auto";
+        newAudio.volume = 0.7;
+        
+        // Event listeners importantes
+        newAudio.addEventListener('loadeddata', () => {
+          console.log('✅ Áudio carregado com sucesso');
+        });
 
+        newAudio.addEventListener('error', (e) => {
+          console.error('❌ Erro ao carregar áudio:', e);
+          toast.error('Erro ao carregar música. Tente outra.');
+          setAudioEnabled(false);
+        });
+        
+        newAudio.addEventListener('ended', () => {
+          console.log('🎵 Preview terminou');
+          setAudioEnabled(false);
+        });
+
+        // Carregar a URL
+        newAudio.src = track.preview;
+        
+        setAudio(newAudio);
+        
         // Armazenar capa do álbum
         if (track.cover) {
           setMusicCover(track.cover);
@@ -147,35 +170,73 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
         return newAudio;
       } else {
-        console.log('No tracks found for query:', searchQuery);
+        console.warn('❌ Nenhuma música encontrada para:', searchQuery);
         toast.error('Música não encontrada');
+        return null;
       }
     } catch (error) {
-      console.error('Could not load music data:', error);
-      toast.error('Erro ao carregar música');
+      console.error('❌ Erro ao carregar dados da música:', error);
+      toast.error('Erro ao buscar música');
+      return null;
     }
-
-    return null;
   };
 
   const playMusic = async () => {
+    console.log('🔊 Tentando tocar música...');
+    
     let audioToPlay = audio;
 
+    // Se não tem áudio carregado, tentar carregar primeiro
     if (!audioToPlay) {
-      toast.error('Música não carregada. A tentar novamente...');
+      console.log('⚠️ Áudio não carregado, tentando carregar...');
+      toast.info('Carregando música...');
       audioToPlay = await loadMusicData();
-      if (!audioToPlay) return;
+      
+      if (!audioToPlay) {
+        console.error('❌ Falha ao carregar áudio');
+        return;
+      }
     }
 
     try {
+      // Garantir que o áudio está pronto para tocar
+      if (audioToPlay.readyState < 2) {
+        console.log('⏳ Aguardando áudio carregar...');
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout ao carregar áudio'));
+          }, 10000);
+
+          audioToPlay!.addEventListener('loadeddata', () => {
+            clearTimeout(timeout);
+            resolve();
+          }, { once: true });
+
+          audioToPlay!.addEventListener('error', () => {
+            clearTimeout(timeout);
+            reject(new Error('Erro ao carregar áudio'));
+          }, { once: true });
+        });
+      }
+
+      // Tocar o áudio
       await audioToPlay.play();
-      console.log('Audio playing successfully');
+      console.log('✅ Música tocando!');
       setAudioEnabled(true);
-      toast.success('Som ativado!');
+      toast.success('🎵 Som ativado!');
     } catch (playError) {
-      console.error('Failed to play audio:', playError);
+      console.error('❌ Erro ao tocar música:', playError);
       setAudioEnabled(false);
-      toast.error('Erro ao tocar a música. Tente novamente.');
+      
+      if (playError instanceof Error) {
+        if (playError.message.includes('Timeout')) {
+          toast.error('Música demorou muito para carregar. Tente outra.');
+        } else if (playError.message.includes('NotAllowedError')) {
+          toast.error('Clique novamente para ativar o som');
+        } else {
+          toast.error('Erro ao tocar música. Tente outra.');
+        }
+      }
     }
   };
   const recordView = async () => {
