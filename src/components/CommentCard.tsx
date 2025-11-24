@@ -4,6 +4,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import VerificationBadge from "./VerificationBadge";
+import { TranslateButton } from "./TranslateButton";
+import { useState } from "react";
 
 interface CommentCardProps {
   comment: {
@@ -29,6 +31,7 @@ interface CommentCardProps {
 export const CommentCard = ({ comment, onLike, onReply, isReply = false }: CommentCardProps) => {
   const navigate = useNavigate();
   const likesCount = comment.likes[0]?.count || 0;
+  const [translatedContent, setTranslatedContent] = useState(comment.content);
 
   return (
     <div className={`flex gap-2 ${isReply ? "ml-12 mt-2" : ""}`}>
@@ -64,9 +67,19 @@ export const CommentCard = ({ comment, onLike, onReply, isReply = false }: Comme
           {comment.audio_url ? (
             <audio controls className="max-w-full h-8 mt-1" src={comment.audio_url} />
           ) : (
-            <p className="text-[15px] text-foreground break-words leading-snug">
-              {comment.content}
-            </p>
+            <>
+              <p className="text-[15px] text-foreground break-words leading-snug">
+                {translatedContent}
+              </p>
+              {!isReply && (
+                <div className="mt-1">
+                  <TranslateButton 
+                    text={comment.content} 
+                    onTranslated={setTranslatedContent}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 

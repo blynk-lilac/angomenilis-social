@@ -15,6 +15,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 import PostMenu from "@/components/PostMenu";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
+import { TranslateButton } from "@/components/TranslateButton";
 
 export default function PostDetail() {
   const { postId } = useParams();
@@ -25,6 +26,7 @@ export default function PostDetail() {
   const [showReactions, setShowReactions] = useState(false);
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [translatedContent, setTranslatedContent] = useState("");
 
   useEffect(() => {
     loadPost();
@@ -200,7 +202,13 @@ export default function PostDetail() {
               </div>
 
               {post.content && (
-                <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
+                <div className="space-y-2">
+                  <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words">{translatedContent || post.content}</p>
+                  <TranslateButton
+                    text={post.content}
+                    onTranslated={setTranslatedContent}
+                  />
+                </div>
               )}
             </div>
 
