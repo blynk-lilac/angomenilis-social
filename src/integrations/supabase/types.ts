@@ -1676,6 +1676,42 @@ export type Database = {
           },
         ]
       }
+      trending_music: {
+        Row: {
+          artist: string
+          audio_url: string
+          cover_url: string | null
+          created_at: string | null
+          duration: number
+          id: string
+          is_trending: boolean | null
+          name: string
+          play_count: number | null
+        }
+        Insert: {
+          artist: string
+          audio_url: string
+          cover_url?: string | null
+          created_at?: string | null
+          duration: number
+          id?: string
+          is_trending?: boolean | null
+          name: string
+          play_count?: number | null
+        }
+        Update: {
+          artist?: string
+          audio_url?: string
+          cover_url?: string | null
+          created_at?: string | null
+          duration?: number
+          id?: string
+          is_trending?: boolean | null
+          name?: string
+          play_count?: number | null
+        }
+        Relationships: []
+      }
       two_factor_auth: {
         Row: {
           created_at: string | null
