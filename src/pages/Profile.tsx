@@ -102,6 +102,7 @@ export default function Profile() {
   }, [userId]);
 
   const loadProfile = async () => {
+    const startTime = Date.now();
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -133,7 +134,12 @@ export default function Profile() {
         }
       }
     } finally {
-      setLoading(false);
+      // Garantir no mínimo 3 segundos de loading
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 3000 - elapsed);
+      setTimeout(() => {
+        setLoading(false);
+      }, remaining);
     }
   };
 

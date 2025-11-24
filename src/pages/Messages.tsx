@@ -60,8 +60,15 @@ export default function Messages() {
   }, [user]);
 
   const loadData = async () => {
+    const startTime = Date.now();
     await Promise.all([loadProfile(), loadFriends(), loadStories(), loadChannels()]);
-    setLoading(false);
+    
+    // Garantir no mínimo 3 segundos de loading
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, 3000 - elapsed);
+    setTimeout(() => {
+      setLoading(false);
+    }, remaining);
   };
 
   const loadProfile = async () => {

@@ -86,7 +86,11 @@ export default function Feed() {
     const loadData = async () => {
       await loadUser();
       await Promise.all([loadPosts(), loadLiveStreams(), loadSponsoredAds()]);
-      setLoading(false);
+      
+      // Garantir no mínimo 3 segundos de loading
+      setTimeout(() => {
+        setLoading(false);
+      }, 3000);
     };
     loadData();
 

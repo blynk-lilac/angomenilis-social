@@ -113,6 +113,7 @@ export default function Videos() {
   };
 
   const loadVideos = async () => {
+    const startTime = Date.now();
     try {
       let query = supabase
         .from("verification_videos")
@@ -142,7 +143,12 @@ export default function Videos() {
 
       setVideos(data || []);
     } finally {
-      setLoading(false);
+      // Garantir no mínimo 3 segundos de loading
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 3000 - elapsed);
+      setTimeout(() => {
+        setLoading(false);
+      }, remaining);
     }
   };
 
