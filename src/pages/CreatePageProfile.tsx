@@ -75,7 +75,7 @@ export default function CreatePageProfile() {
 
       if (error) throw error;
 
-      toast.success(`Perfil criado! Email: ${pageEmail} (use a mesma senha da sua conta principal)`);
+      toast.success(`Perfil "${name}" criado com sucesso!`);
       navigate("/profile");
     } catch (error: any) {
       console.error("Error creating page profile:", error);
