@@ -51,17 +51,20 @@ import { requestNotificationPermission } from "./utils/pushNotifications";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Carregando...</p>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-5xl font-bold animate-pulse">Blynk</div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
       </div>
     );
   }
   
-  if (!user) {
+  if (!user || !session) {
     return <Navigate to="/auth" replace />;
   }
 
