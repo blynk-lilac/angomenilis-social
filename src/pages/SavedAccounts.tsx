@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { X, ChevronRight } from 'lucide-react';
 import logo from '@/assets/blynk-logo.jpg';
@@ -17,7 +18,15 @@ interface SavedAccount {
 
 export default function SavedAccounts() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
+
+  // Redirecionar usuários já autenticados
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/feed', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     loadSavedAccounts();
