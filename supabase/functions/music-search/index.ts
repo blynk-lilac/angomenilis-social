@@ -5,18 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface JamendoTrack {
-  id: string;
-  name: string;
-  artist_name: string;
-  image: string;
+interface DeezerTrack {
+  id: number;
+  title: string;
   duration: number;
-  audio: string;
-  audiodownload: string;
+  preview?: string;
+  artist: {
+    name: string;
+  };
+  album: {
+    cover_medium?: string;
+    cover_big?: string;
+  };
 }
 
-interface JamendoResponse {
-  results: JamendoTrack[];
+interface DeezerResponse {
+  data?: DeezerTrack[];
 }
 
 const formatDuration = (seconds: number): string => {
@@ -32,71 +36,71 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const url = new URL(req.url);
-    const query = url.searchParams.get("query") || "";
+    const query = url.searchParams.get("query");
 
-    if (!query) {
+    console.log("🎵 Query recebida:", query);
+
+    if (!query || query.trim().length === 0) {
       console.log("⚠️ Query vazia");
-      return new Response(
-        JSON.stringify({ tracks: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ tracks: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log("🎵 Buscando músicas na Jamendo:", query);
+    // Usar Deezer API com melhor configuração
+    const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=200`;
+    console.log("🔗 Chamando Deezer:", deezerUrl);
     
-    // Usar Jamendo API - música gratuita e sem restrições
-    const jamendoUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=json&limit=200&search=${encodeURIComponent(query)}&include=musicinfo&audioformat=mp32`;
+    const deezerResponse = await fetch(deezerUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json'
+      }
+    });
     
-    console.log("🔗 URL Jamendo:", jamendoUrl);
-    
-    const response = await fetch(jamendoUrl);
-    console.log("📡 Status Jamendo:", response.status);
+    console.log("📡 Status:", deezerResponse.status);
 
-    if (!response.ok) {
-      throw new Error(`Jamendo API error: ${response.status}`);
+    if (!deezerResponse.ok) {
+      console.error("❌ Erro Deezer:", deezerResponse.status);
+      return new Response(JSON.stringify({ tracks: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const data: JamendoResponse = await response.json();
-    console.log("📊 Jamendo retornou:", data.results?.length || 0, "músicas");
+    const data: DeezerResponse = await deezerResponse.json();
+    const totalTracks = data.data?.length || 0;
+    console.log("📊 Total de tracks:", totalTracks);
 
-    if (!data.results || data.results.length === 0) {
-      console.log("❌ Nenhuma música encontrada");
-      return new Response(
-        JSON.stringify({ tracks: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Filtrar apenas músicas COM preview
+    const tracksWithPreview = (data.data || []).filter((item) => item.preview);
+    console.log("✅ Com preview:", tracksWithPreview.length);
 
-    // Mapear resultados para formato esperado
-    const tracks = data.results.map((track: JamendoTrack) => ({
-      id: track.id,
-      name: track.name,
-      artist: track.artist_name,
-      cover: track.image || "https://via.placeholder.com/300x300?text=Music",
-      duration: formatDuration(track.duration),
-      preview: track.audio || track.audiodownload, // Jamendo fornece áudio completo gratuito
+    const tracks = tracksWithPreview.map((item) => ({
+      id: item.id.toString(),
+      name: item.title,
+      artist: item.artist?.name || "Artista Desconhecido",
+      cover: item.album?.cover_medium || item.album?.cover_big || "",
+      duration: formatDuration(item.duration || 0),
+      preview: item.preview,
     }));
 
-    console.log("✅ Retornando", tracks.length, "músicas");
-    console.log("🎵 Primeira música:", tracks[0]?.name, "por", tracks[0]?.artist);
+    console.log("🎵 Retornando", tracks.length, "músicas");
+    if (tracks.length > 0) {
+      console.log("🎼 Primeira:", tracks[0].name, "-", tracks[0].artist);
+    }
 
-    return new Response(
-      JSON.stringify({ tracks }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return new Response(JSON.stringify({ tracks }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("❌ Erro na API:", error);
-    return new Response(
-      JSON.stringify({ 
-        tracks: [],
-        error: error instanceof Error ? error.message : "Unknown error"
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
-    );
+    console.error("❌ Erro geral:", error);
+    return new Response(JSON.stringify({ tracks: [] }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 };
 
