@@ -33,6 +33,10 @@ interface HashtagData {
   created_at: string;
 }
 
+interface FollowerStats {
+  follower_count: number;
+}
+
 export default function Hashtag() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
@@ -41,6 +45,7 @@ export default function Hashtag() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [followerCount, setFollowerCount] = useState(0);
 
   useEffect(() => {
     loadCurrentUser();
@@ -67,6 +72,14 @@ export default function Hashtag() {
 
       if (hashtagData) {
         setHashtag(hashtagData);
+
+        // Carregar contagem de seguidores
+        const { count } = await supabase
+          .from("hashtag_followers")
+          .select("*", { count: "exact", head: true })
+          .eq("hashtag_id", hashtagData.id);
+        
+        setFollowerCount(count || 0);
 
         // Verificar se está seguindo
         const { data: { user } } = await supabase.auth.getUser();
@@ -132,6 +145,7 @@ export default function Hashtag() {
           .eq("user_id", currentUserId);
         
         setIsFollowing(false);
+        setFollowerCount(prev => Math.max(0, prev - 1));
         toast.success("Deixaste de seguir esta hashtag");
       } else {
         await supabase
@@ -142,6 +156,7 @@ export default function Hashtag() {
           });
         
         setIsFollowing(true);
+        setFollowerCount(prev => prev + 1);
         toast.success("A seguir esta hashtag");
       }
     } catch (error) {
@@ -194,35 +209,68 @@ export default function Hashtag() {
 
   return (
     <MainLayout title={`#${hashtag.name}`}>
-      <div className="max-w-2xl mx-auto">
-        {/* Header da Hashtag */}
-        <div className="bg-card border-b p-6 mb-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">#{hashtag.name}</h1>
-              <p className="text-muted-foreground">
-                {hashtag.post_count} {hashtag.post_count === 1 ? "publicação" : "publicações"}
-              </p>
+      <div className="max-w-4xl mx-auto">
+        {/* Header da Hashtag - Estilo Facebook */}
+        <div className="bg-card border rounded-lg overflow-hidden mb-4">
+          {/* Banner */}
+          <div className="h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-background relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-primary/10 border-4 border-background mb-4">
+                  <span className="text-5xl font-bold text-primary">#</span>
+                </div>
+              </div>
             </div>
-            {currentUserId && (
-              <Button
-                onClick={handleFollowToggle}
-                variant={isFollowing ? "outline" : "default"}
-                className="gap-2"
-              >
-                {isFollowing ? (
-                  <>
-                    <UserCheck className="h-4 w-4" />
-                    A seguir
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4" />
-                    Seguir
-                  </>
-                )}
-              </Button>
-            )}
+          </div>
+
+          {/* Info da Hashtag */}
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold mb-2">#{hashtag.name}</h1>
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <span className="font-semibold">
+                    {hashtag.post_count} {hashtag.post_count === 1 ? "publicação" : "publicações"}
+                  </span>
+                  <span>•</span>
+                  <span className="font-semibold">
+                    {followerCount} {followerCount === 1 ? "seguidor" : "seguidores"}
+                  </span>
+                </div>
+              </div>
+              {currentUserId && (
+                <Button
+                  onClick={handleFollowToggle}
+                  variant={isFollowing ? "outline" : "default"}
+                  size="lg"
+                  className="gap-2 min-w-[140px]"
+                >
+                  {isFollowing ? (
+                    <>
+                      <UserCheck className="h-5 w-5" />
+                      A seguir
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-5 w-5" />
+                      Seguir
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {/* Stats adicionais */}
+            <div className="flex gap-6 pt-4 border-t">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{hashtag.post_count}</div>
+                <div className="text-sm text-muted-foreground">Publicações</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{followerCount}</div>
+                <div className="text-sm text-muted-foreground">Seguidores</div>
+              </div>
+            </div>
           </div>
         </div>
 
