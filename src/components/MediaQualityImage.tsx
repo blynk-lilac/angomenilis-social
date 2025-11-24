@@ -11,21 +11,24 @@ export const MediaQualityImage = ({ src, alt, className }: MediaQualityImageProp
   const { settings } = useSettings();
 
   // Parâmetros de qualidade baseados na configuração
-  const getQualityParams = () => {
+  const getTransform = () => {
     switch (settings.media_quality) {
-      case 'low':
-        return '?width=400&quality=60';
-      case 'medium':
-        return '?width=800&quality=75';
       case 'data-saver':
-        return '?width=200&quality=40';
+        return 'width=300,height=300,quality=40,format=webp';
+      case 'low':
+        return 'width=600,height=600,quality=60,format=webp';
+      case 'medium':
+        return 'width=1000,height=1000,quality=75,format=webp';
       case 'high':
       default:
-        return '?width=1200&quality=90';
+        return 'width=1600,height=1600,quality=90,format=webp';
     }
   };
 
-  const finalSrc = src.includes('?') ? src : `${src}${getQualityParams()}`;
+  // Se for URL do Supabase Storage, adiciona transformação
+  const finalSrc = src.includes('supabase') && src.includes('/storage/v1/object/public/') 
+    ? `${src}?${getTransform()}`
+    : src;
 
   return (
     <img

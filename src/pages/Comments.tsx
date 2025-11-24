@@ -17,6 +17,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import { CommentCard } from "@/components/CommentCard";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
+import { TranslateButton } from "@/components/TranslateButton";
 
 interface Comment {
   id: string;
@@ -66,6 +67,7 @@ export default function Comments() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [translatedContent, setTranslatedContent] = useState("");
 
   useEffect(() => {
     loadPost();
@@ -281,7 +283,12 @@ export default function Comments() {
                   </Button>
                 </div>
 
-                <p className="text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                <p className="text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">{translatedContent || post.content}</p>
+                
+                <TranslateButton
+                  text={post.content}
+                  onTranslated={setTranslatedContent}
+                />
 
                 {/* Media Grid */}
                 {post.media_urls && post.media_urls.length > 0 && (

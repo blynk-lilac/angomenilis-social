@@ -47,22 +47,26 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (data) {
-        setSettings({
+        const newSettings = {
           theme: data.theme as 'light' | 'dark',
           language: data.language,
           media_quality: data.media_quality as any,
-        });
+        };
+        setSettings(newSettings);
         
-        // Aplicar tema
-        document.documentElement.classList.toggle('dark', data.theme === 'dark');
+        // Aplicar tema imediatamente
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(data.theme || 'light');
       } else {
         // Criar configurações padrão
-        await supabase.from('user_settings').insert({
+        const defaultSettings = {
           user_id: user.id,
           theme: 'light',
           language: 'pt',
           media_quality: 'high',
-        });
+        };
+        await supabase.from('user_settings').insert(defaultSettings);
+        document.documentElement.classList.add('light');
       }
     };
 
@@ -75,17 +79,27 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
 
-    // Aplicar tema
+    // Aplicar tema imediatamente
     if (newSettings.theme) {
-      document.documentElement.classList.toggle('dark', newSettings.theme === 'dark');
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(newSettings.theme);
     }
 
-    await supabase
+    // Salvar no banco de dados
+    const { error } = await supabase
       .from('user_settings')
       .upsert({
         user_id: user.id,
-        ...updatedSettings,
+        theme: updatedSettings.theme,
+        language: updatedSettings.language,
+        media_quality: updatedSettings.media_quality,
+      }, {
+        onConflict: 'user_id'
       });
+
+    if (error) {
+      console.error('Error updating settings:', error);
+    }
   };
 
   const translateText = async (text: string, targetLang?: string): Promise<string> => {

@@ -24,6 +24,7 @@ import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
+import { TranslateButton } from "@/components/TranslateButton";
 
 interface LiveStream {
   id: string;
@@ -73,6 +74,7 @@ export default function Feed() {
   const [adLikes, setAdLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({});
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [translatedPosts, setTranslatedPosts] = useState<Record<string, string>>({});
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -593,8 +595,16 @@ export default function Feed() {
 
                         {/* Conteúdo do Post */}
                         {post.content && (
-                          <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                            {parseTextWithLinksAndMentions(post.content)}
+                          <div className="space-y-2">
+                            <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                              {parseTextWithLinksAndMentions(translatedPosts[post.id] || post.content)}
+                            </div>
+                            <TranslateButton
+                              text={post.content}
+                              onTranslated={(translated) => {
+                                setTranslatedPosts(prev => ({ ...prev, [post.id]: translated }));
+                              }}
+                            />
                           </div>
                         )}
                       </div>

@@ -24,6 +24,7 @@ interface PageProfile {
   avatar_url: string | null;
   email: string | null;
   is_authenticated: boolean;
+  auth_user_id: string | null;
 }
 
 interface AssociatedAccountsProps {
@@ -69,18 +70,28 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
   };
 
   const handleLogin = async () => {
-    if (!selectedAccount?.email || !password) {
+    if (!selectedAccount || !password) {
       toast.error("Por favor, insira a senha");
       return;
     }
 
     try {
+      if (!selectedAccount.email) {
+        toast.error("Esta conta não tem email configurado");
+        return;
+      }
+
+      // Fazer login com o email e senha da conta associada
       const { error } = await supabase.auth.signInWithPassword({
         email: selectedAccount.email,
         password: password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        toast.error("Senha incorreta ou erro ao fazer login");
+        return;
+      }
 
       toast.success(`Conectado como ${selectedAccount.name}`);
       setLoginDialogOpen(false);
@@ -88,7 +99,7 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
       navigate("/feed");
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error("Senha incorreta ou erro ao fazer login");
+      toast.error("Erro ao fazer login");
     }
   };
 
@@ -147,7 +158,7 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
       
       {accounts.some(a => a.is_authenticated) && (
         <p className="text-xs text-muted-foreground mt-3 px-2">
-          💡 Clica em "Entrar" para mudar para esta conta. Usa a mesma senha da tua conta principal.
+          💡 Clica em "Entrar" para mudar para esta conta. Usa a senha desta conta associada.
         </p>
       )}
 
@@ -156,7 +167,7 @@ export default function AssociatedAccounts({ userId }: AssociatedAccountsProps) 
           <AlertDialogHeader>
             <AlertDialogTitle>Iniciar sessão como {selectedAccount?.name}</AlertDialogTitle>
             <AlertDialogDescription>
-              Insira a senha da tua conta principal para entrar como {selectedAccount?.name}.
+              Insira a senha desta conta ({selectedAccount?.email}) para entrar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
