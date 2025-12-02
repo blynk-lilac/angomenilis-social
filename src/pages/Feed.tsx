@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageSquare, Share2, Globe, Users, Radio } from "lucide-react";
+import { Heart, MessageSquare, Share2, Globe, Users, Radio, ThumbsUp, X } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -545,24 +545,24 @@ export default function Feed() {
               <>
                 {posts.map((post, index) => (
                   <div key={`post-${post.id}`}>
-                     <Card className="bg-card border-0 sm:border sm:border-border/30 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-lg hover:shadow-xl transition-all duration-300">
+                     <Card className="bg-card border-0 sm:border sm:border-border/30 rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
                        {/* Header do Post */}
-                       <div className="p-3 sm:p-4 hover:bg-accent/5 transition-colors duration-200">
+                       <div className="p-3 sm:p-4">
                          <div className="flex items-center gap-3">
                            <Avatar 
-                             className="h-11 w-11 cursor-pointer ring-2 ring-transparent hover:ring-primary/30 transition-all duration-200"
+                             className="h-10 w-10 cursor-pointer border-2 border-border"
                              onClick={() => navigate(`/profile/${post.profiles?.username}`)}
                            >
                              <AvatarImage src={post.profiles?.avatar_url} />
-                             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
+                             <AvatarFallback className="bg-muted text-foreground font-semibold">
                                {post.profiles?.username?.[0]?.toUpperCase()}
                              </AvatarFallback>
                            </Avatar>
 
                            <div className="flex-1 min-w-0">
-                             <div className="flex items-center gap-1.5">
+                             <div className="flex items-center gap-1">
                                <span 
-                                 className="font-bold text-[15px] text-foreground cursor-pointer hover:underline hover:text-primary transition-colors truncate"
+                                 className="font-semibold text-[15px] text-foreground cursor-pointer hover:underline"
                                  onClick={() => navigate(`/profile/${post.profiles?.username}`)}
                                >
                                  {post.profiles?.full_name || post.profiles?.username}
@@ -571,11 +571,11 @@ export default function Feed() {
                                  <VerificationBadge 
                                    verified={post.profiles?.verified}
                                    badgeType={post.profiles?.badge_type} 
-                                   className="w-4 h-4 flex-shrink-0" 
+                                   className="w-[18px] h-[18px] flex-shrink-0" 
                                  />
                                )}
                              </div>
-                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                             <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
                                <span>
                                  {formatDistanceToNow(new Date(post.created_at), {
                                    addSuffix: true,
@@ -587,12 +587,21 @@ export default function Feed() {
                              </div>
                            </div>
 
-                           <PostMenu
-                             postId={post.id}
-                             postUserId={post.user_id}
-                             currentUserId={currentUserId}
-                             onUpdate={loadPosts}
-                           />
+                           <div className="flex items-center gap-1">
+                             <PostMenu
+                               postId={post.id}
+                               postUserId={post.user_id}
+                               currentUserId={currentUserId}
+                               onUpdate={loadPosts}
+                             />
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               className="h-8 w-8 p-0 hover:bg-muted rounded-full text-muted-foreground"
+                             >
+                               <X className="h-5 w-5" />
+                             </Button>
+                           </div>
                          </div>
 
                          {/* Conteúdo do Post */}
@@ -619,10 +628,10 @@ export default function Feed() {
                        )}
 
                        {/* Stats */}
-                       <div className="px-3 sm:px-4 py-2.5">
-                         <div className="flex items-center justify-between text-sm text-muted-foreground">
-                           <div className="flex items-center gap-1.5">
-                             {post.post_reactions && post.post_reactions.length > 0 ? (
+                       <div className="px-3 sm:px-4 py-2">
+                         <div className="flex items-center justify-between text-[15px]">
+                           <div className="flex items-center gap-1">
+                             {post.post_reactions && post.post_reactions.length > 0 && (
                                <>
                                  <div className="flex -space-x-1">
                                    {Array.from(new Set(post.post_reactions.map(r => r.reaction_type)))
@@ -632,34 +641,44 @@ export default function Feed() {
                                        return reaction ? (
                                          <div 
                                            key={idx}
-                                           className="w-5 h-5 rounded-full bg-background flex items-center justify-center border-2 border-card shadow-sm"
+                                           className="w-[18px] h-[18px] rounded-full bg-background flex items-center justify-center border border-card shadow-sm"
                                          >
-                                           <img src={reaction.icon} alt={reaction.type} className="w-4 h-4 object-contain" />
+                                           <img src={reaction.icon} alt={reaction.type} className="w-full h-full object-contain" />
                                          </div>
                                        ) : null;
                                      })}
                                  </div>
-                                 <span className="ml-1 font-semibold">{post.post_reactions.length}</span>
+                                 <span className="ml-1 text-muted-foreground hover:underline cursor-pointer">
+                                   {post.post_reactions.length > 999 
+                                     ? `${(post.post_reactions.length / 1000).toFixed(1)} m`
+                                     : post.post_reactions.length
+                                   }
+                                 </span>
                                </>
-                             ) : null}
+                             )}
                            </div>
-                           <div className="flex items-center gap-3 font-medium">
+                           <div className="flex items-center gap-3 text-muted-foreground">
                              {post.comments && post.comments.length > 0 && (
-                               <span>{post.comments.length} comentários</span>
+                               <span className="hover:underline cursor-pointer">
+                                 {post.comments.length > 999 
+                                   ? `${(post.comments.length / 1000).toFixed(1)} m`
+                                   : post.comments.length
+                                 } {post.comments.length === 1 ? 'comentário' : 'comentários'}
+                               </span>
                              )}
                            </div>
                          </div>
                        </div>
 
-                       <Separator className="bg-border/30" />
+                       <Separator className="bg-border/50" />
 
                        {/* Actions */}
-                       <div className="p-1.5 sm:p-2 flex gap-1 bg-gradient-to-b from-transparent to-accent/5">
+                       <div className="px-1 py-1 flex items-center justify-around">
                          <div className="relative flex-1">
                            <Button 
                              variant="ghost" 
                              size="sm" 
-                             className={`w-full gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold transition-all duration-200 hover:scale-105 ${
+                             className={`w-full justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold ${
                                post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
                              }`}
                              onClick={() => handleLike(post.id)}
@@ -669,13 +688,13 @@ export default function Feed() {
                              onMouseUp={handlePressEnd}
                              onMouseLeave={handlePressEnd}
                            >
-                             <Heart className={`h-5 w-5 ${
+                             <ThumbsUp className={`h-[18px] w-[18px] ${
                                post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
                              }`} />
-                             <span className="text-sm sm:text-[15px]">Curtir</span>
+                             <span className="text-[15px]">Curtir</span>
                            </Button>
                            {showReactions === post.id && (
-                             <div className="absolute bottom-full left-0 mb-2 z-50">
+                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50">
                                <ReactionPicker
                                  show={true}
                                  onSelect={(reaction) => {
@@ -690,20 +709,20 @@ export default function Feed() {
                          <Button 
                            variant="ghost" 
                            size="sm" 
-                           className="flex-1 gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold text-muted-foreground transition-all duration-200 hover:scale-105"
+                           className="flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold text-muted-foreground"
                            onClick={() => navigate(`/comments/${post.id}`)}
                          >
-                           <MessageSquare className="h-5 w-5" />
-                           <span className="text-sm sm:text-[15px]">Comentar</span>
+                           <MessageSquare className="h-[18px] w-[18px]" />
+                           <span className="text-[15px]">Comentar</span>
                          </Button>
                          <Button 
                            variant="ghost" 
                            size="sm" 
-                           className="flex-1 gap-2 hover:bg-accent/70 rounded-lg h-9 font-bold text-muted-foreground transition-all duration-200 hover:scale-105"
+                           className="flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold text-muted-foreground"
                            onClick={() => handleRepost(post.id)}
                          >
-                           <Share2 className="h-5 w-5" />
-                           <span className="text-sm sm:text-[15px]">Partilhar</span>
+                           <Share2 className="h-[18px] w-[18px]" />
+                           <span className="text-[15px]">Partilhar</span>
                          </Button>
                        </div>
                     </Card>
