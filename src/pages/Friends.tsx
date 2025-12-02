@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { UserPlus, UserCheck, Clock, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
+import { OnlineIndicator } from '@/components/OnlineIndicator';
 
 interface Profile {
   id: string;
@@ -26,11 +28,17 @@ interface FriendRequest {
 
 export default function Friends() {
   const { user } = useAuth();
+  const onlineUsers = useOnlineUsers();
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<string[]>([]);
   const [friends, setFriends] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Calculate online friends count
+  const onlineFriendsCount = allUsers.filter(u => 
+    friends.includes(u.id) && onlineUsers.has(u.id)
+  ).length;
 
   useEffect(() => {
     if (user) {
@@ -167,7 +175,7 @@ export default function Friends() {
             size="sm"
             className="rounded-full h-8 px-4 text-xs font-semibold bg-primary/10 border-primary/30 text-primary"
           >
-            • 21 online
+            • {onlineFriendsCount} online
           </Button>
           <Button
             variant="outline"
@@ -217,12 +225,15 @@ export default function Friends() {
                     key={profile.id}
                     className="flex items-start gap-3 p-4 hover:bg-muted/30 transition-colors"
                   >
-                    <Avatar className="h-12 w-12 flex-shrink-0 border border-border/50">
-                      <AvatarImage src={profile.avatar_url || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold">
-                        {profile.first_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 flex-shrink-0 border border-border/50">
+                        <AvatarImage src={profile.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold">
+                          {profile.first_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineIndicator userId={profile.id} size="sm" />
+                    </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -287,12 +298,15 @@ export default function Friends() {
                     key={request.id}
                     className="flex items-start gap-3 p-4 hover:bg-muted/30 transition-colors"
                   >
-                    <Avatar className="h-12 w-12 flex-shrink-0 border border-border/50">
-                      <AvatarImage src={request.sender.avatar_url || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold">
-                        {request.sender.first_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 flex-shrink-0 border border-border/50">
+                        <AvatarImage src={request.sender.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-foreground font-bold">
+                          {request.sender.first_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineIndicator userId={request.sender.id} size="sm" />
+                    </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-3">

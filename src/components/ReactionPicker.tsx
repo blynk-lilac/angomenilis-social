@@ -35,7 +35,7 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
   return (
     <>
       <div 
-        className="fixed inset-0 z-40 bg-black/20"
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
         onClick={onClose}
       />
       <div 
