@@ -35,14 +35,14 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
   return (
     <>
       <div 
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-lg"
         onClick={onClose}
       />
       <div 
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101]"
       >
         <div 
-          className={`flex gap-2 bg-card border-2 border-border rounded-full px-4 py-2.5 shadow-2xl transition-all duration-200 ${
+          className={`flex gap-3 bg-card border-2 border-border rounded-full px-6 py-3 shadow-2xl transition-all duration-200 ${
             isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
           }`}
         >
@@ -54,7 +54,7 @@ export default function ReactionPicker({ onSelect, onClose, show }: ReactionPick
                 onSelect(reaction.type);
                 onClose();
               }}
-              className="w-11 h-11 hover:scale-125 transition-transform duration-150 active:scale-110 flex items-center justify-center rounded-full"
+              className="w-12 h-12 hover:scale-125 transition-transform duration-150 active:scale-110 flex items-center justify-center rounded-full"
               title={reaction.label}
             >
               <img src={reaction.icon} alt={reaction.type} className="w-full h-full object-contain" />
