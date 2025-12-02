@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { BottomNav } from './BottomNav';
 import { Button } from '@/components/ui/button';
 import InstagramSidebar from '@/components/InstagramSidebar';
 
@@ -42,10 +41,9 @@ export const MainLayout = ({ children, title, showBackButton = false, action }: 
             </div>
           </header>
         )}
-        <main className="flex-1 overflow-hidden pb-16 md:pb-0 animate-fade-in">
+        <main className="flex-1 overflow-hidden md:pb-0 animate-fade-in">
           {children}
         </main>
-        <BottomNav />
       </div>
     </div>
   );

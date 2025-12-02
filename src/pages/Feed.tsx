@@ -19,7 +19,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 import { Separator } from "@/components/ui/separator";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import PostMenu from "@/components/PostMenu";
-import { BottomNav } from "@/components/layout/BottomNav";
+
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
@@ -738,9 +738,6 @@ export default function Feed() {
             onClose={() => setGalleryImages(null)}
           />
         )}
-        
-        {/* Bottom Navigation */}
-        <BottomNav />
       </div>
     </ProtectedRoute>
   );

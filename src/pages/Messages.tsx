@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Plus, Settings, UserPlus } from 'lucide-react';
-import { BottomNav } from '@/components/layout/BottomNav';
 import { toast } from 'sonner';
 import { MessagesSkeleton } from '@/components/loading/MessagesSkeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -451,12 +450,10 @@ export default function Messages() {
       {/* FAB - Floating Action Button */}
       <button
         onClick={() => navigate(activeTab === 'chats' ? '/groups/new' : '/channels/create')}
-        className="fixed bottom-20 right-6 h-14 w-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center z-20 transition-transform hover:scale-110 active:scale-95"
+        className="fixed bottom-6 right-6 h-14 w-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center z-20 transition-transform hover:scale-110 active:scale-95"
       >
         <Plus className="h-6 w-6" />
       </button>
-
-      <BottomNav />
     </div>
   );
 }

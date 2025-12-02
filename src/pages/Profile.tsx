@@ -434,17 +434,34 @@ export default function Profile() {
                     {profile.username?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 {isOwnProfile && (
-                  <Button
-                    onClick={() => navigate("/settings")}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Editar perfil
-                  </Button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Button
+                      onClick={() => navigate("/settings")}
+                      variant="default"
+                      size="sm"
+                      className="rounded-full px-4 h-9 text-sm font-semibold shadow-sm"
+                    >
+                      Painel profissional
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-4 h-9 text-sm font-semibold"
+                      >
+                        Adicionar à história
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-4 h-9 text-sm font-semibold"
+                      >
+                        Promover
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
 

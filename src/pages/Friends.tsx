@@ -160,6 +160,31 @@ export default function Friends() {
           </div>
         </div>
 
+        {/* Filtros de amigos - estilo Blynk */}
+        <div className="flex gap-2 px-4 py-3 border-b bg-card/60 backdrop-blur">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full h-8 px-4 text-xs font-semibold bg-primary/10 border-primary/30 text-primary"
+          >
+            • 21 online
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full h-8 px-4 text-xs font-semibold bg-muted/60 border-border/60 text-foreground"
+          >
+            Sugestões
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full h-8 px-4 text-xs font-semibold bg-muted/40 border-border/60 text-foreground"
+          >
+            Teus amigos
+          </Button>
+        </div>
+
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-transparent border-b rounded-none h-auto p-0">
             <TabsTrigger 
