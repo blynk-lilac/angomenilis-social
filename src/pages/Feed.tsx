@@ -465,6 +465,28 @@ export default function Feed() {
             <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
           </div>
 
+          {/* What's on your mind? Input */}
+          <div className="px-4 sm:px-0 mt-4">
+            <Card className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      U
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={() => navigate("/create")}
+                    className="flex-1 h-10 px-4 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-colors cursor-pointer"
+                  >
+                    Em que estás a pensar?
+                  </button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           {/* Live Streams Section */}
           {liveStreams.length > 0 && (
             <div className="px-4 sm:px-0 mt-4">
