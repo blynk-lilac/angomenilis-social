@@ -69,23 +69,31 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
 
     try {
       if (liked) {
-        await supabase
+        const { error } = await supabase
           .from("ad_likes")
           .delete()
           .eq("ad_id", ad.id)
           .eq("user_id", userId);
-        setLikes(likes - 1);
+        
+        if (error) throw error;
+        
+        setLikes(prev => Math.max(0, prev - 1));
         setLiked(false);
+        toast.success("Gosto removido");
       } else {
-        await supabase
+        const { error } = await supabase
           .from("ad_likes")
           .insert({ ad_id: ad.id, user_id: userId });
-        setLikes(likes + 1);
+        
+        if (error) throw error;
+        
+        setLikes(prev => prev + 1);
         setLiked(true);
+        toast.success("Gostou do anúncio!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao curtir anúncio:", error);
-      toast.error("Erro ao curtir anúncio");
+      toast.error(`Erro: ${error.message}`);
     }
   };
 
