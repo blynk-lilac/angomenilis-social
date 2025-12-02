@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageSquare, Share2, ArrowLeft } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -128,7 +127,6 @@ export default function PostDetail() {
       <ProtectedRoute>
         <div className="min-h-screen bg-background">
           <TopBar />
-          <MainNav />
           <div className="container mx-auto max-w-2xl px-4 py-6 pt-20">
             <p className="text-center text-muted-foreground">Carregando...</p>
           </div>
@@ -143,7 +141,6 @@ export default function PostDetail() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20">
         <TopBar />
-        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-4 py-6 pt-20">
           <Button

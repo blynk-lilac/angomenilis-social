@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Sparkles, Crown, Award } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import verificationRocket from "@/assets/verification-rocket.png";
 
@@ -85,7 +84,6 @@ export default function RequestVerification() {
       <ProtectedRoute>
         <div className="min-h-screen bg-background pb-20">
           <TopBar />
-          <MainNav />
           <div className="container max-w-2xl mx-auto px-4 py-8">
             <Card className="text-center">
               <CardHeader>
@@ -108,7 +106,6 @@ export default function RequestVerification() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20 pt-20">
         <TopBar />
-        <MainNav />
         <div className="container max-w-4xl mx-auto px-4 py-8">
           {/* Hero Section */}
           <div className="text-center mb-12">
