@@ -48,6 +48,8 @@ import CreateAd from "./pages/CreateAd";
 import AppSettings from "./pages/AppSettings";
 import NotFound from "./pages/NotFound";
 import Blocked from "./pages/Blocked";
+import Help from "./pages/Help";
+import Terms from "./pages/Terms";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -402,6 +404,26 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <AppSettings />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Help Route */}
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <Help />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Terms Route */}
+        <Route
+          path="/terms"
+          element={
+            <ProtectedRoute>
+              <Terms />
             </ProtectedRoute>
           }
         />
