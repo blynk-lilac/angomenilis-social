@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageSquare, Share2, Globe, Users, Radio } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StoriesBar from "@/components/StoriesBar";
 import CreateStory from "@/components/CreateStory";
@@ -459,7 +458,6 @@ export default function Feed() {
       <MessageNotification />
       <div className="min-h-screen bg-background pb-20">
         <TopBar />
-        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4 pt-20">
           {/* Stories Bar */}

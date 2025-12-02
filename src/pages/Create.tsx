@@ -7,7 +7,6 @@ import { Image as ImageIcon, Video, X } from "lucide-react";
 import MentionTextarea from "@/components/MentionTextarea";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
@@ -122,7 +121,6 @@ export default function Create() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-16 pt-20">
         <TopBar />
-        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-4 py-6">
           <h1 className="text-2xl font-bold mb-6">Criar Publicação</h1>

@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageSquare, Share2, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -110,9 +109,8 @@ export default function SavedPosts() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background">
         <TopBar />
-        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-4 py-6 pt-20">
           <h1 className="text-2xl font-bold mb-6">Publicações Guardadas</h1>

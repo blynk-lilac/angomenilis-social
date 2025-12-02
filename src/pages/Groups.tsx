@@ -246,7 +246,7 @@ export default function Groups() {
         </div>
 
         {/* Floating Action Button */}
-        <div className="fixed bottom-20 right-4 z-10">
+        <div className="fixed bottom-6 right-4 z-10">
           <Button
             onClick={() => navigate('/canais')}
             size="lg"

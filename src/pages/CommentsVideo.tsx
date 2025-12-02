@@ -11,7 +11,6 @@ import AudioRecorder from "@/components/AudioRecorder";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TopBar } from "@/components/TopBar";
-import { MainNav } from "@/components/MainNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
 
@@ -135,7 +134,6 @@ export default function CommentsVideo() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20 pt-20">
         <TopBar />
-        <MainNav />
 
         <div className="container mx-auto max-w-2xl px-4 py-4">
           <Button
