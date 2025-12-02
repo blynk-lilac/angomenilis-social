@@ -1,4 +1,4 @@
-facebookbookrt { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Home, Users, MessageSquare, Video, Bell, Menu, Search, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

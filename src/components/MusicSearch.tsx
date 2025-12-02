@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, X, ArrowRight, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
+import { supabase } from "@/lib/supabase";
 interface Music {
   id: string;
   name: string;
@@ -67,47 +67,57 @@ export default function MusicSearch({ onSelect, onClose }: MusicSearchProps) {
 
   const loadTrendingMusic = async () => {
     setLoading(true);
-    
-    // Loading mínimo de 3 segundos
-    const loadingStart = Date.now();
-    
+
     try {
-      const allMusic: Music[] = [];
+      // Primeiro tenta carregar músicas em destaque salvas no backend (mais rápido e estável)
+      const { data, error } = await supabase
+        .from("trending_music")
+        .select("*")
+        .eq("is_trending", true)
+        .order("play_count", { ascending: false })
+        .limit(50);
 
-      // Carregar músicas populares de diversos gêneros
-      const trendingQueries = ["pop hits 2024", "viral songs", "top charts"];
-      
-      for (const query of trendingQueries) {
-        const results = await searchDeezerMusic(query);
-        allMusic.push(...results.slice(0, 50));
+      if (!error && data && data.length > 0) {
+        const trending: Music[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          artist: item.artist,
+          cover: item.cover_url || "",
+          duration: formatDuration(item.duration || 0),
+          preview: item.audio_url,
+        }));
+
+        setMusic(trending);
+        return;
       }
 
-      // Carregar mais músicas de diversos gêneros
-      for (const query of GLOBAL_QUERIES.slice(0, 10)) {
-        const results = await searchDeezerMusic(query);
-        allMusic.push(...results.slice(0, 20));
-      }
+      // Fallback rápido usando a API externa apenas se não houver músicas em destaque
+      const fallbackQueries = ["pop hits 2024", "viral songs"];
+      const resultsLists = await Promise.all(
+        fallbackQueries.map((query) => searchDeezerMusic(query))
+      );
 
-      if (allMusic.length > 0) {
-        // Embaralhar e garantir apenas músicas com preview
-        const withPreview = allMusic.filter(m => m.preview);
-        const shuffled = withPreview.sort(() => Math.random() - 0.5);
-        setMusic(shuffled);
-      } else {
+      const combined: Music[] = [];
+      resultsLists.forEach((list) => {
+        combined.push(...list.slice(0, 25));
+      });
+
+      const withPreview = combined.filter((m) => m.preview);
+
+      if (withPreview.length === 0) {
         toast.error("Nenhuma música encontrada");
         setMusic([]);
+        return;
       }
+
+      const shuffled = withPreview.sort(() => Math.random() - 0.5);
+      setMusic(shuffled.slice(0, 60));
     } catch (error) {
       console.error(error);
       toast.error("Erro ao carregar músicas");
       setMusic([]);
     } finally {
-      // Garantir loading de 3s
-      const elapsed = Date.now() - loadingStart;
-      const remaining = Math.max(0, 3000 - elapsed);
-      setTimeout(() => {
-        setLoading(false);
-      }, remaining);
+      setLoading(false);
     }
   };
 

@@ -12,7 +12,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
-import { BottomNav } from "@/components/layout/BottomNav";
 
 export default function SavedPosts() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -224,9 +223,7 @@ export default function SavedPosts() {
               })}
             </div>
           )}
-        </div>
-
-        <BottomNav />
+      </div>
       </div>
     </ProtectedRoute>
   );
