@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_comments: {
+        Row: {
+          ad_id: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_comments_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "sponsored_ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_likes: {
         Row: {
           ad_id: string

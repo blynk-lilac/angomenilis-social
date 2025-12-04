@@ -1,11 +1,27 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Heart, MessageCircle, Share2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import nuvexLogo from "@/assets/nuvex-logo.png";
 import { useAdBoost } from "@/hooks/useAdBoost";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface AdComment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  profile?: {
+    username: string;
+    avatar_url: string;
+    full_name: string;
+  };
+}
 
 interface SponsoredAdProps {
   ad: {
@@ -26,9 +42,17 @@ interface SponsoredAdProps {
 export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProps) => {
   const [liked, setLiked] = useState(isLiked);
   const [likes, setLikes] = useState(likesCount);
+  const [comments, setComments] = useState<AdComment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [showComments, setShowComments] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Ativar boost automático de likes
   useAdBoost(ad.id, true);
+
+  useEffect(() => {
+    loadComments();
+  }, [ad.id]);
 
   // Atualizar contador de likes em tempo real
   useEffect(() => {
@@ -60,6 +84,54 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       supabase.removeChannel(channel);
     };
   }, [ad.id]);
+
+  // Realtime comments
+  useEffect(() => {
+    const channel = supabase
+      .channel(`ad-comments-${ad.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ad_comments',
+          filter: `ad_id=eq.${ad.id}`,
+        },
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ad.id]);
+
+  const loadComments = async () => {
+    const { data, error } = await supabase
+      .from('ad_comments')
+      .select('*')
+      .eq('ad_id', ad.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (!error && data) {
+      // Buscar perfis dos usuários
+      const userIds = [...new Set(data.map(c => c.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, full_name')
+        .in('id', userIds);
+
+      const commentsWithProfiles = data.map(comment => ({
+        ...comment,
+        profile: profiles?.find(p => p.id === comment.user_id)
+      }));
+
+      setComments(commentsWithProfiles);
+    }
+  };
 
   const handleLike = async () => {
     if (!userId) {
@@ -94,6 +166,36 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
     } catch (error: any) {
       console.error("Erro ao curtir anúncio:", error);
       toast.error(`Erro: ${error.message}`);
+    }
+  };
+
+  const handleComment = async () => {
+    if (!userId) {
+      toast.error("Faça login para comentar");
+      return;
+    }
+
+    if (!newComment.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('ad_comments')
+        .insert({
+          ad_id: ad.id,
+          user_id: userId,
+          content: newComment.trim()
+        });
+
+      if (error) throw error;
+
+      setNewComment("");
+      toast.success("Comentário adicionado!");
+    } catch (error: any) {
+      console.error("Erro ao comentar:", error);
+      toast.error(`Erro: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,6 +268,12 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       {/* Stats */}
       <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-b border-border/50">
         <span>{likes} curtidas</span>
+        <button 
+          onClick={() => setShowComments(!showComments)}
+          className="hover:underline"
+        >
+          {comments.length} comentários
+        </button>
       </div>
 
       {/* Actions */}
@@ -177,22 +285,76 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
           onClick={handleLike}
         >
           <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
-          <span>Curtir</span>
+          <span className="hidden sm:inline">Curtir</span>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           className="flex-1 gap-2"
-          onClick={() => window.open(ad.link_url, "_blank")}
+          onClick={() => setShowComments(!showComments)}
         >
           <MessageCircle className="h-5 w-5" />
-          <span>Comentar</span>
+          <span className="hidden sm:inline">Comentar</span>
         </Button>
         <Button variant="ghost" size="sm" className="flex-1 gap-2" onClick={handleShare}>
           <Share2 className="h-5 w-5" />
-          <span>Partilhar</span>
+          <span className="hidden sm:inline">Partilhar</span>
         </Button>
       </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="border-t border-border/50 p-3 sm:p-4 space-y-3">
+          {/* Comment Input */}
+          <div className="flex gap-2 items-center">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Escreva um comentário..."
+              className="flex-1 h-10 text-sm rounded-full"
+              onKeyDown={(e) => e.key === 'Enter' && handleComment()}
+            />
+            <Button
+              size="icon"
+              className="h-10 w-10 rounded-full"
+              onClick={handleComment}
+              disabled={isSubmitting || !newComment.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex gap-2">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={comment.profile?.avatar_url} />
+                  <AvatarFallback className="text-xs bg-primary/10">
+                    {comment.profile?.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="bg-muted/50 rounded-xl px-3 py-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      {comment.profile?.full_name || comment.profile?.username || 'Usuário'}
+                    </p>
+                    <p className="text-sm text-foreground break-words">{comment.content}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 px-2">
+                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {comments.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-4">
+                Nenhum comentário ainda. Seja o primeiro!
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
