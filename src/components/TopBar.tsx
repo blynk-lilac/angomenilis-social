@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, MessageSquare, Video, Bell, Menu, Search, Plus } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Home, Users, MessageSquare, Video, Bell, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import SideMenu from "@/components/SideMenu";
 
 interface Profile {
   avatar_url: string | null;
@@ -70,7 +70,6 @@ export const TopBar = () => {
     { to: '/messages', icon: MessageSquare, badge: unreadMessages },
     { to: '/videos', icon: Video, badge: 0 },
     { to: '/notifications', icon: Bell, badge: notifications },
-    { to: '/app-settings', icon: Menu, badge: 0 },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -81,7 +80,7 @@ export const TopBar = () => {
         {/* Logo */}
         <Link to="/feed" className="flex items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-      Blynk
+            Blynk
           </h1>
         </Link>
 
@@ -104,16 +103,7 @@ export const TopBar = () => {
           >
             <Search className="h-5 w-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full bg-muted hover:bg-muted/80"
-            asChild
-          >
-            <Link to="/app-settings">
-              <Menu className="h-5 w-5" />
-            </Link>
-          </Button>
+          <SideMenu />
         </div>
       </div>
 
