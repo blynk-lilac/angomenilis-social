@@ -370,31 +370,31 @@ export default function Chat() {
   const isTyping = typingUsers.size > 0;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Header - Fixed */}
-      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-4 py-3 safe-area-top">
-        <div className="flex items-center gap-3">
+      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-2 sm:px-4 py-2 sm:py-3 safe-area-top">
+        <div className="flex items-center gap-2 sm:gap-3 w-full">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/')}
-            className="h-10 w-10 rounded-full"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           
-          <div className="relative">
-            <Avatar className="h-11 w-11">
+          <div className="relative flex-shrink-0">
+            <Avatar className="h-10 w-10 sm:h-11 sm:w-11">
               <AvatarImage src={friend.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-base">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm sm:text-base">
                 {friend.first_name[0]}
               </AvatarFallback>
             </Avatar>
-            <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-card ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <div className={`absolute bottom-0 right-0 h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full border-2 border-card ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-base text-foreground truncate">{friend.first_name}</p>
+            <p className="font-semibold text-sm sm:text-base text-foreground truncate">{friend.first_name}</p>
             {isTyping ? (
               <div className="flex items-center gap-1 text-xs text-primary">
                 <span>Escrevendo</span>
@@ -411,38 +411,40 @@ export default function Chat() {
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={() => startCall('voice')}
-          >
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={() => startCall('video')}
-          >
-            <Video className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={() => setShowWallpaperPicker(true)}
-          >
-            <ImageIcon className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={() => navigate(`/chat/${friendId}/settings`)}
-          >
-            <Lock className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
+              onClick={() => startCall('voice')}
+            >
+              <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hidden xs:flex"
+              onClick={() => startCall('video')}
+            >
+              <Video className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hidden sm:flex"
+              onClick={() => setShowWallpaperPicker(true)}
+            >
+              <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
+              onClick={() => navigate(`/chat/${friendId}/settings`)}
+            >
+              <Lock className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -488,15 +490,15 @@ export default function Chat() {
       {/* Input - Fixed */}
       <form
         onSubmit={sendMessage}
-        className="flex-shrink-0 bg-card border-t border-border px-4 py-3 safe-area-bottom"
+        className="flex-shrink-0 bg-card border-t border-border px-2 sm:px-4 py-2 sm:py-3 safe-area-bottom"
       >
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 sm:gap-3 items-center">
           <MediaPicker onMediaSelect={handleMediaSelect} />
           <Input
             value={newMessage}
             onChange={(e) => handleTyping(e.target.value)}
             placeholder="Mensagem..."
-            className="flex-1 h-11 text-base rounded-full border-border/50 bg-background/50 focus-visible:ring-primary"
+            className="flex-1 h-10 sm:h-11 text-sm sm:text-base rounded-full border-border/50 bg-background/50 focus-visible:ring-primary"
           />
           <Button
             type="submit"

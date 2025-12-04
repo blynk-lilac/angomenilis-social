@@ -60,15 +60,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (mounted) {
-          console.log('Auth state changed:', event);
-          
-          // Only redirect on explicit SIGNED_OUT event
-          if (event === 'SIGNED_OUT') {
-            setSession(null);
-            setUser(null);
-          } else {
-            setSession(session);
-            setUser(session?.user ?? null);
+          // Handle different auth events properly
+          switch (event) {
+            case 'SIGNED_OUT':
+              setSession(null);
+              setUser(null);
+              break;
+            case 'SIGNED_IN':
+            case 'TOKEN_REFRESHED':
+            case 'USER_UPDATED':
+              setSession(session);
+              setUser(session?.user ?? null);
+              break;
+            case 'INITIAL_SESSION':
+              // Don't clear session on initial load - just update if valid
+              if (session) {
+                setSession(session);
+                setUser(session?.user ?? null);
+              }
+              break;
+            default:
+              // For any other event, preserve existing session if new one is null
+              if (session) {
+                setSession(session);
+                setUser(session?.user ?? null);
+              }
           }
           
           setLoading(false);
@@ -76,9 +92,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
+    // Refresh token periodically to prevent session expiry
+    const refreshInterval = setInterval(async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession) {
+        await supabase.auth.refreshSession();
+      }
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
   }, []);
 

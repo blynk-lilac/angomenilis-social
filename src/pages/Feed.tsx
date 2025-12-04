@@ -456,32 +456,33 @@ export default function Feed() {
   return (
     <ProtectedRoute>
       <MessageNotification />
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background flex flex-col">
         <TopBar />
 
-        <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4 pt-20">
-          {/* Stories Bar */}
-          <div className="px-4 sm:px-0">
-            <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
-          </div>
+        <div className="flex-1 overflow-y-auto pb-20">
+          <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4 pt-20">
+            {/* Stories Bar */}
+            <div className="px-4 sm:px-0">
+              <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
+            </div>
 
-          {/* What's on your mind? Input */}
-          <div className="px-4 sm:px-0 mt-4">
-            <Card className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
-              <div className="p-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                      U
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    onClick={() => navigate("/create")}
-                    className="flex-1 h-10 px-4 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-colors cursor-pointer"
-                  >
-                    Em que estás a pensar?
-                  </button>
+            {/* What's on your mind? Input */}
+            <div className="px-4 sm:px-0 mt-4">
+              <Card className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
+                <div className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                        U
+                      </AvatarFallback>
+                    </Avatar>
+                    <button
+                      onClick={() => navigate("/create")}
+                      className="flex-1 h-10 px-4 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-colors cursor-pointer"
+                    >
+                      Em que estás a pensar?
+                    </button>
                 </div>
               </div>
             </Card>
@@ -763,6 +764,7 @@ export default function Feed() {
                 ))}
               </>
             )}
+          </div>
           </div>
         </div>
 
