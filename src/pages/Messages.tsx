@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Plus, Settings, UserPlus } from 'lucide-react';
+import { Search, Plus, ArrowLeft, UserPlus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { MessagesSkeleton } from '@/components/loading/MessagesSkeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Friend {
   id: string;
@@ -48,6 +49,7 @@ export default function Messages() {
   const [myProfile, setMyProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [channels, setChannels] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("chats");
@@ -62,9 +64,8 @@ export default function Messages() {
     const startTime = Date.now();
     await Promise.all([loadProfile(), loadFriends(), loadStories(), loadChannels()]);
     
-    // Garantir no mínimo 3 segundos de loading
     const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, 3000 - elapsed);
+    const remaining = Math.max(0, 2000 - elapsed);
     setTimeout(() => {
       setLoading(false);
     }, remaining);
@@ -116,11 +117,7 @@ export default function Messages() {
     try {
       const { data: friendships, error } = await supabase
         .from('friendships')
-        .select(`
-          id,
-          user_id_1,
-          user_id_2
-        `)
+        .select(`id, user_id_1, user_id_2`)
         .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
       if (error) throw error;
@@ -145,7 +142,6 @@ export default function Messages() {
             .order('created_at', { ascending: false })
             .limit(1);
 
-          // Count unread messages from this friend
           const { count: unreadCount } = await supabase
             .from('messages')
             .select('*', { count: 'exact', head: true })
@@ -225,70 +221,110 @@ export default function Messages() {
     }, {})
   );
 
-  const myStories = groupedStories.find(stories => stories[0].user_id === user?.id);
-
   if (loading) {
     return <MessagesSkeleton />;
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-card border-b border-border safe-area-top">
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-10 bg-card/95 backdrop-blur-lg border-b border-border safe-area-top"
+      >
         <div className="flex items-center justify-between h-14 px-4">
-          <h1 className="text-2xl font-bold">Mensagens</h1>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => navigate('/profile')}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => navigate(-1)}
             >
-              <Settings className="h-6 w-6" />
-            </button>
-            <button 
-              className="p-2 hover:bg-muted rounded-full transition-colors"
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Mensagens
+            </h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:bg-primary/10"
+              onClick={() => setShowSearch(!showSearch)}
             >
-              <Search className="h-6 w-6" />
-            </button>
+              <Search className="h-5 w-5" />
+            </Button>
           </div>
         </div>
+
+        {/* Search Bar */}
+        <AnimatePresence>
+          {showSearch && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="px-4 pb-3 overflow-hidden"
+            >
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Pesquisar conversas..."
+                className="h-10 rounded-full bg-muted/50"
+                autoFocus
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent h-12 px-4 gap-6">
             <TabsTrigger 
               value="chats" 
-              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3 transition-all"
             >
               Chats
             </TabsTrigger>
             <TabsTrigger 
               value="canais" 
-              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent font-semibold data-[state=active]:shadow-none pb-3 transition-all"
             >
               Canais
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      </header>
+      </motion.header>
 
-      <Tabs value={activeTab} className="flex-1 flex flex-col">
+      <Tabs value={activeTab} className="flex-1 flex flex-col overflow-hidden">
         {/* Chats Tab */}
-        <TabsContent value="chats" className="flex-1 mt-0 flex flex-col">
+        <TabsContent value="chats" className="flex-1 mt-0 flex flex-col overflow-hidden">
           {/* Stories */}
-          <div className="px-4 py-3 border-b border-border">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="px-4 py-3 border-b border-border/50"
+          >
             <ScrollArea className="w-full">
               <div className="flex gap-3 pb-2">
                 {/* Your Story */}
-                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex flex-col items-center gap-1 flex-shrink-0"
+                >
                   <label htmlFor="story-upload" className="cursor-pointer">
                     <div className="relative">
                       <Avatar className="h-16 w-16 border-2 border-muted">
                         <AvatarImage src={myProfile?.avatar_url || undefined} />
-                        <AvatarFallback className="bg-muted">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
                           {myProfile?.first_name?.[0] || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute bottom-0 right-0 h-6 w-6 bg-primary rounded-full flex items-center justify-center border-2 border-card">
+                      <div className="absolute bottom-0 right-0 h-6 w-6 bg-primary rounded-full flex items-center justify-center border-2 border-card shadow-lg">
                         <Plus className="h-4 w-4 text-white" />
                       </div>
                     </div>
@@ -302,19 +338,24 @@ export default function Messages() {
                     disabled={uploading}
                     className="hidden"
                   />
-                </div>
+                </motion.div>
 
                 {/* Friends Stories */}
-                {groupedStories.filter(stories => stories[0].user_id !== user?.id).map((userStories) => {
+                {groupedStories.filter(stories => stories[0].user_id !== user?.id).map((userStories, index) => {
                   const story = userStories[0];
                   return (
-                    <div
+                    <motion.div
                       key={story.user_id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => navigate('/stories')}
-                      className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer hover-scale"
+                      className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
                     >
                       <div className="relative">
-                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-accent to-primary">
+                        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary via-accent to-primary animate-pulse">
                           <Avatar className="h-16 w-16 border-[3px] border-card">
                             <AvatarImage src={story.profile.avatar_url || undefined} />
                             <AvatarFallback className="bg-muted">
@@ -326,41 +367,57 @@ export default function Messages() {
                       <p className="text-xs text-center mt-1 w-16 truncate font-medium">
                         {story.profile.first_name}
                       </p>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             </ScrollArea>
-          </div>
+          </motion.div>
 
           {/* Conversations */}
           <ScrollArea className="flex-1">
             {filteredFriends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
-                <p className="text-muted-foreground mb-2">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center h-96 p-6 text-center"
+              >
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
+                  <Sparkles className="h-10 w-10 text-primary" />
+                </div>
+                <p className="text-lg font-semibold text-foreground mb-2">
                   Nenhuma conversa
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-4">
                   Adicione amigos para começar a conversar
                 </p>
-              </div>
+                <Button onClick={() => navigate('/friends')} className="gap-2 rounded-full">
+                  <UserPlus className="h-4 w-4" />
+                  Encontrar amigos
+                </Button>
+              </motion.div>
             ) : (
-              <div>
-                {filteredFriends.map((friend) => {
+              <div className="pb-20">
+                {filteredFriends.map((friend, index) => {
                   const isUnread = friend.lastMessage && 
                                  !friend.lastMessage.read && 
                                  friend.lastMessage.sender_id === friend.id;
                   
                   return (
-                    <button
+                    <motion.button
                       key={friend.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => navigate(`/chat/${friend.id}`)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors active:bg-muted"
+                      className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-muted"
                     >
                       <div className="relative">
-                        <Avatar className="h-14 w-14">
+                        <Avatar className="h-14 w-14 ring-2 ring-transparent hover:ring-primary/20 transition-all">
                           <AvatarImage src={friend.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-semibold text-lg">
                             {friend.first_name[0]}
                           </AvatarFallback>
                         </Avatar>
@@ -387,14 +444,18 @@ export default function Messages() {
                               {friend.lastMessage.content}
                             </p>
                             {friend.unreadCount > 0 && (
-                              <div className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
+                              <motion.div 
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center"
+                              >
                                 {friend.unreadCount > 15 ? '15+' : friend.unreadCount}
-                              </div>
+                              </motion.div>
                             )}
                           </div>
                         )}
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -403,32 +464,44 @@ export default function Messages() {
         </TabsContent>
 
         {/* Canais Tab */}
-        <TabsContent value="canais" className="flex-1 mt-0 flex flex-col">
+        <TabsContent value="canais" className="flex-1 mt-0 flex flex-col overflow-hidden">
           <ScrollArea className="flex-1">
             {channels.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-96 p-6 text-center">
-                <p className="text-muted-foreground mb-2">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center h-96 p-6 text-center"
+              >
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
+                  <Sparkles className="h-10 w-10 text-primary" />
+                </div>
+                <p className="text-lg font-semibold text-foreground mb-2">
                   Nenhum canal
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
                   Entre num canal para começar a receber atualizações
                 </p>
-                <Button onClick={() => navigate('/channels')} className="gap-2">
+                <Button onClick={() => navigate('/channels')} className="gap-2 rounded-full">
                   <UserPlus className="h-4 w-4" />
                   Explorar Canais
                 </Button>
-              </div>
+              </motion.div>
             ) : (
-              <div>
-                {channels.map((channel) => (
-                  <button
+              <div className="pb-20">
+                {channels.map((channel, index) => (
+                  <motion.button
                     key={channel.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => navigate(`/channel/${channel.id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors active:bg-muted"
+                    className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-muted"
                   >
                     <Avatar className="h-14 w-14">
                       <AvatarImage src={channel.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
+                      <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary font-semibold text-lg">
                         {channel.name[0]}
                       </AvatarFallback>
                     </Avatar>
@@ -439,7 +512,7 @@ export default function Messages() {
                         Canal · {channel.follower_count || 0} membro(s)
                       </p>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -447,13 +520,17 @@ export default function Messages() {
         </TabsContent>
       </Tabs>
 
-      {/* FAB - Floating Action Button */}
-      <button
+      {/* FAB */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
         onClick={() => navigate(activeTab === 'chats' ? '/groups/new' : '/channels/create')}
-        className="fixed bottom-6 right-6 h-14 w-14 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg flex items-center justify-center z-20 transition-transform hover:scale-110 active:scale-95"
+        className="fixed bottom-6 right-6 h-14 w-14 bg-gradient-to-br from-primary to-primary/80 text-white rounded-full shadow-lg flex items-center justify-center z-20"
       >
         <Plus className="h-6 w-6" />
-      </button>
+      </motion.button>
     </div>
   );
 }

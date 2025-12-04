@@ -697,38 +697,24 @@ export default function Feed() {
 
                        {/* Actions */}
                        <div className="px-1 py-1 flex items-center justify-around">
-                         <div className="relative flex-1">
-                           <Button 
-                             variant="ghost" 
-                             size="sm" 
-                             className={`w-full justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold ${
-                               post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
-                             }`}
-                             onClick={() => handleLike(post.id)}
-                             onTouchStart={() => handlePressStart(post.id)}
-                             onTouchEnd={handlePressEnd}
-                             onMouseDown={() => handlePressStart(post.id)}
-                             onMouseUp={handlePressEnd}
-                             onMouseLeave={handlePressEnd}
-                           >
-                             <ThumbsUp className={`h-[18px] w-[18px] ${
-                               post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
-                             }`} />
-                             <span className="text-[15px]">Curtir</span>
-                           </Button>
-                           {showReactions === post.id && (
-                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50">
-                               <ReactionPicker
-                                 show={true}
-                                 onSelect={(reaction) => {
-                                   handleLike(post.id, reaction);
-                                   setShowReactions(null);
-                                 }}
-                                 onClose={() => setShowReactions(null)}
-                               />
-                             </div>
-                           )}
-                         </div>
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           className={`flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold ${
+                             post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
+                           }`}
+                           onClick={() => handleLike(post.id)}
+                           onTouchStart={() => handlePressStart(post.id)}
+                           onTouchEnd={handlePressEnd}
+                           onMouseDown={() => handlePressStart(post.id)}
+                           onMouseUp={handlePressEnd}
+                           onMouseLeave={handlePressEnd}
+                         >
+                           <ThumbsUp className={`h-[18px] w-[18px] ${
+                             post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
+                           }`} />
+                           <span className="text-[15px]">Curtir</span>
+                         </Button>
                          <Button 
                            variant="ghost" 
                            size="sm" 
@@ -749,6 +735,18 @@ export default function Feed() {
                          </Button>
                        </div>
                     </Card>
+                    
+                    {/* Reaction Picker Modal */}
+                    {showReactions === post.id && (
+                      <ReactionPicker
+                        show={true}
+                        onSelect={(reaction) => {
+                          handleLike(post.id, reaction);
+                          setShowReactions(null);
+                        }}
+                        onClose={() => setShowReactions(null)}
+                      />
+                    )}
 
                     {/* Inserir anúncio após o terceiro post */}
                     {index === 2 && sponsoredAds.length > 0 && sponsoredAds.map(ad => (

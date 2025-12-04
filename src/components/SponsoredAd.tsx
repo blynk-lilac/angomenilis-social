@@ -46,6 +46,7 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
   const [newComment, setNewComment] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   // Ativar boost automático de likes
   useAdBoost(ad.id, true);
@@ -67,7 +68,6 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
           filter: `ad_id=eq.${ad.id}`,
         },
         async () => {
-          // Buscar contador atualizado
           const { data, error } = await supabase
             .from('ad_likes')
             .select('id')
@@ -117,7 +117,6 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       .limit(10);
 
     if (!error && data) {
-      // Buscar perfis dos usuários
       const userIds = [...new Set(data.map(c => c.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
@@ -139,13 +138,24 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       return;
     }
 
+    if (isLiking) return;
+    setIsLiking(true);
+
     try {
-      if (liked) {
+      // Verificar se já curtiu
+      const { data: existingLike } = await supabase
+        .from("ad_likes")
+        .select("id")
+        .eq("ad_id", ad.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingLike) {
+        // Remover like
         const { error } = await supabase
           .from("ad_likes")
           .delete()
-          .eq("ad_id", ad.id)
-          .eq("user_id", userId);
+          .eq("id", existingLike.id);
         
         if (error) throw error;
         
@@ -153,6 +163,7 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
         setLiked(false);
         toast.success("Gosto removido");
       } else {
+        // Adicionar like
         const { error } = await supabase
           .from("ad_likes")
           .insert({ ad_id: ad.id, user_id: userId });
@@ -165,17 +176,21 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       }
     } catch (error: any) {
       console.error("Erro ao curtir anúncio:", error);
-      toast.error(`Erro: ${error.message}`);
+      toast.error("Erro ao processar curtida");
+    } finally {
+      setIsLiking(false);
     }
   };
 
-  const handleComment = async () => {
+  const handleComment = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    
     if (!userId) {
       toast.error("Faça login para comentar");
       return;
     }
 
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -193,7 +208,7 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
       toast.success("Comentário adicionado!");
     } catch (error: any) {
       console.error("Erro ao comentar:", error);
-      toast.error(`Erro: ${error.message}`);
+      toast.error("Erro ao comentar");
     } finally {
       setIsSubmitting(false);
     }
@@ -213,7 +228,7 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
   };
 
   return (
-    <Card className="bg-card border border-border/30 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 my-4">
+    <Card className="bg-card border border-border/30 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 my-4 animate-in fade-in slide-in-from-bottom-2">
       {/* Header */}
       <div className="p-3 sm:p-4 pb-3">
         <div className="flex items-center gap-3 mb-3">
@@ -281,10 +296,11 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
         <Button
           variant="ghost"
           size="sm"
-          className={`flex-1 gap-2 ${liked ? "text-red-500" : ""}`}
+          className={`flex-1 gap-2 transition-all duration-200 ${liked ? "text-red-500" : ""}`}
           onClick={handleLike}
+          disabled={isLiking}
         >
-          <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
+          <Heart className={`h-5 w-5 transition-transform ${liked ? "fill-current scale-110" : ""}`} />
           <span className="hidden sm:inline">Curtir</span>
         </Button>
         <Button
@@ -304,30 +320,29 @@ export const SponsoredAd = ({ ad, likesCount, isLiked, userId }: SponsoredAdProp
 
       {/* Comments Section */}
       {showComments && (
-        <div className="border-t border-border/50 p-3 sm:p-4 space-y-3">
+        <div className="border-t border-border/50 p-3 sm:p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
           {/* Comment Input */}
-          <div className="flex gap-2 items-center">
+          <form onSubmit={handleComment} className="flex gap-2 items-center">
             <Input
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Escreva um comentário..."
               className="flex-1 h-10 text-sm rounded-full"
-              onKeyDown={(e) => e.key === 'Enter' && handleComment()}
             />
             <Button
+              type="submit"
               size="icon"
               className="h-10 w-10 rounded-full"
-              onClick={handleComment}
               disabled={isSubmitting || !newComment.trim()}
             >
               <Send className="h-4 w-4" />
             </Button>
-          </div>
+          </form>
 
           {/* Comments List */}
           <div className="space-y-3 max-h-60 overflow-y-auto">
             {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-2">
+              <div key={comment.id} className="flex gap-2 animate-in fade-in duration-200">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={comment.profile?.avatar_url} />
                   <AvatarFallback className="text-xs bg-primary/10">
