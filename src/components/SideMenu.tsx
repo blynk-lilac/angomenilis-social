@@ -2,7 +2,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { 
@@ -11,9 +10,6 @@ import {
   Users, 
   MessageCircle, 
   Video, 
-  Heart,
-  Calendar,
-  Gift,
   Bookmark,
   Clock,
   Settings as SettingsIcon,
@@ -23,24 +19,32 @@ import {
   Shield,
   BadgeCheck,
   ChevronRight,
-  Palette,
-  Globe,
-  Database
+  ChevronDown,
+  BarChart3,
+  Megaphone,
+  Home,
+  Bell,
+  RefreshCw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
+import VerificationBadge from "@/components/VerificationBadge";
 
 interface Profile {
   username: string;
   full_name: string;
+  first_name: string;
   avatar_url: string;
+  verified: boolean;
+  badge_type: string | null;
 }
 
 export default function SideMenu() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const { activeProfile } = useActiveProfile();
 
   useEffect(() => {
@@ -52,7 +56,6 @@ export default function SideMenu() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Se há perfil ativo e é uma página
     if (activeProfile?.type === 'page') {
       const { data } = await supabase
         .from("page_profiles")
@@ -64,14 +67,16 @@ export default function SideMenu() {
         setProfile({
           username: data.name,
           full_name: data.name,
-          avatar_url: data.avatar_url
+          first_name: data.name,
+          avatar_url: data.avatar_url,
+          verified: false,
+          badge_type: null
         });
       }
     } else {
-      // Usar perfil do usuário principal
       const { data } = await supabase
         .from("profiles")
-        .select("username, full_name, avatar_url")
+        .select("username, full_name, first_name, avatar_url, verified, badge_type")
         .eq("id", user.id)
         .single();
 
@@ -95,32 +100,26 @@ export default function SideMenu() {
 
   const profilePath = activeProfile?.type === 'page' ? `/profile/${activeProfile.id}` : "/profile";
 
-  const menuSections = [
-    {
-      title: "Seus atalhos",
-      items: [
-        { icon: User, label: "Meu Perfil", path: profilePath, color: "text-blue-600", bgColor: "bg-gradient-to-br from-blue-500/10 to-blue-600/10" },
-        { icon: Users, label: "Amigos", path: "/friends", color: "text-cyan-600", bgColor: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/10" },
-        { icon: MessageCircle, label: "Mensagens", path: "/messages", color: "text-pink-600", bgColor: "bg-gradient-to-br from-pink-500/10 to-pink-600/10" },
-        { icon: Video, label: "Vídeos", path: "/videos", color: "text-purple-600", bgColor: "bg-gradient-to-br from-purple-500/10 to-purple-600/10" },
-        { icon: BadgeCheck, label: "Verificação", path: "/verification", color: "text-green-600", bgColor: "bg-gradient-to-br from-green-500/10 to-green-600/10" },
-      ]
-    },
-    {
-      title: "Profissional",
-      items: [
-        { icon: FileText, label: "Criar Anúncio", path: "/create-ad", color: "text-orange-600", bgColor: "bg-gradient-to-br from-orange-500/10 to-orange-600/10" },
-      ]
-    },
-    {
-      title: "Pessoal",
-      items: [
-        { icon: Bookmark, label: "Guardados", path: "/saved", color: "text-purple-600", bgColor: "bg-gradient-to-br from-purple-500/10 to-purple-600/10" },
-        { icon: Clock, label: "Memórias", path: "#", color: "text-blue-600", bgColor: "bg-gradient-to-br from-blue-500/10 to-blue-600/10" },
-        { icon: Gift, label: "Aniversários", path: "#", color: "text-pink-600", bgColor: "bg-gradient-to-br from-pink-500/10 to-pink-600/10" },
-        { icon: Calendar, label: "Eventos", path: "#", color: "text-red-600", bgColor: "bg-gradient-to-br from-red-500/10 to-red-600/10" },
-      ]
-    }
+  const shortcuts = [
+    { label: profile?.full_name || profile?.first_name || "Meu Perfil", icon: null, avatar: profile?.avatar_url, path: profilePath },
+  ];
+
+  const mainMenuItems = [
+    { icon: Users, label: "Amigos (29 online)", path: "/friends", color: "text-cyan-500" },
+    { icon: BarChart3, label: "Painel Profissional", path: "/admin", color: "text-orange-500", adminOnly: true },
+    { icon: Clock, label: "Memórias", path: "#", color: "text-blue-500" },
+    { icon: Bookmark, label: "Guardados", path: "/saved", color: "text-purple-500" },
+    { icon: Users, label: "Grupos", path: "/groups", color: "text-cyan-500" },
+    { icon: Video, label: "Reels", path: "/videos", color: "text-red-500" },
+    { icon: Home, label: "Marketplace", path: "#", color: "text-teal-500" },
+    { icon: Home, label: "Feeds", path: "/", color: "text-orange-500" },
+  ];
+
+  const moreMenuItems = [
+    { icon: BadgeCheck, label: "Verificação", path: "/verification", color: "text-blue-500" },
+    { icon: Megaphone, label: "Criar Anúncio", path: "/create-ad", color: "text-green-500" },
+    { icon: MessageCircle, label: "Mensagens", path: "/messages", color: "text-pink-500" },
+    { icon: Bell, label: "Notificações", path: "/notifications", color: "text-red-500" },
   ];
 
   return (
@@ -130,162 +129,150 @@ export default function SideMenu() {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full sm:max-w-md p-0 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+      <SheetContent side="left" className="w-full sm:max-w-md p-0 bg-background">
         <ScrollArea className="h-full">
-          <div className="p-5">
-            {/* Header com título e gradiente */}
-            <div className="mb-8 pt-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Menu className="h-5 w-5 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Menu
-                </h1>
-              </div>
-              <p className="text-sm text-muted-foreground ml-13">Acesso rápido às suas páginas</p>
-            </div>
-
-            {/* Profile Card - Design Moderno */}
+          <div className="p-4">
+            {/* Profile Card */}
             <Link 
-              to={activeProfile?.type === 'page' ? `/profile/${activeProfile.id}` : "/profile"}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 transition-all duration-300 mb-6 group border border-border/50 shadow-sm"
+              to={profilePath}
+              className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border shadow-sm mb-4 hover:bg-muted/50 transition-colors"
             >
-              <Avatar className="h-16 w-16 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
+              <Avatar className="h-14 w-14">
                 <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-primary via-accent to-primary/80 text-white font-bold text-xl">
-                  {profile?.username?.[0]?.toUpperCase()}
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xl">
+                  {profile?.first_name?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-lg truncate text-foreground group-hover:text-primary transition-colors">
-                  {profile?.full_name || profile?.username}
-                </p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  Ver perfil 
-                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </p>
+                <div className="flex items-center gap-1">
+                  <p className="font-bold text-lg truncate text-foreground">
+                    {profile?.full_name || profile?.first_name}
+                  </p>
+                  {profile?.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} size="sm" />}
+                </div>
+                <p className="text-sm text-muted-foreground">@{profile?.username}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </Link>
 
-            <Separator className="my-4" />
-
-            {/* Menu Sections - Design Aprimorado */}
-            {menuSections.map((section, idx) => (
-              <div key={idx} className="mb-7">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 mb-4 px-3">
-                  {section.title}
-                </h2>
-                <div className="space-y-2">
-                  {section.items.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={item.path}
-                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
-                    >
-                      <div className={`w-11 h-11 rounded-xl ${item.bgColor} flex items-center justify-center shadow-sm group-hover:shadow-md transition-all`}>
-                        <item.icon className={`h-5 w-5 ${item.color}`} />
-                      </div>
-                      <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                        {item.label}
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                    </Link>
-                  ))}
-                </div>
+            {/* Os teus atalhos */}
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground mb-3 px-2">Os teus atalhos</p>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {shortcuts.map((item, idx) => (
+                  <Link
+                    key={idx}
+                    to={item.path}
+                    className="flex flex-col items-center gap-1 min-w-[72px]"
+                  >
+                    <Avatar className="h-16 w-16 rounded-xl">
+                      <AvatarImage src={item.avatar || undefined} className="rounded-xl" />
+                      <AvatarFallback className="bg-muted rounded-xl">
+                        {item.label[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-center line-clamp-2 w-16">{item.label}</span>
+                  </Link>
+                ))}
               </div>
-            ))}
+            </div>
 
-            <Separator className="my-5 opacity-50" />
-
-            {/* Configurações e Sair - Design Aprimorado */}
-            <div className="space-y-2">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 mb-4 px-3">
-                Configurações e suporte
-              </h2>
-              
-              {isAdmin && (
+            {/* Main Menu Grid */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {mainMenuItems
+                .filter(item => !item.adminOnly || isAdmin)
+                .map((item, idx) => (
                 <Link
-                  to="/admin"
-                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
+                  key={idx}
+                  to={item.path}
+                  className="flex flex-col items-start gap-2 p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors shadow-sm"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                    <Shield className="h-5 w-5 text-red-600" />
-                  </div>
-                  <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                    Painel Admin
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  <item.icon className={`h-6 w-6 ${item.color}`} />
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
                 </Link>
+              ))}
+            </div>
+
+            {/* Ver mais Button */}
+            <Button
+              variant="secondary"
+              className="w-full mb-6 rounded-xl h-12"
+              onClick={() => setShowMore(!showMore)}
+            >
+              {showMore ? "Ver menos" : "Ver mais"}
+              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showMore ? "rotate-180" : ""}`} />
+            </Button>
+
+            {/* More Items */}
+            {showMore && (
+              <div className="grid grid-cols-2 gap-2 mb-6 animate-in slide-in-from-top-2">
+                {moreMenuItems.map((item, idx) => (
+                  <Link
+                    key={idx}
+                    to={item.path}
+                    className="flex flex-col items-start gap-2 p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors shadow-sm"
+                  >
+                    <item.icon className={`h-6 w-6 ${item.color}`} />
+                    <span className="text-sm font-medium text-foreground">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom Section */}
+            <div className="space-y-1 border-t border-border pt-4">
+              <button
+                onClick={() => navigate("/help")}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Ajuda e apoio técnico</span>
+                </div>
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={() => navigate("/settings")}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Definições e privacidade</span>
+                </div>
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              </button>
+
+              {isAdmin && (
+                <button
+                  onClick={() => navigate("/admin/verification-requests")}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-red-500" />
+                    <span className="font-medium">Pedidos de Verificação</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </button>
               )}
-              
-              <Link
-                to="/app-settings"
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <Palette className="h-5 w-5 text-purple-600" />
-                </div>
-                <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                  Configurações do App
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </Link>
-              
-              <Link
-                to="/settings"
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gray-500/10 to-gray-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <Shield className="h-5 w-5 text-gray-600" />
-                </div>
-                <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                  Definições e privacidade
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </Link>
-              
-              <Link
-                to="/help"
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <HelpCircle className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                  Ajuda e suporte
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </Link>
-              
-              <Link
-                to="/terms"
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/60 transition-all duration-200 group hover:shadow-sm"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <FileText className="h-5 w-5 text-yellow-600" />
-                </div>
-                <span className="text-[15px] font-medium text-foreground group-hover:text-primary transition-colors flex-1">
-                  Termos e políticas
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </Link>
-              
+
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all duration-200 group hover:shadow-sm"
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600"
               >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/10 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <LogOut className="h-5 w-5 text-red-600" />
-                </div>
-                <span className="text-[15px] font-medium text-foreground group-hover:text-red-600 transition-colors flex-1 text-left">
-                  Terminar sessão
-                </span>
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium">Terminar sessão</span>
               </button>
             </div>
 
-            <div className="pt-6 pb-4 px-3">
-              <p className="text-xs text-muted-foreground/60 leading-relaxed text-center">
+            {/* Footer */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground text-center">
                 Privacidade · Termos · Publicidade · Cookies<br />
                 © Blynk 2024
               </p>

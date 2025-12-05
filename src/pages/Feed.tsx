@@ -24,6 +24,7 @@ import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 import { TranslateButton } from "@/components/TranslateButton";
+import { UserSuggestions } from "@/components/UserSuggestions";
 
 interface LiveStream {
   id: string;
@@ -486,6 +487,11 @@ export default function Feed() {
                 </div>
               </div>
             </Card>
+          </div>
+
+          {/* User Suggestions */}
+          <div className="px-4 sm:px-0 mt-4">
+            <UserSuggestions />
           </div>
 
           {/* Live Streams Section */}
