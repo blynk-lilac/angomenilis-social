@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video, Lock, Image as ImageIcon, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, Image as ImageIcon, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
@@ -29,6 +29,7 @@ interface Message {
   message_type?: string;
   media_url?: string;
   duration?: number;
+  read?: boolean;
 }
 
 interface Profile {
@@ -52,16 +53,17 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
   const [wallpaper, setWallpaper] = useState<string>('');
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { isOnline } = useUserPresence(friendId);
   const { typingUsers, setTyping } = useTypingIndicator(friendId || '');
   
-  // Enable screenshot protection
   useScreenshotProtection(true);
   
-  // Enable temporary messages if configured
   useTemporaryMessages({
     chatPartnerId: friendId || '',
     userId: user?.id || '',
@@ -75,9 +77,8 @@ export default function Chat() {
       const startTime = Date.now();
       await Promise.all([loadFriend(), loadChatSettings(), loadMessages(), loadWallpaper()]);
       
-      // Garantir no mínimo 3 segundos de loading
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 3000 - elapsed);
+      const remaining = Math.max(0, 2000 - elapsed);
       setTimeout(() => {
         setLoading(false);
       }, remaining);
@@ -94,7 +95,6 @@ export default function Chat() {
   }, [friendId]);
 
   useEffect(() => {
-    // Listen for settings updates from ChatPrivacyMenu
     const handleSettingsUpdate = () => {
       loadChatSettings();
     };
@@ -199,7 +199,6 @@ export default function Chat() {
 
     if (data) setMessages(data);
 
-    // Mark messages as read
     await supabase
       .from('messages')
       .update({ read: true })
@@ -225,9 +224,7 @@ export default function Chat() {
           ) {
             setMessages(prev => [...prev, newMsg]);
             
-            // Show notification if message is from friend
             if (newMsg.sender_id === friendId && document.hidden) {
-              // Load sender profile for avatar
               const { data: senderProfile } = await supabase
                 .from('profiles')
                 .select('avatar_url, first_name')
@@ -275,7 +272,6 @@ export default function Chat() {
 
     const messageText = newMessage.trim();
     
-    // Evita envios duplicados rápidos
     if (sendingMessages.has(messageText)) {
       return;
     }
@@ -288,7 +284,6 @@ export default function Chat() {
     setSendingMessages(prev => new Set(prev).add(messageText));
     setNewMessage('');
 
-    // Envia diretamente para o servidor (realtime vai mostrar a mensagem)
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: friendId,
@@ -324,6 +319,33 @@ export default function Chat() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const folder = type === 'image' ? 'images' : 'videos';
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(`${folder}/${fileName}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(`${folder}/${fileName}`);
+
+      handleMediaSelect(data.publicUrl, type);
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
+    
+    e.target.value = '';
+  };
+
   const startCall = async (type: 'voice' | 'video') => {
     if (!user || !friendId) return;
 
@@ -342,7 +364,6 @@ export default function Chat() {
     }
   };
 
-  // Show PIN protection if chat is locked
   if (chatSettings?.is_locked && !isUnlocked && chatSettings?.pin_code) {
     return (
       <ChatPinProtection
@@ -370,210 +391,344 @@ export default function Chat() {
 
   const isTyping = typingUsers.size > 0;
 
+  // Group messages by date
+  const groupedMessages = messages.reduce((acc, msg) => {
+    const date = format(new Date(msg.created_at), 'yyyy-MM-dd');
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(msg);
+    return acc;
+  }, {} as Record<string, Message[]>);
+
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (dateStr === format(today, 'yyyy-MM-dd')) {
+      return 'Hoje';
+    } else if (dateStr === format(yesterday, 'yyyy-MM-dd')) {
+      return 'Ontem';
+    } else {
+      return format(date, 'dd/MM/yyyy');
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* Header - Fixed */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="flex-shrink-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border px-2 sm:px-4 py-2 sm:py-3 safe-area-top"
-      >
-        <div className="flex items-center gap-2 sm:gap-3 w-full">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/messages')}
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </motion.div>
-          
-          <motion.div 
-            className="relative flex-shrink-0 cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-            onClick={() => navigate(`/profile/${friend.username}`)}
+      {/* WhatsApp-style Header */}
+      <header className="flex-shrink-0 z-50 bg-primary text-primary-foreground px-3 py-2 safe-area-top">
+        <div className="flex items-center gap-3 w-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/messages')}
+            className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
           >
-            <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-primary/20">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          
+          <div 
+            className="relative flex-shrink-0 cursor-pointer"
+            onClick={() => navigate(`/profile/${friend.id}`)}
+          >
+            <Avatar className="h-10 w-10 border-2 border-primary-foreground/20">
               <AvatarImage src={friend.avatar_url || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm sm:text-base">
+              <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm">
                 {friend.first_name[0]}
               </AvatarFallback>
             </Avatar>
-            <motion.div 
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className={`absolute bottom-0 right-0 h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full border-2 border-card ${isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`}
-            >
-              {isOnline && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-green-500"
-                  animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              )}
-            </motion.div>
-          </motion.div>
+            {isOnline && (
+              <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-primary" />
+            )}
+          </div>
           
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm sm:text-base text-foreground truncate">{friend.first_name}</p>
+          <div 
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => navigate(`/profile/${friend.id}`)}
+          >
+            <p className="font-semibold text-sm truncate">{friend.first_name}</p>
             <AnimatePresence mode="wait">
               {isTyping ? (
-                <motion.div 
+                <motion.p 
                   key="typing"
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="flex items-center gap-1 text-xs text-primary"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-xs text-primary-foreground/80"
                 >
-                  <span>Escrevendo</span>
-                  <div className="flex gap-0.5">
-                    <motion.div 
-                      className="w-1 h-1 bg-primary rounded-full"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                    />
-                    <motion.div 
-                      className="w-1 h-1 bg-primary rounded-full"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
-                    />
-                    <motion.div 
-                      className="w-1 h-1 bg-primary rounded-full"
-                      animate={{ y: [0, -3, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
-                    />
-                  </div>
-                </motion.div>
+                  digitando...
+                </motion.p>
               ) : (
                 <motion.p 
                   key="status"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="text-xs text-muted-foreground truncate"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-xs text-primary-foreground/70"
                 >
-                  {isOnline ? 'Online agora' : 'Offline'}
+                  {isOnline ? 'online' : 'offline'}
                 </motion.p>
               )}
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-primary/10"
-                onClick={() => startCall('voice')}
-              >
-                <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="hidden xs:block">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-primary/10"
-                onClick={() => startCall('video')}
-              >
-                <Video className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-primary/10"
-                onClick={() => navigate(`/chat/${friendId}/settings`)}
-              >
-                <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </motion.div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => startCall('video')}
+            >
+              <Video className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => startCall('voice')}
+            >
+              <Phone className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => navigate(`/chat/${friendId}/settings`)}
+            >
+              <MoreVertical className="h-5 w-5" />
+            </Button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      {/* Messages - Scrollable */}
+      {/* Messages Area with WhatsApp-style background */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 py-3 space-y-2 relative"
-        style={wallpaper ? {
-          backgroundImage: `url(${wallpaper})`,
+        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
+        style={{
+          backgroundImage: wallpaper ? `url(${wallpaper})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        } : undefined}
+          backgroundColor: wallpaper ? undefined : 'hsl(var(--muted))',
+        }}
       >
-        {wallpaper && (
-          <div className="absolute inset-0 bg-background/30 backdrop-blur-[1px]" />
-        )}
-        <div className="relative z-10 space-y-2 pb-2">
+        <div className="max-w-3xl mx-auto space-y-1">
+          {Object.entries(groupedMessages).map(([date, msgs]) => (
+            <div key={date}>
+              {/* Date Label */}
+              <div className="flex justify-center my-3">
+                <span className="px-3 py-1 text-xs bg-card/90 backdrop-blur-sm text-muted-foreground rounded-lg shadow-sm">
+                  {formatDateLabel(date)}
+                </span>
+              </div>
+
+              {/* Messages */}
+              {msgs.map((message, index) => {
+                const isOwn = message.sender_id === user?.id;
+                const showAvatar = !isOwn && (index === 0 || msgs[index - 1]?.sender_id !== message.sender_id);
+                
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}
+                  >
+                    <div className={`flex items-end gap-1 max-w-[80%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {!isOwn && showAvatar && (
+                        <Avatar className="h-6 w-6 flex-shrink-0">
+                          <AvatarImage src={friend.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">{friend.first_name[0]}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      {!isOwn && !showAvatar && <div className="w-6" />}
+                      
+                      <div
+                        className={`relative px-3 py-2 rounded-2xl shadow-sm ${
+                          isOwn
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+                            : 'bg-card text-foreground rounded-bl-md'
+                        }`}
+                      >
+                        {/* Tail */}
+                        <div 
+                          className={`absolute bottom-0 w-3 h-3 ${
+                            isOwn 
+                              ? 'right-0 translate-x-1/2 bg-primary' 
+                              : 'left-0 -translate-x-1/2 bg-card'
+                          }`}
+                          style={{
+                            clipPath: isOwn 
+                              ? 'polygon(0 0, 100% 100%, 0 100%)' 
+                              : 'polygon(100% 0, 100% 100%, 0 100%)'
+                          }}
+                        />
+                        
+                        {message.message_type === 'image' && message.media_url && (
+                          <img 
+                            src={message.media_url} 
+                            alt="Image" 
+                            className="rounded-lg max-w-full max-h-64 object-contain mb-1"
+                          />
+                        )}
+                        
+                        {message.message_type === 'video' && message.media_url && (
+                          <video 
+                            src={message.media_url} 
+                            controls 
+                            className="rounded-lg max-w-full max-h-64 mb-1"
+                          />
+                        )}
+                        
+                        {message.message_type === 'audio' && message.media_url && (
+                          <div className="flex items-center gap-2 min-w-[200px]">
+                            <Avatar className="h-10 w-10 flex-shrink-0">
+                              <AvatarImage src={isOwn ? undefined : friend.avatar_url || undefined} />
+                              <AvatarFallback className={isOwn ? 'bg-primary-foreground/20' : ''}>
+                                {isOwn ? user?.email?.[0]?.toUpperCase() : friend.first_name[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <audio 
+                              src={message.media_url} 
+                              controls 
+                              className="flex-1 h-8"
+                            />
+                            {message.duration && (
+                              <span className={`text-xs ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                {Math.floor(message.duration / 60)}:{(message.duration % 60).toString().padStart(2, '0')}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {message.content && (
+                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                        )}
+                        
+                        <div className={`flex items-center gap-1 justify-end mt-1 ${isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                          <span className="text-[10px]">
+                            {format(new Date(message.created_at), 'HH:mm')}
+                          </span>
+                          {isOwn && (
+                            message.read ? (
+                              <CheckCheck className="h-3 w-3 text-blue-400" />
+                            ) : (
+                              <Check className="h-3 w-3" />
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ))}
+          
+          {/* Typing Indicator */}
           <AnimatePresence>
-            {messages.map((message, index) => {
-              const isSent = message.sender_id === user?.id;
-              const hideMedia = chatSettings && !chatSettings.media_visibility;
-              return (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2, delay: index > messages.length - 3 ? 0 : 0 }}
-                  className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-                >
-                  <MessageBubble
-                    message={message}
-                    isSent={isSent}
-                    hideMedia={hideMedia}
-                    contextType="chat"
-                    contextId={friendId || ''}
-                    onDeleteLocal={(id) =>
-                      setMessages((prev) => prev.filter((m) => m.id !== id))
-                    }
-                  />
-                </motion.div>
-              );
-            })}
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex justify-start mb-2"
+              >
+                <div className="flex items-center gap-1 px-4 py-2 bg-card rounded-2xl shadow-sm">
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-2 h-2 bg-muted-foreground rounded-full"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
+          
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input - Fixed */}
-      <motion.form
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        onSubmit={sendMessage}
-        className="flex-shrink-0 bg-card/95 backdrop-blur-lg border-t border-border px-2 sm:px-4 py-2 sm:py-3 safe-area-bottom"
-      >
-        <div className="flex gap-2 sm:gap-3 items-center">
-          <MediaPicker onMediaSelect={handleMediaSelect} />
-          <Input
-            value={newMessage}
-            onChange={(e) => handleTyping(e.target.value)}
-            placeholder="Mensagem..."
-            className="flex-1 h-11 text-sm sm:text-base rounded-full border-border/50 bg-muted/50 focus-visible:ring-primary transition-all"
-          />
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      {/* WhatsApp-style Input Area */}
+      <div className="flex-shrink-0 bg-card border-t border-border px-2 py-2 safe-area-bottom">
+        <form onSubmit={sendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
+          >
+            <Smile className="h-5 w-5" />
+          </Button>
+          
+          <div className="flex-1 relative">
+            <Input
+              type="text"
+              value={newMessage}
+              onChange={(e) => handleTyping(e.target.value)}
+              placeholder="Mensagem"
+              className="h-10 rounded-full bg-muted/50 border-0 pr-12 focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e, 'image')}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e, 'video')}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <Paperclip className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {newMessage.trim() ? (
             <Button
               type="submit"
               size="icon"
-              className="rounded-full h-11 w-11 flex-shrink-0 bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg transition-all"
-              disabled={!newMessage.trim()}
+              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
             >
               <Send className="h-5 w-5" />
             </Button>
-          </motion.div>
-        </div>
-      </motion.form>
+          ) : (
+            <Button
+              type="button"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+          )}
+        </form>
+      </div>
 
+      {/* Wallpaper Picker */}
       <WallpaperPicker
         open={showWallpaperPicker}
-        onClose={() => setShowWallpaperPicker(false)}
         chatPartnerId={friendId || ''}
+        onClose={() => setShowWallpaperPicker(false)}
         currentWallpaper={wallpaper}
-        onWallpaperChange={setWallpaper}
+        onWallpaperChange={(url) => setWallpaper(url)}
       />
     </div>
   );
