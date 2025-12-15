@@ -43,7 +43,8 @@ export function ClickableProfile({
 }: ClickableProfileProps) {
   const navigate = useNavigate();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     navigate(`/profile/${userId}`);
   };
 

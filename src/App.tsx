@@ -46,6 +46,7 @@ import InstallPWA from './pages/InstallPWA';
 import Hashtag from './pages/Hashtag';
 import CreateAd from "./pages/CreateAd";
 import AppSettings from "./pages/AppSettings";
+import ProfessionalPanel from "./pages/ProfessionalPanel";
 import NotFound from "./pages/NotFound";
 import Blocked from "./pages/Blocked";
 import Help from "./pages/Help";
@@ -404,6 +405,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <AppSettings />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Professional Panel Route */}
+        <Route
+          path="/professional-panel"
+          element={
+            <ProtectedRoute>
+              <ProfessionalPanel />
             </ProtectedRoute>
           }
         />

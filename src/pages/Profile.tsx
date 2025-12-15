@@ -435,7 +435,7 @@ export default function Profile() {
                 {isOwnProfile && (
                   <div className="flex flex-col items-end gap-2">
                     <Button
-                      onClick={() => navigate("/settings")}
+                      onClick={() => navigate("/professional-panel")}
                       variant="default"
                       size="sm"
                       className="rounded-full px-4 h-9 text-sm font-semibold shadow-sm"

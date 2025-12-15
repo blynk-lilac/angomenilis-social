@@ -1404,48 +1404,69 @@ export type Database = {
           badge_type: string | null
           banner_url: string | null
           bio: string | null
+          category: string | null
+          civil_status: string | null
           created_at: string | null
           email: string | null
           first_name: string
           full_name: string | null
           id: string
+          instagram: string | null
           is_public: boolean | null
+          location: string | null
           phone: string | null
+          twitter: string | null
           updated_at: string | null
           username: string
           verified: boolean | null
+          website: string | null
+          youtube: string | null
         }
         Insert: {
           avatar_url?: string | null
           badge_type?: string | null
           banner_url?: string | null
           bio?: string | null
+          category?: string | null
+          civil_status?: string | null
           created_at?: string | null
           email?: string | null
           first_name: string
           full_name?: string | null
           id: string
+          instagram?: string | null
           is_public?: boolean | null
+          location?: string | null
           phone?: string | null
+          twitter?: string | null
           updated_at?: string | null
           username: string
           verified?: boolean | null
+          website?: string | null
+          youtube?: string | null
         }
         Update: {
           avatar_url?: string | null
           badge_type?: string | null
           banner_url?: string | null
           bio?: string | null
+          category?: string | null
+          civil_status?: string | null
           created_at?: string | null
           email?: string | null
           first_name?: string
           full_name?: string | null
           id?: string
+          instagram?: string | null
           is_public?: boolean | null
+          location?: string | null
           phone?: string | null
+          twitter?: string | null
           updated_at?: string | null
           username?: string
           verified?: boolean | null
+          website?: string | null
+          youtube?: string | null
         }
         Relationships: []
       }
