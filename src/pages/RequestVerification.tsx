@@ -8,10 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, ChevronLeft, BadgeCheck, Shield, Star, Sparkles, X } from "lucide-react";
 
-// Simple inline badge for this page
-const SimpleBadge = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
+// Simple inline badge for this page - replaces VerificationBadge
+const VerificationBadge = ({ type = "blue", size = "md" }: { type?: "blue" | "gold"; size?: "sm" | "md" | "lg" }) => {
   const sizeClass = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-6 h-6" : "w-5 h-5";
-  return <BadgeCheck className={`${sizeClass} text-blue-500`} />;
+  const color = type === "gold" ? "text-amber-500" : "text-blue-500";
+  return <BadgeCheck className={`${sizeClass} ${color}`} />;
 };
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";

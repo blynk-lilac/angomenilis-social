@@ -3,12 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/blynk-logo.jpg';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { requestNotificationPermission, showNotification } from '@/utils/pushNotifications';
+import { motion } from 'framer-motion';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -27,7 +28,6 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
   const [tempUserId, setTempUserId] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Carregar credenciais salvas ou email pré-preenchido
   useEffect(() => {
     const prefilledEmail = location.state?.prefilledEmail;
     if (prefilledEmail) {
@@ -46,7 +46,6 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
 
   const saveAccount = async (userId: string, email: string) => {
     try {
-      // Buscar dados do perfil
       const { data: profile } = await supabase
         .from('profiles')
         .select('first_name, username, avatar_url')
@@ -54,7 +53,6 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
         .single();
 
       if (profile) {
-        // Salvar conta na lista
         const accounts = JSON.parse(localStorage.getItem('blynk_saved_accounts') || '[]');
         const existingIndex = accounts.findIndex((acc: any) => acc.userId === userId);
         
@@ -75,7 +73,6 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
         localStorage.setItem('blynk_saved_accounts', JSON.stringify(accounts));
         localStorage.setItem('blynk_saved_credential', email);
 
-        // Salvar sessão
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           localStorage.setItem(`blynk_session_${userId}`, JSON.stringify({
@@ -127,7 +124,6 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
         return;
       }
 
-      // Verificar se 2FA está ativado
       const { data: twoFactorData } = await supabase
         .from('two_factor_auth')
         .select('enabled')
@@ -135,22 +131,18 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
         .single();
 
       if (twoFactorData?.enabled) {
-        // Fazer logout temporário
         await supabase.auth.signOut();
         
-        // Gerar código de 2FA
         const code = generateTwoFactorCode();
         const expiresAt = new Date();
-        expiresAt.setSeconds(expiresAt.getSeconds() + 10); // 10 segundos
+        expiresAt.setSeconds(expiresAt.getSeconds() + 10);
 
-        // Salvar código no banco
         await supabase.from('two_factor_codes').insert({
           user_id: data.user.id,
           code,
           expires_at: expiresAt.toISOString(),
         });
         
-        // Solicitar permissão de notificação e enviar
         const hasPermission = await requestNotificationPermission();
         if (hasPermission) {
           showNotification('Código de Verificação Blynk', {
@@ -160,10 +152,8 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
           });
         }
         
-        // Exibir código na tela também
         toast.success(`Seu código de verificação é: ${code}`, { duration: 10000 });
 
-        // Redirecionar para página de verificação
         navigate('/two-factor-verification', {
           state: {
             tempUserId: data.user.id,
@@ -174,12 +164,10 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
         });
         return;
       } else if (!isEmail) {
-        // Se é login por telefone, verificar número
         await supabase.auth.signOut();
         setTempUserId(data.user.id);
         setShowPhoneVerification(true);
       } else {
-        // Salvar conta se "lembrar-me" estiver marcado
         if (rememberMe) {
           await saveAccount(data.user.id, credential.trim());
         } else {
@@ -195,13 +183,11 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
     }
   };
 
-  // Verificação de telefone
   if (showPhoneVerification) {
     return (
       <PhoneVerification
         phoneNumber={credential}
         onVerified={async () => {
-          // Re-fazer login após verificação
           if (!tempUserId) return;
           
           try {
@@ -227,129 +213,197 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
   }
 
   return (
-    <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="mb-4 hover:scale-105 transition-transform duration-200"
-          disabled={loading}
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Voltar
-        </Button>
+    <div className="w-full max-w-md mx-auto px-6">
+      {/* Glass Card Container */}
+      <motion.div 
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative bg-card/80 backdrop-blur-2xl rounded-3xl border border-border/50 shadow-2xl overflow-hidden"
+      >
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/20 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
         
-        <div className="text-center space-y-3">
-          <div className="relative inline-block">
-            <img 
-              src={logo} 
-              alt="Blynk" 
-              className="h-20 w-20 mx-auto rounded-full shadow-lg ring-4 ring-primary/20 animate-in zoom-in duration-500" 
-            />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent animate-pulse" />
-          </div>
-          <h2 className="text-4xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
-            Bem-vindo de volta!
-          </h2>
-          <p className="text-lg text-muted-foreground animate-in slide-in-from-bottom-3 duration-500">
-            Entre no Blynk
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-500">
-          <label className="text-sm font-semibold text-foreground">
-            E-mail ou Telefone
-          </label>
-          <Input
-            type="text"
-            value={credential}
-            onChange={(e) => setCredential(e.target.value)}
-            placeholder="exemplo@email.com ou +244..."
-            className="h-14 text-lg rounded-2xl border-2 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
-            required
-            autoFocus
-          />
-        </div>
-
-        <div className="space-y-3 animate-in slide-in-from-bottom-5 duration-500">
-          <label className="text-sm font-semibold text-foreground">
-            Senha
-          </label>
-          <div className="relative">
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite sua senha"
-              className="h-14 text-lg rounded-2xl border-2 pr-12 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 bg-background/50 backdrop-blur-sm"
-              required
-              minLength={6}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-200"
+        <div className="relative p-8 space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={onBack}
+              className="p-2 rounded-full bg-muted/50 hover:bg-muted transition-colors"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
+              <ArrowLeft className="h-5 w-5" />
+            </motion.button>
+            <div className="flex-1" />
+            <Sparkles className="h-5 w-5 text-primary animate-pulse" />
           </div>
-        </div>
 
-        <div className="flex items-center justify-between animate-in slide-in-from-bottom-6 duration-500">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="remember" 
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-              className="transition-all duration-200 hover:scale-110"
-            />
-            <label
-              htmlFor="remember"
-              className="text-sm font-medium text-foreground cursor-pointer select-none hover:text-primary transition-colors"
-            >
-              Lembrar-me
-            </label>
-          </div>
-          
-          <Button
-            type="button"
-            variant="link"
-            className="text-primary hover:underline p-0 h-auto font-medium"
-            onClick={() => {
-              if (credential && isEmail) {
-                onForgotPassword(credential);
-              } else {
-                toast.error('Digite um e-mail válido primeiro');
-              }
-            }}
+          {/* Logo & Title */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-center space-y-4"
           >
-            Esqueci minha senha
-          </Button>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full h-14 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-bottom-7 duration-500"
-          disabled={!credential || password.length < 6 || loading}
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </Button>
-
-        {onSwitchToSignup && (
-          <div className="text-center animate-in slide-in-from-bottom-8 duration-500">
-            <Button
-              type="button"
-              variant="link"
-              onClick={onSwitchToSignup}
-              className="text-foreground hover:text-primary"
+            <motion.div 
+              className="relative inline-block"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              Não tem conta? <span className="font-semibold ml-1">Criar conta</span>
-            </Button>
-          </div>
-        )}
-      </form>
+              <img 
+                src={logo} 
+                alt="Blynk" 
+                className="h-20 w-20 mx-auto rounded-2xl shadow-xl ring-4 ring-primary/20" 
+              />
+              <motion.div 
+                className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-4 border-card flex items-center justify-center"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+              >
+                <span className="text-white text-xs">✓</span>
+              </motion.div>
+            </motion.div>
+            
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                Bem-vindo!
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Entre na sua conta Blynk
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-foreground/80">
+                E-mail ou Telefone
+              </label>
+              <Input
+                type="text"
+                value={credential}
+                onChange={(e) => setCredential(e.target.value)}
+                placeholder="exemplo@email.com"
+                className="h-12 text-base rounded-xl border-2 border-border/50 bg-background/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                required
+                autoFocus
+              />
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-2"
+            >
+              <label className="text-sm font-medium text-foreground/80">
+                Senha
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-12 text-base rounded-xl border-2 border-border/50 bg-background/50 pr-12 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remember" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  className="border-2"
+                />
+                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                  Lembrar-me
+                </label>
+              </div>
+              
+              <button
+                type="button"
+                className="text-sm text-primary hover:underline font-medium"
+                onClick={() => {
+                  if (credential && isEmail) {
+                    onForgotPassword(credential);
+                  } else {
+                    toast.error('Digite um e-mail válido primeiro');
+                  }
+                }}
+              >
+                Esqueceu a senha?
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all duration-300"
+                disabled={!credential || password.length < 6 || loading}
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Entrando...</span>
+                  </div>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </motion.div>
+
+            {onSwitchToSignup && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="text-center pt-2"
+              >
+                <p className="text-sm text-muted-foreground">
+                  Não tem conta?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToSignup}
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    Criar conta
+                  </button>
+                </p>
+              </motion.div>
+            )}
+          </form>
+        </div>
+      </motion.div>
     </div>
   );
 };
