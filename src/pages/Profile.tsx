@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -6,49 +6,60 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Camera, 
   Heart, 
   MessageCircle, 
   Share2, 
   MoreHorizontal,
-  Settings,
   UserPlus,
   UserCheck,
   Bell,
   BellOff,
   Briefcase,
   Star,
-  Users,
   ArrowLeft,
-  Search
+  Search,
+  MapPin,
+  Link as LinkIcon,
+  X,
+  Grid3X3,
+  Play
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
-import PostMenu from "@/components/PostMenu";
 import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import AssociatedAccounts from "@/components/AssociatedAccounts";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Profile {
   id: string;
   username: string;
   full_name: string;
+  first_name: string;
   avatar_url: string;
   bio: string;
   verified?: boolean;
   badge_type?: string | null;
   banner_url?: string;
+  location?: string;
+  website?: string;
+  category?: string;
+  civil_status?: string;
 }
 
 interface Friend {
   id: string;
   username: string;
   full_name: string;
+  first_name: string;
   avatar_url: string;
   verified?: boolean;
   badge_type?: string | null;
@@ -58,9 +69,7 @@ interface Post {
   id: string;
   content: string;
   created_at: string;
-  image_url?: string;
-  video_url?: string;
-  audio_url?: string;
+  media_urls?: string[];
   likes_count: number;
   comments_count: number;
   user_liked: boolean;
@@ -86,15 +95,18 @@ export default function Profile() {
   const [followingCount, setFollowingCount] = useState(0);
   const [friendsCount, setFriendsCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isFriend, setIsFriend] = useState(false);
-  const [isFollowingCurrentUser, setIsFollowingCurrentUser] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"followers" | "following" | "friends">("followers");
   const [modalUsers, setModalUsers] = useState<Profile[]>([]);
+  const [modalSearch, setModalSearch] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
@@ -126,41 +138,26 @@ export default function Profile() {
         ]);
         
         if (profileId !== user.id) {
-          await Promise.all([
-            checkFollowing(user.id, profileId),
-            checkFriendStatus(user.id, profileId),
-          ]);
+          await checkFollowing(user.id, profileId);
         }
       }
     } finally {
-      // Garantir no mínimo 3 segundos de loading
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 3000 - elapsed);
-      setTimeout(() => {
-        setLoading(false);
-      }, remaining);
+      const remaining = Math.max(0, 2000 - elapsed);
+      setTimeout(() => setLoading(false), remaining);
     }
   };
 
   const loadStats = async (profileId: string) => {
-    const { count: followersCount } = await supabase
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("following_id", profileId);
+    const [followers, following, friendships] = await Promise.all([
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
+      supabase.from("friendships").select("*", { count: "exact", head: true }).or(`user_id_1.eq.${profileId},user_id_2.eq.${profileId}`)
+    ]);
 
-    const { count: followingCount } = await supabase
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("follower_id", profileId);
-
-    const { count: friendsCount } = await supabase
-      .from("friendships")
-      .select("*", { count: "exact", head: true })
-      .or(`user_id_1.eq.${profileId},user_id_2.eq.${profileId}`);
-
-    setFollowersCount(followersCount || 0);
-    setFollowingCount(followingCount || 0);
-    setFriendsCount(friendsCount || 0);
+    setFollowersCount(followers.count || 0);
+    setFollowingCount(following.count || 0);
+    setFriendsCount(friendships.count || 0);
   };
 
   const checkFollowing = async (currentUserId: string, profileId: string) => {
@@ -172,25 +169,6 @@ export default function Profile() {
       .maybeSingle();
 
     setIsFollowing(!!data);
-
-    const { data: followingMe } = await supabase
-      .from("follows")
-      .select("*")
-      .eq("follower_id", profileId)
-      .eq("following_id", currentUserId)
-      .maybeSingle();
-
-    setIsFollowingCurrentUser(!!followingMe);
-  };
-
-  const checkFriendStatus = async (currentUserId: string, profileId: string) => {
-    const { data } = await supabase
-      .from("friendships")
-      .select("*")
-      .or(`and(user_id_1.eq.${currentUserId},user_id_2.eq.${profileId}),and(user_id_1.eq.${profileId},user_id_2.eq.${currentUserId})`)
-      .maybeSingle();
-
-    setIsFriend(!!data);
   };
 
   const loadFriends = async (profileId: string) => {
@@ -200,14 +178,12 @@ export default function Profile() {
       .or(`user_id_1.eq.${profileId},user_id_2.eq.${profileId}`);
 
     if (data) {
-      const friendIds = data.map(f =>
-        f.user_id_1 === profileId ? f.user_id_2 : f.user_id_1
-      );
+      const friendIds = data.map(f => f.user_id_1 === profileId ? f.user_id_2 : f.user_id_1);
       
       if (friendIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username, full_name, avatar_url, verified, badge_type")
+          .select("id, username, full_name, first_name, avatar_url, verified, badge_type")
           .in("id", friendIds);
         setFriends(profiles || []);
       }
@@ -217,12 +193,7 @@ export default function Profile() {
   const loadPosts = async (profileId: string) => {
     const { data } = await supabase
       .from("posts")
-      .select(`
-        *,
-        profiles (username, avatar_url, verified, badge_type),
-        likes:post_likes(count),
-        comments:comments(count)
-      `)
+      .select(`*, likes:post_likes(count), comments:comments(count)`)
       .eq("user_id", profileId)
       .is("expires_at", null)
       .order("created_at", { ascending: false });
@@ -255,11 +226,7 @@ export default function Profile() {
   const loadVideos = async (profileId: string) => {
     const { data } = await supabase
       .from("verification_videos")
-      .select(`
-        *,
-        likes:verification_video_likes(count),
-        comments:verification_video_comments(count)
-      `)
+      .select(`*, likes:verification_video_likes(count), comments:verification_video_comments(count)`)
       .eq("user_id", profileId)
       .order("created_at", { ascending: false });
 
@@ -292,18 +259,11 @@ export default function Profile() {
     if (!profile) return;
 
     if (isFollowing) {
-      await supabase
-        .from("follows")
-        .delete()
-        .eq("follower_id", currentUserId)
-        .eq("following_id", profile.id);
+      await supabase.from("follows").delete().eq("follower_id", currentUserId).eq("following_id", profile.id);
       setIsFollowing(false);
       setFollowersCount(prev => prev - 1);
     } else {
-      await supabase.from("follows").insert({
-        follower_id: currentUserId,
-        following_id: profile.id,
-      });
+      await supabase.from("follows").insert({ follower_id: currentUserId, following_id: profile.id });
       setIsFollowing(true);
       setFollowersCount(prev => prev + 1);
     }
@@ -314,34 +274,72 @@ export default function Profile() {
     if (!post) return;
 
     if (post.user_liked) {
-      await supabase
-        .from("post_likes")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", currentUserId);
-
-      setPosts(posts.map(p =>
-        p.id === postId
-          ? { ...p, user_liked: false, likes_count: p.likes_count - 1 }
-          : p
-      ));
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", currentUserId);
+      setPosts(posts.map(p => p.id === postId ? { ...p, user_liked: false, likes_count: p.likes_count - 1 } : p));
     } else {
-      await supabase.from("post_likes").insert({
-        post_id: postId,
-        user_id: currentUserId,
-      });
+      await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
+      setPosts(posts.map(p => p.id === postId ? { ...p, user_liked: true, likes_count: p.likes_count + 1 } : p));
+    }
+  };
 
-      setPosts(posts.map(p =>
-        p.id === postId
-          ? { ...p, user_liked: true, likes_count: p.likes_count + 1 }
-          : p
-      ));
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setUploadingBanner(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}/banner-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('post-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(fileName);
+
+      await supabase.from('profiles').update({ banner_url: publicUrl }).eq('id', profile.id);
+      setProfile({ ...profile, banner_url: publicUrl });
+      toast.success('Foto de capa atualizada!');
+    } catch (error) {
+      toast.error('Erro ao enviar foto de capa');
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}/avatar-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('post-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(fileName);
+
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
+      setProfile({ ...profile, avatar_url: publicUrl });
+      toast.success('Foto de perfil atualizada!');
+    } catch (error) {
+      toast.error('Erro ao enviar foto de perfil');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
   const handleOpenModal = async (type: "followers" | "following" | "friends") => {
     setModalType(type);
     setModalOpen(true);
+    setModalSearch("");
 
     if (type === "followers") {
       const { data } = await supabase
@@ -362,22 +360,23 @@ export default function Profile() {
         .or(`user_id_1.eq.${profile?.id},user_id_2.eq.${profile?.id}`);
 
       if (data) {
-        const friendIds = data.map(f =>
-          f.user_id_1 === profile?.id ? f.user_id_2 : f.user_id_1
-        );
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("*")
-          .in("id", friendIds);
+        const friendIds = data.map(f => f.user_id_1 === profile?.id ? f.user_id_2 : f.user_id_1);
+        const { data: profiles } = await supabase.from("profiles").select("*").in("id", friendIds);
         setModalUsers(profiles || []);
       }
     }
   };
 
+  const filteredModalUsers = modalUsers.filter(u => 
+    u.username?.toLowerCase().includes(modalSearch.toLowerCase()) ||
+    u.full_name?.toLowerCase().includes(modalSearch.toLowerCase()) ||
+    u.first_name?.toLowerCase().includes(modalSearch.toLowerCase())
+  );
+
   if (loading || !profile) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-background pb-20">
+        <div className="min-h-screen bg-background">
           <TopBar />
           <ProfileSkeleton />
         </div>
@@ -387,470 +386,292 @@ export default function Profile() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-20">
         <TopBar />
 
-        {/* Header com Back e Search */}
-        <div className="sticky top-14 z-40 bg-background border-b px-4 py-2 flex items-center justify-between">
+        {/* Header */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="sticky top-14 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-2 flex items-center justify-between"
+        >
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-xl font-bold">{profile.username}</h1>
+            {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-5 h-5" />}
           </div>
           <Button variant="ghost" size="icon" className="rounded-full">
             <Search className="h-5 w-5" />
           </Button>
-        </div>
+        </motion.div>
 
         <div className="max-w-3xl mx-auto">
           {/* Banner e Avatar */}
-          <div className="relative">
-            <div className="h-48 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="relative"
+          >
+            <div className="h-48 sm:h-56 bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/20 overflow-hidden relative group">
               {profile.banner_url ? (
-                <img
-                  src={profile.banner_url}
-                  alt="Banner"
-                  className="w-full h-full object-cover"
-                />
+                <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10" />
+                <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10" />
+              )}
+              {isOwnProfile && (
+                <>
+                  <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+                  <button
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="h-4 w-4" />
+                    {uploadingBanner ? 'Enviando...' : 'Editar capa'}
+                  </button>
+                </>
               )}
             </div>
 
             <div className="px-4 pb-4">
-              <div className="flex items-end justify-between -mt-16">
-                <Avatar className="h-32 w-32 border-4 border-background ring-2 ring-border">
-                  <AvatarImage src={profile.avatar_url} />
-                  <AvatarFallback className="text-4xl bg-gradient-to-br from-primary to-secondary text-white">
-                    {profile.username?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-16 sm:-mt-20 gap-4">
+                <div className="relative">
+                  <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background ring-4 ring-primary/20 shadow-xl">
+                    <AvatarImage src={profile.avatar_url} />
+                    <AvatarFallback className="text-4xl bg-gradient-to-br from-primary to-accent text-white">
+                      {profile.username?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOwnProfile && (
+                    <>
+                      <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="absolute bottom-2 right-2 h-9 w-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
 
                 {isOwnProfile && (
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      onClick={() => navigate("/professional-panel")}
-                      variant="default"
-                      size="sm"
-                      className="rounded-full px-4 h-9 text-sm font-semibold shadow-sm"
-                    >
+                  <div className="flex flex-wrap gap-2 sm:pb-4">
+                    <Button onClick={() => navigate("/professional-panel")} size="sm" className="rounded-full px-4 h-9 text-sm font-semibold shadow-sm">
                       Painel profissional
                     </Button>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full px-4 h-9 text-sm font-semibold"
-                      >
-                        Adicionar à história
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full px-4 h-9 text-sm font-semibold"
-                      >
-                        Promover
-                      </Button>
-                    </div>
+                    <Button onClick={() => navigate("/settings/edit-profile")} variant="outline" size="sm" className="rounded-full px-4 h-9 text-sm font-semibold">
+                      Editar perfil
+                    </Button>
+                  </div>
+                )}
+
+                {!isOwnProfile && (
+                  <div className="flex gap-2 sm:pb-4">
+                    <Button onClick={handleFollow} className="rounded-full px-6" variant={isFollowing ? "outline" : "default"}>
+                      {isFollowing ? <><UserCheck className="h-4 w-4 mr-2" />A seguir</> : <><UserPlus className="h-4 w-4 mr-2" />Seguir</>}
+                    </Button>
+                    <Button variant="outline" size="icon" className="rounded-full">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
 
               <div className="mt-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-2xl font-bold">{profile.full_name || profile.username}</h2>
-                  {(profile.verified || profile.badge_type) && (
-                    <VerificationBadge 
-                      verified={profile.verified}
-                      badgeType={profile.badge_type} 
-                      className="w-6 h-6" 
-                    />
-                  )}
+                  <h2 className="text-2xl font-bold">{profile.full_name || profile.first_name || profile.username}</h2>
+                  {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-6 h-6" />}
                 </div>
                 <p className="text-sm text-muted-foreground">@{profile.username}</p>
                 
-                <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                  <button
-                    onClick={() => handleOpenModal("followers")}
-                    className="hover:underline font-semibold"
-                  >
-                    <span className="text-foreground">{followersCount}</span> seguidores
+                {profile.category && (
+                  <p className="text-sm text-primary mt-1">{profile.category}</p>
+                )}
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 mt-3 text-sm">
+                  <button onClick={() => handleOpenModal("followers")} className="hover:underline">
+                    <span className="font-bold">{followersCount}</span> <span className="text-muted-foreground">seguidores</span>
                   </button>
-                  <span>•</span>
-                  <button
-                    onClick={() => handleOpenModal("following")}
-                    className="hover:underline font-semibold"
-                  >
-                    <span className="text-foreground">{followingCount}</span> a seguir
+                  <button onClick={() => handleOpenModal("following")} className="hover:underline">
+                    <span className="font-bold">{followingCount}</span> <span className="text-muted-foreground">a seguir</span>
                   </button>
                 </div>
 
-                {profile.bio && (
-                  <p className="mt-3 text-sm">{profile.bio}</p>
-                )}
+                {profile.bio && <p className="mt-3 text-sm">{profile.bio}</p>}
 
-                {/* Contas Associadas */}
-                {isOwnProfile && (
-                  <AssociatedAccounts userId={currentUserId} />
-                )}
+                {/* Info extra */}
+                <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
+                  {profile.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{profile.location}</span>
+                    </div>
+                  )}
+                  {profile.website && (
+                    <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                      <LinkIcon className="h-4 w-4" />
+                      <span>{profile.website.replace(/https?:\/\//, '')}</span>
+                    </a>
+                  )}
+                </div>
 
-                {!isOwnProfile && (
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      onClick={handleFollow}
-                      className="flex-1 rounded-lg"
-                      variant={isFollowing ? "outline" : "default"}
-                    >
-                      {isFollowing ? (
-                        <>
-                          <UserCheck className="h-4 w-4 mr-2" />
-                          A seguir
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Subscrever
-                        </>
-                      )}
-                    </Button>
-                    <Button variant="outline" size="icon" className="rounded-lg">
-                      {isFollowing ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                    </Button>
-                    <Button variant="outline" size="icon" className="rounded-lg">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
+                {isOwnProfile && <AssociatedAccounts userId={currentUserId} />}
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Tabs do Facebook */}
+          {/* Tabs */}
           <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0">
-              <TabsTrigger
-                value="posts"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Publicações
+            <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-12 p-0 px-4 gap-2">
+              <TabsTrigger value="posts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-semibold px-4">
+                <Grid3X3 className="h-4 w-4 mr-2" />
+                Posts
               </TabsTrigger>
-              <TabsTrigger
-                value="about"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Sobre
-              </TabsTrigger>
-              <TabsTrigger
-                value="photos"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Fotos
-              </TabsTrigger>
-              <TabsTrigger
-                value="reels"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
+              <TabsTrigger value="reels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-semibold px-4">
+                <Play className="h-4 w-4 mr-2" />
                 Reels
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="posts" className="mt-0">
-              {/* Detalhes section */}
-              <Card className="m-4 p-4 border">
-                <h3 className="font-bold text-lg mb-3">Detalhes</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Briefcase className="h-5 w-5" />
-                    <span>Página • Criador de conteúdos digitais</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Star className="h-5 w-5 text-muted-foreground" />
-                    <button className="text-primary hover:underline font-semibold">
-                      100% recomendam (1339 críticas)
-                    </button>
-                  </div>
+              {posts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <Grid3X3 className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">Nenhuma publicação ainda</p>
                 </div>
-              </Card>
-
-              {/* Posts */}
-              <div className="px-4 pb-4">
-                <h3 className="font-bold text-xl mb-4">Publicações</h3>
-                <div className="space-y-4">
+              ) : (
+                <div className="grid grid-cols-3 gap-0.5 p-1">
                   {posts.map((post) => (
-                    <Card key={post.id} className="border overflow-hidden">
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={profile.avatar_url} />
-                              <AvatarFallback>
-                                {profile.username?.[0]?.toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center gap-1">
-                                <Link
-                                  to={`/profile/${profile.id}`}
-                                  className="font-semibold text-sm hover:underline"
-                                >
-                                  {profile.username}
-                                </Link>
-                                {profile.verified && (
-                                  <VerificationBadge
-                                    verified={profile.verified}
-                                    badgeType={profile.badge_type}
-                                    className="w-4 h-4"
-                                  />
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <span>
-                                  {formatDistanceToNow(new Date(post.created_at), {
-                                    addSuffix: true,
-                                    locale: ptBR,
-                                  })}
-                                </span>
-                                <span>•</span>
-                                <span>🌍</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                            <MoreHorizontal className="h-5 w-5" />
-                          </Button>
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => navigate(`/comments/${post.id}`)}
+                      className="aspect-square bg-muted overflow-hidden cursor-pointer relative group"
+                    >
+                      {post.media_urls && post.media_urls[0] ? (
+                        post.media_urls[0].includes('.mp4') || post.media_urls[0].includes('.webm') ? (
+                          <video src={post.media_urls[0]} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                        )
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-2">
+                          <p className="text-xs text-center line-clamp-3">{post.content}</p>
                         </div>
-
-                        <p className="text-sm mb-3 whitespace-pre-wrap">{post.content}</p>
-
-                        {post.image_url && (
-                          <img
-                            src={post.image_url}
-                            alt="Post"
-                            className="w-full rounded-lg"
-                          />
-                        )}
-                        {post.video_url && (
-                          <video
-                            src={post.video_url}
-                            controls
-                            className="w-full rounded-lg"
-                          />
-                        )}
-                        {post.audio_url && (
-                          <audio src={post.audio_url} controls className="w-full" />
-                        )}
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-5 w-5 fill-white" />
+                          <span className="font-semibold">{post.likes_count}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-5 w-5 fill-white" />
+                          <span className="font-semibold">{post.comments_count}</span>
+                        </div>
                       </div>
-
-                      <div className="px-4 py-2 border-t flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{post.likes_count} gostos</span>
-                        <span>{post.comments_count} comentários</span>
-                      </div>
-
-                      <div className="border-t px-4 py-2 flex items-center justify-around">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleLike(post.id)}
-                          className={`flex-1 gap-2 ${post.user_liked ? "text-primary" : ""}`}
-                        >
-                          <Heart
-                            className={`h-5 w-5 ${post.user_liked ? "fill-current" : ""}`}
-                          />
-                          <span className="font-semibold">Gosto</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/comments/${post.id}`)}
-                          className="flex-1 gap-2"
-                        >
-                          <MessageCircle className="h-5 w-5" />
-                          <span className="font-semibold">Comentar</span>
-                        </Button>
-                        <Button variant="ghost" size="sm" className="flex-1 gap-2">
-                          <Share2 className="h-5 w-5" />
-                          <span className="font-semibold">Partilhar</span>
-                        </Button>
-                      </div>
-                    </Card>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="about" className="mt-0 space-y-4">
-              {/* Bio */}
-              {profile.bio && (
-                <Card className="m-4 p-4 border">
-                  <h3 className="font-bold text-lg mb-3">Sobre</h3>
-                  <p className="text-sm">{profile.bio}</p>
-                </Card>
               )}
-
-              {/* Amigos */}
-              <Card className="m-4 p-4 border">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-lg">Amigos</h3>
-                  <button
-                    onClick={() => handleOpenModal("friends")}
-                    className="text-primary hover:underline text-sm font-semibold"
-                  >
-                    Ver tudo
-                  </button>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {friendsCount} amigos
-                </p>
-                {friends.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {friends.slice(0, 6).map((friend) => (
-                      <Link
-                        key={friend.id}
-                        to={`/profile/${friend.id}`}
-                        className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors"
-                      >
-                        <Avatar className="h-20 w-20">
-                          <AvatarImage src={friend.avatar_url} />
-                          <AvatarFallback className="text-lg">
-                            {friend.username?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="text-center w-full">
-                          <div className="flex items-center justify-center gap-1">
-                            <p className="text-sm font-semibold truncate">
-                              {friend.full_name || friend.username}
-                            </p>
-                            {friend.verified && (
-                              <VerificationBadge
-                                verified={friend.verified}
-                                badgeType={friend.badge_type}
-                                className="w-3 h-3 flex-shrink-0"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum amigo ainda
-                  </p>
-                )}
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="photos" className="mt-0">
-              <div className="grid grid-cols-3 gap-1 p-1">
-                {posts
-                  .filter(post => post.image_url)
-                  .map((post) => (
-                    <div key={post.id} className="aspect-square overflow-hidden bg-muted">
-                      <img 
-                        src={post.image_url} 
-                        alt="Foto"
-                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => navigate(`/comments/${post.id}`)}
-                      />
-                    </div>
-                  ))
-                }
-                {posts.filter(post => post.image_url).length === 0 && (
-                  <div className="col-span-3 text-center py-8">
-                    <p className="text-muted-foreground">Nenhuma foto ainda</p>
-                  </div>
-                )}
-              </div>
             </TabsContent>
 
             <TabsContent value="reels" className="mt-0">
-              {videos.length > 0 ? (
-                <div className="grid grid-cols-3 gap-1 p-1">
-                  {videos.map((video) => (
-                    <div 
-                      key={video.id} 
-                      className="aspect-[9/16] overflow-hidden bg-black relative cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => navigate("/videos")}
-                    >
-                      <video 
-                        src={video.video_url}
-                        className="w-full h-full object-cover"
-                        muted
-                      />
-                      <div className="absolute bottom-2 left-2 right-2">
-                        {video.caption && (
-                          <p className="text-white text-xs line-clamp-2 drop-shadow-lg">
-                            {video.caption}
-                          </p>
-                        )}
-                      </div>
-                      <div className="absolute top-2 left-2 flex items-center gap-2">
-                        <div className="flex items-center gap-1 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                          <Heart className="h-3 w-3" />
-                          <span>{video.likes_count}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                          <MessageCircle className="h-3 w-3" />
-                          <span>{video.comments_count}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              {videos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <Play className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">Nenhum reel ainda</p>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum vídeo ainda</p>
+                <div className="grid grid-cols-3 gap-0.5 p-1">
+                  {videos.map((video) => (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => navigate(`/videos/${video.id}`)}
+                      className="aspect-[9/16] bg-black overflow-hidden cursor-pointer relative group"
+                    >
+                      <video src={video.video_url} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-2 text-white text-xs">
+                        <Play className="h-3 w-3 fill-white" />
+                        <span>{video.likes_count}</span>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               )}
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Modal de seguidores/seguindo/amigos */}
+        {/* Fullscreen Modal for Followers/Following */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {modalType === "followers" && "Seguidores"}
-              {modalType === "following" && "A seguir"}
-              {modalType === "friends" && "Amigos"}
-            </h2>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {modalUsers.map((user) => (
-                <div key={user.id} className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatar_url} />
-                    <AvatarFallback>
-                      {user.username?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1">
-                      <Link
-                        to={`/profile/${user.id}`}
-                        className="font-semibold hover:underline"
-                        onClick={() => setModalOpen(false)}
-                      >
-                        {user.username}
-                      </Link>
-                      {user.verified && (
-                        <VerificationBadge
-                          verified={user.verified}
-                          badgeType={user.badge_type}
-                          className="w-4 h-4"
-                        />
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{user.full_name}</p>
+          <DialogContent className="max-w-lg h-[90vh] p-0 gap-0">
+            <DialogHeader className="p-4 border-b">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-lg font-bold">
+                  {modalType === "followers" ? "Seguidores" : modalType === "following" ? "A seguir" : "Amigos"}
+                </DialogTitle>
+                <Button variant="ghost" size="icon" onClick={() => setModalOpen(false)} className="rounded-full">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar..."
+                  value={modalSearch}
+                  onChange={(e) => setModalSearch(e.target.value)}
+                  className="pl-10 h-10 rounded-full bg-muted border-0"
+                />
+              </div>
+            </DialogHeader>
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                {filteredModalUsers.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground">
+                    Nenhum usuário encontrado
                   </div>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  filteredModalUsers.map((user) => (
+                    <motion.button
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
+                      onClick={() => {
+                        setModalOpen(false);
+                        navigate(`/profile/${user.id}`);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors"
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                          {(user.first_name || user.username)?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">{user.full_name || user.first_name || user.username}</span>
+                          {user.verified && <VerificationBadge verified={user.verified} badgeType={user.badge_type} className="w-4 h-4" />}
+                        </div>
+                        <span className="text-sm text-muted-foreground">@{user.username}</span>
+                      </div>
+                    </motion.button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>

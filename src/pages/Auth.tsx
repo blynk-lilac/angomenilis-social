@@ -15,11 +15,14 @@ import {
   EyeOff, 
   ArrowLeft, 
   ArrowRight,
-  Smartphone,
-  Shield,
   Sparkles,
   Check,
-  Loader2
+  Loader2,
+  AtSign,
+  MessageCircle,
+  Heart,
+  Camera,
+  Users
 } from 'lucide-react';
 
 type AuthModeType = 'welcome' | 'login' | 'signup' | 'forgotPassword';
@@ -49,12 +52,12 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         >
-          <Loader2 className="h-8 w-8 text-primary" />
+          <Loader2 className="h-10 w-10 text-primary" />
         </motion.div>
       </div>
     );
@@ -121,7 +124,7 @@ export default function Auth() {
         });
       }
 
-      toast.success('Conta criada! Verifique seu email.');
+      toast.success('Conta criada com sucesso!');
       setMode('login');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar conta');
@@ -152,33 +155,59 @@ export default function Auth() {
     }
   };
 
-  const pageVariants = {
-    initial: { opacity: 0, x: 50 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 }
-  };
-
-  const iconVariants = {
-    initial: { scale: 0, rotate: -180 },
-    animate: { scale: 1, rotate: 0 },
-    hover: { scale: 1.1, rotate: 5 }
-  };
+  const floatingIcons = [
+    { Icon: Heart, delay: 0 },
+    { Icon: MessageCircle, delay: 0.5 },
+    { Icon: Camera, delay: 1 },
+    { Icon: Users, delay: 1.5 },
+    { Icon: Sparkles, delay: 2 },
+  ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex flex-col overflow-hidden relative">
+      {/* Floating Background Icons */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {floatingIcons.map(({ Icon, delay }, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ 
+              opacity: [0.1, 0.2, 0.1], 
+              y: [-20, 20, -20],
+              x: [0, 10, 0]
+            }}
+            transition={{ 
+              duration: 4, 
+              repeat: Infinity, 
+              delay,
+              ease: "easeInOut"
+            }}
+            className="absolute"
+            style={{
+              left: `${15 + i * 18}%`,
+              top: `${10 + (i % 3) * 30}%`,
+            }}
+          >
+            <Icon className="h-12 w-12 text-primary/10" />
+          </motion.div>
+        ))}
+        
+        {/* Gradient Orbs */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.15, scale: 1 }}
-          transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-          className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/30 to-accent/20 blur-3xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.2, 0.1]
+          }}
+          transition={{ duration: 5, repeat: Infinity }}
+          className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl"
         />
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.1, scale: 1.2 }}
-          transition={{ duration: 3, repeat: Infinity, repeatType: "reverse", delay: 1 }}
-          className="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-accent/20 to-primary/30 blur-3xl"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.1, 0.15, 0.1]
+          }}
+          transition={{ duration: 6, repeat: Infinity, delay: 1 }}
+          className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-accent/20 to-transparent blur-3xl"
         />
       </div>
 
@@ -187,26 +216,24 @@ export default function Auth() {
         {mode === 'welcome' && (
           <motion.div
             key="welcome"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
           >
-            {/* Logo Animation */}
+            {/* Animated Logo */}
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", duration: 0.8 }}
-              className="mb-8"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", duration: 1, bounce: 0.5 }}
+              className="mb-6"
             >
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-2xl">
+              <div className="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center shadow-2xl shadow-primary/30">
                 <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-4xl font-black text-primary-foreground"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="text-5xl font-black text-primary-foreground"
                 >
                   B
                 </motion.span>
@@ -214,73 +241,74 @@ export default function Auth() {
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-4xl font-black text-foreground mb-3"
+              transition={{ delay: 0.3 }}
+              className="text-5xl font-black bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent mb-2"
             >
               Blynk
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-muted-foreground text-center mb-12 max-w-xs"
+              className="text-muted-foreground text-center text-lg mb-10 max-w-xs"
             >
-              Conecte-se com amigos e compartilhe momentos incríveis
+              Conecte-se com amigos e compartilhe momentos
             </motion.p>
 
-            {/* Feature Icons */}
+            {/* Feature Pills */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex gap-8 mb-12"
+              className="flex flex-wrap justify-center gap-2 mb-12"
             >
-              {[
-                { icon: Sparkles, label: 'Stories' },
-                { icon: Shield, label: 'Seguro' },
-                { icon: Smartphone, label: 'Mobile' },
-              ].map((item, i) => (
+              {['Stories', 'Reels', 'Chat', 'Grupos'].map((feature, i) => (
                 <motion.div
-                  key={i}
-                  variants={iconVariants}
-                  initial="initial"
-                  animate="animate"
-                  whileHover="hover"
+                  key={feature}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 + i * 0.1 }}
-                  className="flex flex-col items-center gap-2"
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-full bg-muted/80 backdrop-blur-sm text-sm font-medium"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
-                    <item.icon className="h-6 w-6 text-foreground" />
-                  </div>
-                  <span className="text-xs text-muted-foreground">{item.label}</span>
+                  {feature}
                 </motion.div>
               ))}
             </motion.div>
 
             {/* Buttons */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
               className="w-full max-w-xs space-y-3"
             >
               <Button
                 onClick={() => setMode('signup')}
-                className="w-full h-14 rounded-2xl text-lg font-semibold bg-primary hover:bg-primary/90 transition-all"
+                className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
               >
                 Criar Conta
               </Button>
               <Button
                 onClick={() => setMode('login')}
                 variant="outline"
-                className="w-full h-14 rounded-2xl text-lg font-semibold border-2"
+                className="w-full h-14 rounded-2xl text-lg font-bold border-2 hover:bg-muted/50"
               >
-                Já tenho conta
+                Entrar
               </Button>
             </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="text-xs text-muted-foreground text-center mt-8 max-w-xs"
+            >
+              Ao continuar, concordas com os nossos Termos de Serviço e Política de Privacidade
+            </motion.p>
           </motion.div>
         )}
 
@@ -288,46 +316,61 @@ export default function Auth() {
         {mode === 'login' && (
           <motion.div
             key="login"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col px-6 pt-12 relative z-10"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="flex-1 flex flex-col px-6 pt-safe relative z-10"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMode('welcome')}
-              className="absolute top-4 left-4 rounded-full"
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="pt-4"
             >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMode('welcome')}
+                className="h-10 w-10 rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </motion.div>
 
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring" }}
-                className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-8 mx-auto"
+                transition={{ type: "spring", delay: 0.1 }}
+                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto shadow-xl"
               >
-                <User className="h-8 w-8 text-primary-foreground" />
+                <User className="h-10 w-10 text-primary-foreground" />
               </motion.div>
 
               <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-3xl font-black text-center mb-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-3xl font-black text-center mb-1"
               >
                 Bem-vindo de volta
               </motion.h1>
-              <p className="text-muted-foreground text-center mb-8">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="text-muted-foreground text-center mb-8"
+              >
                 Entre na sua conta Blynk
-              </p>
+              </motion.p>
 
-              <div className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Email</Label>
+                  <Label className="text-sm font-semibold">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -335,13 +378,13 @@ export default function Auth() {
                       placeholder="seu@email.com"
                       value={formData.email}
                       onChange={(e) => updateFormData('email', e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-muted border-0 text-lg"
+                      className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Senha</Label>
+                  <Label className="text-sm font-semibold">Senha</Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -349,14 +392,14 @@ export default function Auth() {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => updateFormData('password', e.target.value)}
-                      className="h-14 pl-12 pr-12 rounded-2xl bg-muted border-0 text-lg"
+                      className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </Button>
@@ -366,36 +409,39 @@ export default function Auth() {
                 <Button
                   variant="link"
                   onClick={() => setMode('forgotPassword')}
-                  className="px-0 text-muted-foreground hover:text-foreground"
+                  className="px-0 text-sm text-primary font-semibold"
                 >
-                  Esqueceu a senha?
+                  Esqueceste a senha?
                 </Button>
 
                 <Button
                   onClick={handleLogin}
                   disabled={isLoading}
-                  className="w-full h-14 rounded-2xl text-lg font-semibold mt-4"
+                  className="w-full h-14 rounded-2xl text-lg font-bold mt-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg"
                 >
                   {isLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <>
-                      Entrar <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
+                    <>Entrar <ArrowRight className="ml-2 h-5 w-5" /></>
                   )}
                 </Button>
-              </div>
+              </motion.div>
 
-              <p className="text-center text-muted-foreground mt-8">
-                Não tem conta?{' '}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-center text-muted-foreground mt-8"
+              >
+                Não tens conta?{' '}
                 <Button
                   variant="link"
                   onClick={() => setMode('signup')}
-                  className="px-0 font-semibold text-foreground"
+                  className="px-0 font-bold text-primary"
                 >
                   Criar agora
                 </Button>
-              </p>
+              </motion.p>
             </div>
           </motion.div>
         )}
@@ -404,37 +450,42 @@ export default function Auth() {
         {mode === 'signup' && (
           <motion.div
             key="signup"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col px-6 pt-12 relative z-10"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="flex-1 flex flex-col px-6 pt-safe relative z-10"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => signupStep > 1 ? setSignupStep((signupStep - 1) as SignupStep) : setMode('welcome')}
-              className="absolute top-4 left-4 rounded-full"
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="pt-4"
             >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => signupStep > 1 ? setSignupStep((signupStep - 1) as SignupStep) : setMode('welcome')}
+                className="h-10 w-10 rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </motion.div>
 
             {/* Progress Steps */}
-            <div className="flex justify-center gap-2 mb-8 mt-8">
+            <div className="flex justify-center gap-2 my-6">
               {[1, 2, 3, 4].map((step) => (
                 <motion.div
                   key={step}
                   initial={{ scale: 0.8 }}
-                  animate={{ scale: signupStep >= step ? 1 : 0.8 }}
-                  className={`h-2 w-8 rounded-full transition-colors ${
-                    signupStep >= step ? 'bg-primary' : 'bg-muted'
-                  }`}
+                  animate={{ 
+                    scale: signupStep >= step ? 1 : 0.8,
+                    backgroundColor: signupStep >= step ? 'hsl(var(--primary))' : 'hsl(var(--muted))'
+                  }}
+                  className="h-2 w-10 rounded-full transition-colors"
                 />
               ))}
             </div>
 
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
               <AnimatePresence mode="wait">
                 {/* Step 1: Name */}
                 {signupStep === 1 && (
@@ -449,34 +500,32 @@ export default function Auth() {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 mx-auto"
+                        transition={{ type: "spring" }}
+                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
                       >
-                        <User className="h-8 w-8 text-primary-foreground" />
+                        <User className="h-10 w-10 text-primary-foreground" />
                       </motion.div>
                       <h1 className="text-3xl font-black">Como te chamas?</h1>
-                      <p className="text-muted-foreground mt-2">Este será seu nome de exibição</p>
+                      <p className="text-muted-foreground mt-2">Este será o teu nome de exibição</p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Primeiro nome</Label>
-                      <Input
-                        placeholder="Seu nome"
-                        value={formData.firstName}
-                        onChange={(e) => updateFormData('firstName', e.target.value)}
-                        className="h-14 rounded-2xl bg-muted border-0 text-lg text-center"
-                        autoFocus
-                      />
-                    </div>
+                    <Input
+                      placeholder="O teu nome"
+                      value={formData.firstName}
+                      onChange={(e) => updateFormData('firstName', e.target.value)}
+                      className="h-14 rounded-2xl bg-muted/50 border-0 text-lg text-center focus:ring-2 focus:ring-primary"
+                      autoFocus
+                    />
 
                     <Button
                       onClick={() => {
-                        if (!formData.firstName) {
-                          toast.error('Digite seu nome');
+                        if (!formData.firstName.trim()) {
+                          toast.error('Digite o teu nome');
                           return;
                         }
                         setSignupStep(2);
                       }}
-                      className="w-full h-14 rounded-2xl text-lg font-semibold"
+                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
@@ -496,52 +545,47 @@ export default function Auth() {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 mx-auto"
+                        transition={{ type: "spring" }}
+                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
                       >
-                        <Mail className="h-8 w-8 text-primary-foreground" />
+                        <AtSign className="h-10 w-10 text-primary-foreground" />
                       </motion.div>
-                      <h1 className="text-3xl font-black">Seus dados</h1>
-                      <p className="text-muted-foreground mt-2">Email e nome de usuário</p>
+                      <h1 className="text-3xl font-black">Os teus dados</h1>
+                      <p className="text-muted-foreground mt-2">Email e username</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            type="email"
-                            placeholder="seu@email.com"
-                            value={formData.email}
-                            onChange={(e) => updateFormData('email', e.target.value)}
-                            className="h-14 pl-12 rounded-2xl bg-muted border-0 text-lg"
-                          />
-                        </div>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={formData.email}
+                          onChange={(e) => updateFormData('email', e.target.value)}
+                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Nome de usuário</Label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                          <Input
-                            placeholder="username"
-                            value={formData.username}
-                            onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                            className="h-14 pl-10 rounded-2xl bg-muted border-0 text-lg"
-                          />
-                        </div>
+                      <div className="relative">
+                        <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          placeholder="Username"
+                          value={formData.username}
+                          onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                        />
                       </div>
                     </div>
 
                     <Button
                       onClick={() => {
                         if (!formData.email || !formData.username) {
-                          toast.error('Preencha todos os campos');
+                          toast.error('Preenche todos os campos');
                           return;
                         }
                         setSignupStep(3);
                       }}
-                      className="w-full h-14 rounded-2xl text-lg font-semibold"
+                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
@@ -561,50 +605,45 @@ export default function Auth() {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 mx-auto"
+                        transition={{ type: "spring" }}
+                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
                       >
-                        <Lock className="h-8 w-8 text-primary-foreground" />
+                        <Lock className="h-10 w-10 text-primary-foreground" />
                       </motion.div>
-                      <h1 className="text-3xl font-black">Crie uma senha</h1>
-                      <p className="text-muted-foreground mt-2">Mínimo de 6 caracteres</p>
+                      <h1 className="text-3xl font-black">Cria uma senha</h1>
+                      <p className="text-muted-foreground mt-2">Mínimo 6 caracteres</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Senha</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={(e) => updateFormData('password', e.target.value)}
-                            className="h-14 pl-12 pr-12 rounded-2xl bg-muted border-0 text-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2"
-                          >
-                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                          </Button>
-                        </div>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Senha"
+                          value={formData.password}
+                          onChange={(e) => updateFormData('password', e.target.value)}
+                          className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </Button>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Confirmar senha</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            value={formData.confirmPassword}
-                            onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                            className="h-14 pl-12 rounded-2xl bg-muted border-0 text-lg"
-                          />
-                        </div>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Confirmar senha"
+                          value={formData.confirmPassword}
+                          onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                        />
                       </div>
                     </div>
 
@@ -620,14 +659,14 @@ export default function Auth() {
                         }
                         setSignupStep(4);
                       }}
-                      className="w-full h-14 rounded-2xl text-lg font-semibold"
+                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
 
-                {/* Step 4: Confirm */}
+                {/* Step 4: Confirmation */}
                 {signupStep === 4 && (
                   <motion.div
                     key="step4"
@@ -640,25 +679,26 @@ export default function Auth() {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 mx-auto"
+                        transition={{ type: "spring" }}
+                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4 mx-auto shadow-xl"
                       >
-                        <Check className="h-8 w-8 text-primary-foreground" />
+                        <Check className="h-10 w-10 text-white" />
                       </motion.div>
                       <h1 className="text-3xl font-black">Tudo pronto!</h1>
-                      <p className="text-muted-foreground mt-2">Confirme seus dados</p>
+                      <p className="text-muted-foreground mt-2">Confirma os teus dados</p>
                     </div>
 
-                    <div className="bg-muted rounded-2xl p-6 space-y-4">
-                      <div className="flex justify-between items-center">
+                    <div className="space-y-3 bg-muted/30 rounded-2xl p-4">
+                      <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Nome</span>
                         <span className="font-semibold">{formData.firstName}</span>
                       </div>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between py-2 border-b border-border/50">
                         <span className="text-muted-foreground">Email</span>
-                        <span className="font-semibold">{formData.email}</span>
+                        <span className="font-semibold text-sm">{formData.email}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Usuário</span>
+                      <div className="flex justify-between py-2">
+                        <span className="text-muted-foreground">Username</span>
                         <span className="font-semibold">@{formData.username}</span>
                       </div>
                     </div>
@@ -666,14 +706,12 @@ export default function Auth() {
                     <Button
                       onClick={handleSignup}
                       disabled={isLoading}
-                      className="w-full h-14 rounded-2xl text-lg font-semibold"
+                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg"
                     >
                       {isLoading ? (
                         <Loader2 className="h-6 w-6 animate-spin" />
                       ) : (
-                        <>
-                          Criar conta <Sparkles className="ml-2 h-5 w-5" />
-                        </>
+                        <>Criar Conta <Sparkles className="ml-2 h-5 w-5" /></>
                       )}
                     </Button>
                   </motion.div>
@@ -683,38 +721,43 @@ export default function Auth() {
           </motion.div>
         )}
 
-        {/* Forgot Password */}
+        {/* Forgot Password Screen */}
         {mode === 'forgotPassword' && (
           <motion.div
             key="forgot"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col px-6 pt-12 relative z-10"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="flex-1 flex flex-col px-6 pt-safe relative z-10"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMode('login')}
-              className="absolute top-4 left-4 rounded-full"
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="pt-4"
             >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMode('login')}
+                className="h-10 w-10 rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </motion.div>
 
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-8 mx-auto"
+                transition={{ type: "spring" }}
+                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto shadow-xl"
               >
-                <Lock className="h-8 w-8 text-primary-foreground" />
+                <Mail className="h-10 w-10 text-primary-foreground" />
               </motion.div>
 
-              <h1 className="text-3xl font-black text-center mb-2">Esqueceu a senha?</h1>
+              <h1 className="text-3xl font-black text-center mb-2">Recuperar senha</h1>
               <p className="text-muted-foreground text-center mb-8">
-                Digite seu email para receber um link de recuperação
+                Vamos enviar um link para redefinires a tua senha
               </p>
 
               <div className="space-y-4">
@@ -722,33 +765,25 @@ export default function Auth() {
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder="O teu email"
                     value={formData.email}
                     onChange={(e) => updateFormData('email', e.target.value)}
-                    className="h-14 pl-12 rounded-2xl bg-muted border-0 text-lg"
+                    className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
                 <Button
                   onClick={handleForgotPassword}
                   disabled={isLoading}
-                  className="w-full h-14 rounded-2xl text-lg font-semibold"
+                  className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
                 >
                   {isLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    'Enviar link'
+                    'Enviar email'
                   )}
                 </Button>
               </div>
-
-              <Button
-                variant="link"
-                onClick={() => setMode('login')}
-                className="mt-6 text-muted-foreground"
-              >
-                Voltar ao login
-              </Button>
             </div>
           </motion.div>
         )}
