@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageSquare, Share2, Globe, Users, Radio, ThumbsUp, X } from "lucide-react";
+import { Heart, MessageSquare, Share2, Globe, MoreHorizontal, Send, Bookmark, Play } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -15,45 +15,27 @@ import CreateStory from "@/components/CreateStory";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
-import { Separator } from "@/components/ui/separator";
 import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import PostMenu from "@/components/PostMenu";
-
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 import { TranslateButton } from "@/components/TranslateButton";
 import { UserSuggestions } from "@/components/UserSuggestions";
-
-interface LiveStream {
-  id: string;
-  title: string;
-  user_id: string;
-  viewer_count: number;
-  created_at: string;
-  profiles: {
-    id: string;
-    username: string;
-    full_name: string;
-    avatar_url: string;
-    verified: boolean;
-    badge_type: string | null;
-  };
-}
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Post {
   id: string;
   content: string;
   user_id: string;
-  image_url?: string;
-  video_url?: string;
   media_urls?: string[];
   created_at: string;
   profiles: {
     id: string;
     username: string;
     full_name: string;
+    first_name: string;
     avatar_url: string;
     verified?: boolean;
     badge_type?: string | null;
@@ -64,718 +46,349 @@ interface Post {
 }
 
 export default function Feed() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sponsoredAds, setSponsoredAds] = useState<any[]>([]);
-  const [adLikes, setAdLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({});
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [translatedPosts, setTranslatedPosts] = useState<Record<string, string>>({});
+  const [myProfile, setMyProfile] = useState<any>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
-    };
     const loadData = async () => {
-      await loadUser();
-      await Promise.all([loadPosts(), loadLiveStreams(), loadSponsoredAds()]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (profile) setMyProfile(profile);
+      }
       
-      // Garantir no mínimo 3 segundos de loading
-      setTimeout(() => {
-        setLoading(false);
-      }, 3000);
+      await Promise.all([loadPosts(), loadSponsoredAds()]);
+      setTimeout(() => setLoading(false), 2000);
     };
     loadData();
 
-    const postsChannel = supabase
+    const channel = supabase
       .channel("posts-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "posts",
-        },
-        () => {
-          loadPosts();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => loadPosts())
       .subscribe();
 
-    const streamsChannel = supabase
-      .channel("streams-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "live_streams",
-        },
-        () => {
-          loadLiveStreams();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(postsChannel);
-      supabase.removeChannel(streamsChannel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const loadPosts = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("posts")
-      .select(`
-        *,
-        profiles (
-          id,
-          username,
-          full_name,
-          avatar_url,
-          verified,
-          badge_type
-        ),
-        post_likes (
-          user_id
-        ),
-        post_reactions (
-          user_id,
-          reaction_type
-        ),
-        comments (
-          id
-        )
-      `)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast.error("Erro ao carregar posts");
-      return;
-    }
-
-    setPosts(data || []);
-  };
-
-  const loadLiveStreams = async () => {
-    const { data, error } = await supabase
-      .from("live_streams")
-      .select(`
-        *,
-        profiles (
-          id,
-          username,
-          full_name,
-          avatar_url,
-          verified,
-          badge_type
-        )
-      `)
-      .eq("is_active", true)
+      .select(`*, profiles(id, username, full_name, first_name, avatar_url, verified, badge_type), post_likes(user_id), post_reactions(user_id, reaction_type), comments(id)`)
       .order("created_at", { ascending: false })
-      .limit(5);
+      .limit(50);
 
-    if (error) {
-      console.error("Erro ao carregar streams:", error);
-      return;
-    }
-
-    setLiveStreams(data || []);
+    if (data) setPosts(data);
   };
 
   const loadSponsoredAds = async () => {
-    const { data: ads, error } = await supabase
-      .from("sponsored_ads")
-      .select("*")
-      .eq("is_active", true);
-
-    if (error) {
-      console.error("Erro ao carregar anúncios:", error);
-      return;
-    }
-
-    setSponsoredAds(ads || []);
-
-    // Buscar curtidas dos anúncios
-    if (ads && ads.length > 0 && currentUserId) {
-      const adIds = ads.map(ad => ad.id);
-      const { data: likesData } = await supabase
-        .from("ad_likes")
-        .select("ad_id, user_id");
-
-      const likesMap: Record<string, { count: number; isLiked: boolean }> = {};
-      ads.forEach(ad => {
-        const adLikesCount = likesData?.filter(l => l.ad_id === ad.id).length || 0;
-        const userLiked = likesData?.some(l => l.ad_id === ad.id && l.user_id === currentUserId) || false;
-        likesMap[ad.id] = { count: adLikesCount, isLiked: userLiked };
-      });
-      setAdLikes(likesMap);
-    }
+    const { data } = await supabase.from("sponsored_ads").select("*").eq("is_active", true);
+    if (data) setSponsoredAds(data);
   };
 
   const handleLike = async (postId: string, reaction?: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    if (!currentUserId) return;
 
-      // Check if user already has a reaction
-      const { data: existingReaction } = await supabase
-        .from("post_reactions")
-        .select("*")
-        .eq("post_id", postId)
-        .eq("user_id", user.id)
-        .single();
+    const { data: existingReaction } = await supabase
+      .from("post_reactions")
+      .select("*")
+      .eq("post_id", postId)
+      .eq("user_id", currentUserId)
+      .maybeSingle();
 
-      if (existingReaction) {
-        if (reaction && existingReaction.reaction_type !== reaction) {
-          // Update to new reaction
-          await supabase
-            .from("post_reactions")
-            .update({ reaction_type: reaction })
-            .eq("id", existingReaction.id);
-        } else if (!reaction) {
-          // Remove reaction (simple click without long press)
-          await supabase
-            .from("post_reactions")
-            .delete()
-            .eq("id", existingReaction.id);
-        }
-      } else if (reaction) {
-        // Add new reaction
-        await supabase.from("post_reactions").insert({
-          post_id: postId,
-          user_id: user.id,
-          reaction_type: reaction,
-        });
+    if (existingReaction) {
+      if (reaction && existingReaction.reaction_type !== reaction) {
+        await supabase.from("post_reactions").update({ reaction_type: reaction }).eq("id", existingReaction.id);
       } else {
-        // Add default "heart" reaction if no reaction selected
-        await supabase.from("post_reactions").insert({
-          post_id: postId,
-          user_id: user.id,
-          reaction_type: "heart",
-        });
+        await supabase.from("post_reactions").delete().eq("id", existingReaction.id);
       }
-
-      // Reload posts
-      loadPosts();
-    } catch (error) {
-      console.error("Erro ao reagir:", error);
+    } else {
+      await supabase.from("post_reactions").insert({ post_id: postId, user_id: currentUserId, reaction_type: reaction || "heart" });
     }
+
+    loadPosts();
+    setShowReactions(null);
   };
 
   const handleLongPress = (postId: string) => {
-    longPressTimer.current = setTimeout(() => {
-      setShowReactions(postId);
-    }, 500);
-  };
-
-  const handlePressStart = (postId: string) => {
-    handleLongPress(postId);
+    longPressTimer.current = setTimeout(() => setShowReactions(postId), 500);
   };
 
   const handlePressEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  const handleRepost = async (postId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
-
-      await supabase.from("posts").insert({
-        content: post.content,
-        user_id: user.id,
-        media_urls: post.media_urls,
-      });
-
-      toast.success("Post compartilhado!");
-      loadPosts();
-    } catch (error) {
-      console.error("Erro ao compartilhar:", error);
-      toast.error("Erro ao compartilhar");
-    }
+  const getUserReaction = (post: Post) => {
+    return post.post_reactions?.find(r => r.user_id === currentUserId)?.reaction_type;
   };
+
+  const isVideo = (url: string) => url?.includes(".mp4") || url?.includes(".webm") || url?.includes(".mov");
 
   const renderMediaGrid = (mediaUrls: string[]) => {
     if (!mediaUrls || mediaUrls.length === 0) return null;
 
-    const isVideo = (url: string) => {
-      return url.includes(".mp4") || url.includes(".webm") || url.includes(".mov");
-    };
-
-    const handleImageClick = (index: number) => {
-      setGalleryImages(mediaUrls);
-      setGalleryIndex(index);
-    };
-
     if (mediaUrls.length === 1) {
       const url = mediaUrls[0];
       return (
-        <div 
-          className="w-full cursor-pointer" 
-          onClick={() => !isVideo(url) && handleImageClick(0)}
-        >
+        <div className="relative cursor-pointer" onClick={() => !isVideo(url) && setGalleryImages(mediaUrls)}>
           {isVideo(url) ? (
-            <video 
-              src={url} 
-              controls 
-              className="w-full max-h-[600px] object-contain bg-black"
-            />
+            <div className="relative bg-black rounded-lg overflow-hidden">
+              <video src={url} controls className="w-full max-h-[500px] object-contain" />
+            </div>
           ) : (
-            <img 
-              src={url} 
-              alt="Post" 
-              className="w-full max-h-[600px] object-contain bg-muted" 
-            />
+            <img src={url} alt="Post" className="w-full max-h-[500px] object-cover rounded-lg" />
           )}
         </div>
       );
     }
 
-    if (mediaUrls.length === 2) {
-      return (
-        <div className="grid grid-cols-2 gap-0.5">
-          {mediaUrls.map((url, idx) => (
-            <div 
-              key={idx} 
-              className="aspect-square overflow-hidden cursor-pointer"
-              onClick={() => handleImageClick(idx)}
-            >
-              {isVideo(url) ? (
-                <video src={url} className="w-full h-full object-cover" />
-              ) : (
-                <img src={url} alt="Post" className="w-full h-full object-cover" />
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (mediaUrls.length === 3) {
-      return (
-        <div className="grid grid-cols-2 gap-0.5">
+    return (
+      <div className={`grid gap-0.5 rounded-lg overflow-hidden ${mediaUrls.length === 2 ? 'grid-cols-2' : mediaUrls.length >= 3 ? 'grid-cols-2' : ''}`}>
+        {mediaUrls.slice(0, 4).map((url, idx) => (
           <div 
-            className="row-span-2 cursor-pointer"
-            onClick={() => handleImageClick(0)}
+            key={idx} 
+            className={`relative cursor-pointer ${mediaUrls.length === 3 && idx === 0 ? 'row-span-2' : ''} ${idx >= 4 ? 'hidden' : ''}`}
+            onClick={() => { setGalleryImages(mediaUrls); setGalleryIndex(idx); }}
           >
-            {isVideo(mediaUrls[0]) ? (
-              <video src={mediaUrls[0]} className="w-full h-full object-cover" />
-            ) : (
-              <img src={mediaUrls[0]} alt="Post" className="w-full h-full object-cover" />
-            )}
-          </div>
-          {mediaUrls.slice(1).map((url, idx) => (
-            <div 
-              key={idx} 
-              className="aspect-square overflow-hidden cursor-pointer"
-              onClick={() => handleImageClick(idx + 1)}
-            >
-              {isVideo(url) ? (
+            {isVideo(url) ? (
+              <div className="relative aspect-square bg-black">
                 <video src={url} className="w-full h-full object-cover" />
-              ) : (
-                <img src={url} alt="Post" className="w-full h-full object-cover" />
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (mediaUrls.length === 4) {
-      return (
-        <div className="grid grid-cols-2 gap-0.5">
-          {mediaUrls.map((url, idx) => (
-            <div 
-              key={idx} 
-              className="aspect-square overflow-hidden cursor-pointer"
-              onClick={() => handleImageClick(idx)}
-            >
-              {isVideo(url) ? (
-                <video src={url} className="w-full h-full object-cover" />
-              ) : (
-                <img src={url} alt="Post" className="w-full h-full object-cover" />
-              )}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (mediaUrls.length >= 5) {
-      return (
-        <div className="grid grid-cols-2 gap-0.5">
-          <div 
-            className="col-span-2 aspect-video cursor-pointer"
-            onClick={() => handleImageClick(0)}
-          >
-            {isVideo(mediaUrls[0]) ? (
-              <video src={mediaUrls[0]} className="w-full h-full object-cover" />
-            ) : (
-              <img src={mediaUrls[0]} alt="Post" className="w-full h-full object-cover" />
-            )}
-          </div>
-          {mediaUrls.slice(1, 5).map((url, idx) => {
-            const actualIdx = idx + 1;
-            const isLast = actualIdx === 4 && mediaUrls.length > 5;
-            return (
-              <div 
-                key={idx} 
-                className="aspect-square overflow-hidden relative cursor-pointer"
-                onClick={() => handleImageClick(actualIdx)}
-              >
-                {isVideo(url) ? (
-                  <video src={url} className="w-full h-full object-cover" />
-                ) : (
-                  <img src={url} alt="Post" className="w-full h-full object-cover" />
-                )}
-                {isLast && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
-                    <span className="text-white text-3xl font-bold">+{mediaUrls.length - 5}</span>
-                  </div>
-                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Play className="h-12 w-12 text-white/80 fill-white/80" />
+                </div>
               </div>
-            );
-          })}
-        </div>
-      );
-    }
+            ) : (
+              <img src={url} alt="" className="w-full aspect-square object-cover" />
+            )}
+            {idx === 3 && mediaUrls.length > 4 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">+{mediaUrls.length - 4}</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <MessageNotification />
+        <div className="min-h-screen bg-background">
+          <TopBar />
+          <FeedSkeleton />
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
       <MessageNotification />
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background">
         <TopBar />
 
-        <div className="flex-1 overflow-y-auto pb-20">
-          <div className="container mx-auto max-w-2xl px-0 sm:px-4 py-4 pt-20">
+        <div className="pt-16 pb-20">
+          <div className="max-w-xl mx-auto">
             {/* Stories Bar */}
-            <div className="px-4 sm:px-0">
+            <div className="px-4 py-3">
               <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
             </div>
 
-            {/* What's on your mind? Input */}
-            <div className="px-4 sm:px-0 mt-4">
-              <Card className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
+            {/* Create Post Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-4 mb-4"
+            >
+              <Card className="bg-card border shadow-sm rounded-xl overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                        U
+                    <Avatar className="h-11 w-11 ring-2 ring-primary/10">
+                      <AvatarImage src={myProfile?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold">
+                        {myProfile?.first_name?.[0] || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <button
                       onClick={() => navigate("/create")}
-                      className="flex-1 h-10 px-4 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-colors cursor-pointer"
+                      className="flex-1 h-11 px-4 bg-muted/50 hover:bg-muted/70 rounded-full text-left text-muted-foreground transition-colors"
                     >
                       Em que estás a pensar?
                     </button>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* User Suggestions */}
-          <div className="px-4 sm:px-0 mt-4">
-            <UserSuggestions />
-          </div>
-
-          {/* Live Streams Section */}
-          {liveStreams.length > 0 && (
-            <div className="px-4 sm:px-0 mt-4">
-              <Card className="bg-card border-0 sm:border sm:border-border rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Radio className="w-5 h-5 text-red-600" />
-                      <h2 className="font-semibold text-foreground">Ao Vivo Agora</h2>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate("/live")}
-                      className="text-primary hover:text-primary"
-                    >
-                      Ver todos
-                    </Button>
-                  </div>
-
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                    {liveStreams.map((stream) => (
-                      <div
-                        key={stream.id}
-                        onClick={() => navigate(`/live-watch/${stream.id}`)}
-                        className="flex-shrink-0 w-40 cursor-pointer group"
-                      >
-                        <div className="relative aspect-[9/16] rounded-lg overflow-hidden bg-gradient-to-br from-red-500 to-pink-600 mb-2">
-                          <Avatar className="w-full h-full">
-                            <AvatarImage src={stream.profiles.avatar_url} className="object-cover" />
-                            <AvatarFallback className="text-4xl text-white">
-                              {stream.profiles.username[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                          
-                          <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs text-white font-semibold">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            AO VIVO
-                          </div>
-
-                          <div className="absolute bottom-2 left-2 right-2">
-                            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
-                              <Users className="w-3 h-3" />
-                              <span>{stream.viewer_count}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-1">
-                          <p className="text-sm font-medium line-clamp-1 text-foreground group-hover:text-primary">
-                            {stream.profiles.full_name || stream.profiles.username}
-                          </p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {stream.title}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </Card>
+            </motion.div>
+
+            {/* User Suggestions */}
+            <div className="px-4 mb-4">
+              <UserSuggestions />
             </div>
-          )}
 
-          {/* Feed - Design Facebook */}
-          <div className="space-y-4 mt-4">
-            {loading ? (
-              <FeedSkeleton />
-            ) : posts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <p className="text-muted-foreground text-center">
-                  Nenhuma publicação ainda
-                </p>
-              </div>
-            ) : (
-              <>
-                {posts.map((post, index) => (
-                  <div key={`post-${post.id}`}>
-                     <Card className="bg-card border-0 sm:border sm:border-border/30 rounded-none sm:rounded-xl overflow-hidden shadow-none sm:shadow-sm">
-                       {/* Header do Post */}
-                       <div className="p-3 sm:p-4">
-                         <div className="flex items-center gap-3">
-                           <Avatar 
-                             className="h-10 w-10 cursor-pointer border-2 border-border"
-                             onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                           >
-                             <AvatarImage src={post.profiles?.avatar_url} />
-                             <AvatarFallback className="bg-muted text-foreground font-semibold">
-                               {post.profiles?.username?.[0]?.toUpperCase()}
-                             </AvatarFallback>
-                           </Avatar>
+            {/* Posts Feed */}
+            <div className="space-y-4 px-4">
+              {posts.map((post, index) => {
+                const userReaction = getUserReaction(post);
+                const reactionIcon = reactions.find(r => r.name === userReaction);
+                const totalReactions = post.post_reactions?.length || 0;
 
-                           <div className="flex-1 min-w-0">
-                             <div className="flex items-center gap-1">
-                               <span 
-                                 className="font-semibold text-[15px] text-foreground cursor-pointer hover:underline"
-                                 onClick={() => navigate(`/profile/${post.profiles?.username}`)}
-                               >
-                                 {post.profiles?.full_name || post.profiles?.username}
-                               </span>
-                               {post.profiles?.verified && (
-                                 <VerificationBadge 
-                                   verified={post.profiles?.verified}
-                                   badgeType={post.profiles?.badge_type} 
-                                   className="w-[18px] h-[18px] flex-shrink-0" 
-                                 />
-                               )}
-                             </div>
-                             <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
-                               <span>
-                                 {formatDistanceToNow(new Date(post.created_at), {
-                                   addSuffix: true,
-                                   locale: ptBR,
-                                 })}
-                               </span>
-                               <span>•</span>
-                               <Globe className="h-3 w-3" />
-                             </div>
-                           </div>
+                // Insert sponsored ad every 5 posts
+                const showAd = index > 0 && index % 5 === 0 && sponsoredAds.length > 0;
+                const adIndex = Math.floor(index / 5) % sponsoredAds.length;
 
-                           <div className="flex items-center gap-1">
-                             <PostMenu
-                               postId={post.id}
-                               postUserId={post.user_id}
-                               currentUserId={currentUserId}
-                               onUpdate={loadPosts}
-                             />
-                             <Button 
-                               variant="ghost" 
-                               size="sm" 
-                               className="h-8 w-8 p-0 hover:bg-muted rounded-full text-muted-foreground"
-                             >
-                               <X className="h-5 w-5" />
-                             </Button>
-                           </div>
-                         </div>
-
-                         {/* Conteúdo do Post */}
-                         {post.content && (
-                           <div className="space-y-2">
-                             <div className="mt-3 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                               {parseTextWithLinksAndMentions(translatedPosts[post.id] || post.content)}
-                             </div>
-                             <TranslateButton
-                               text={post.content}
-                               onTranslated={(translated) => {
-                                 setTranslatedPosts(prev => ({ ...prev, [post.id]: translated }));
-                               }}
-                             />
-                           </div>
-                         )}
-                       </div>
-
-                       {/* Mídia */}
-                       {post.media_urls && post.media_urls.length > 0 && (
-                         <div className="w-full">
-                           {renderMediaGrid(post.media_urls)}
-                         </div>
-                       )}
-
-                       {/* Stats */}
-                       <div className="px-3 sm:px-4 py-2">
-                         <div className="flex items-center justify-between text-[15px]">
-                           <div className="flex items-center gap-1">
-                             {post.post_reactions && post.post_reactions.length > 0 && (
-                               <>
-                                 <div className="flex -space-x-1">
-                                   {Array.from(new Set(post.post_reactions.map(r => r.reaction_type)))
-                                     .slice(0, 3)
-                                     .map((type, idx) => {
-                                       const reaction = reactions.find(r => r.type === type);
-                                       return reaction ? (
-                                         <div 
-                                           key={idx}
-                                           className="w-[18px] h-[18px] rounded-full bg-background flex items-center justify-center border border-card shadow-sm"
-                                         >
-                                           <img src={reaction.icon} alt={reaction.type} className="w-full h-full object-contain" />
-                                         </div>
-                                       ) : null;
-                                     })}
-                                 </div>
-                                 <span className="ml-1 text-muted-foreground hover:underline cursor-pointer">
-                                   {post.post_reactions.length > 999 
-                                     ? `${(post.post_reactions.length / 1000).toFixed(1)} m`
-                                     : post.post_reactions.length
-                                   }
-                                 </span>
-                               </>
-                             )}
-                           </div>
-                           <div className="flex items-center gap-3 text-muted-foreground">
-                             {post.comments && post.comments.length > 0 && (
-                               <span className="hover:underline cursor-pointer">
-                                 {post.comments.length > 999 
-                                   ? `${(post.comments.length / 1000).toFixed(1)} m`
-                                   : post.comments.length
-                                 } {post.comments.length === 1 ? 'comentário' : 'comentários'}
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-
-                       <Separator className="bg-border/50" />
-
-                       {/* Actions */}
-                       <div className="px-1 py-1 flex items-center justify-around">
-                         <Button 
-                           variant="ghost" 
-                           size="sm" 
-                           className={`flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold ${
-                             post.post_reactions?.some(r => r.user_id === currentUserId) ? "text-primary" : "text-muted-foreground"
-                           }`}
-                           onClick={() => handleLike(post.id)}
-                           onTouchStart={() => handlePressStart(post.id)}
-                           onTouchEnd={handlePressEnd}
-                           onMouseDown={() => handlePressStart(post.id)}
-                           onMouseUp={handlePressEnd}
-                           onMouseLeave={handlePressEnd}
-                         >
-                           <ThumbsUp className={`h-[18px] w-[18px] ${
-                             post.post_reactions?.some(r => r.user_id === currentUserId) ? "fill-current" : ""
-                           }`} />
-                           <span className="text-[15px]">Curtir</span>
-                         </Button>
-                         <Button 
-                           variant="ghost" 
-                           size="sm" 
-                           className="flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold text-muted-foreground"
-                           onClick={() => navigate(`/comments/${post.id}`)}
-                         >
-                           <MessageSquare className="h-[18px] w-[18px]" />
-                           <span className="text-[15px]">Comentar</span>
-                         </Button>
-                         <Button 
-                           variant="ghost" 
-                           size="sm" 
-                           className="flex-1 justify-center gap-2 hover:bg-muted/50 rounded-md h-10 font-semibold text-muted-foreground"
-                           onClick={() => handleRepost(post.id)}
-                         >
-                           <Share2 className="h-[18px] w-[18px]" />
-                           <span className="text-[15px]">Partilhar</span>
-                         </Button>
-                       </div>
-                    </Card>
+                return (
+                  <div key={post.id}>
+                    {showAd && <SponsoredAd ad={sponsoredAds[adIndex]} />}
                     
-                    {/* Reaction Picker Modal */}
-                    {showReactions === post.id && (
-                      <ReactionPicker
-                        show={true}
-                        onSelect={(reaction) => {
-                          handleLike(post.id, reaction);
-                          setShowReactions(null);
-                        }}
-                        onClose={() => setShowReactions(null)}
-                      />
-                    )}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card className="bg-card border shadow-sm rounded-xl overflow-hidden">
+                        {/* Post Header */}
+                        <div className="p-4 pb-3">
+                          <div className="flex items-center justify-between">
+                            <div 
+                              className="flex items-center gap-3 cursor-pointer"
+                              onClick={() => navigate(`/profile/${post.profiles.id}`)}
+                            >
+                              <Avatar className="h-11 w-11 ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                                <AvatarImage src={post.profiles.avatar_url} />
+                                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold">
+                                  {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-[15px] hover:underline">
+                                    {post.profiles.full_name || post.profiles.first_name || post.profiles.username}
+                                  </span>
+                                  {post.profiles.verified && (
+                                    <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ptBR })}</span>
+                                  <span>•</span>
+                                  <Globe className="h-3 w-3" />
+                                </div>
+                              </div>
+                            </div>
+                            <PostMenu postId={post.id} postUserId={post.user_id} />
+                          </div>
+                        </div>
 
-                    {/* Inserir anúncio após o terceiro post */}
-                    {index === 2 && sponsoredAds.length > 0 && sponsoredAds.map(ad => (
-                      <SponsoredAd
-                        key={ad.id}
-                        ad={ad}
-                        likesCount={adLikes[ad.id]?.count || 0}
-                        isLiked={adLikes[ad.id]?.isLiked || false}
-                        userId={currentUserId}
-                      />
-                    ))}
+                        {/* Post Content */}
+                        {post.content && (
+                          <div className="px-4 pb-3">
+                            <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed">
+                              {parseTextWithLinksAndMentions(post.content)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Media */}
+                        {post.media_urls && post.media_urls.length > 0 && (
+                          <div className="px-4 pb-3">
+                            {renderMediaGrid(post.media_urls)}
+                          </div>
+                        )}
+
+                        {/* Reactions Count */}
+                        {(totalReactions > 0 || post.comments.length > 0) && (
+                          <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-t border-border/50">
+                            <div className="flex items-center gap-1">
+                              {totalReactions > 0 && (
+                                <>
+                                  <div className="flex -space-x-1">
+                                    {['heart', 'laughing', 'sad'].slice(0, Math.min(3, totalReactions)).map((_, i) => (
+                                      <span key={i} className="text-sm">❤️</span>
+                                    ))}
+                                  </div>
+                                  <span className="ml-1">{totalReactions}</span>
+                                </>
+                              )}
+                            </div>
+                            {post.comments.length > 0 && (
+                              <span>{post.comments.length} comentários</span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="px-2 py-1 border-t border-border/50 flex items-center justify-around relative">
+                          {/* Reaction Picker */}
+                          <AnimatePresence>
+                            {showReactions === post.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                                className="absolute bottom-full left-4 mb-2"
+                              >
+                                <ReactionPicker onSelect={(reaction) => handleLike(post.id, reaction)} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`flex-1 gap-2 rounded-lg ${userReaction ? 'text-primary' : ''}`}
+                            onMouseDown={() => handleLongPress(post.id)}
+                            onMouseUp={handlePressEnd}
+                            onMouseLeave={handlePressEnd}
+                            onTouchStart={() => handleLongPress(post.id)}
+                            onTouchEnd={handlePressEnd}
+                            onClick={() => !showReactions && handleLike(post.id)}
+                          >
+                            {reactionIcon ? (
+                              <span className="text-lg">{reactionIcon.emoji}</span>
+                            ) : (
+                              <Heart className="h-5 w-5" />
+                            )}
+                            <span className="font-medium text-sm">Gosto</span>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex-1 gap-2 rounded-lg"
+                            onClick={() => navigate(`/comments/${post.id}`)}
+                          >
+                            <MessageSquare className="h-5 w-5" />
+                            <span className="font-medium text-sm">Comentar</span>
+                          </Button>
+
+                          <Button variant="ghost" size="sm" className="flex-1 gap-2 rounded-lg">
+                            <Send className="h-5 w-5" />
+                            <span className="font-medium text-sm">Enviar</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    </motion.div>
                   </div>
-                ))}
-              </>
-            )}
-          </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Create Story Dialog */}
-        <CreateStory open={createStoryOpen} onOpenChange={setCreateStoryOpen} />
-        
-        {/* Image Gallery Viewer */}
+        <CreateStory open={createStoryOpen} onClose={() => setCreateStoryOpen(false)} />
+
         {galleryImages && (
           <ImageGalleryViewer
             images={galleryImages}
