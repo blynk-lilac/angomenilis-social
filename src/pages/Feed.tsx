@@ -241,7 +241,7 @@ export default function Feed() {
             <div className="space-y-4 px-4">
               {posts.map((post, index) => {
                 const userReaction = getUserReaction(post);
-                const reactionIcon = reactions.find(r => r.name === userReaction);
+                const reactionIcon = reactions.find(r => r.type === userReaction);
                 const totalReactions = post.post_reactions?.length || 0;
 
                 // Insert sponsored ad every 5 posts
@@ -250,7 +250,14 @@ export default function Feed() {
 
                 return (
                   <div key={post.id}>
-                    {showAd && <SponsoredAd ad={sponsoredAds[adIndex]} />}
+                    {showAd && (
+                      <SponsoredAd 
+                        ad={sponsoredAds[adIndex]} 
+                        likesCount={0}
+                        isLiked={false}
+                        userId={currentUserId}
+                      />
+                    )}
                     
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -287,7 +294,11 @@ export default function Feed() {
                                 </div>
                               </div>
                             </div>
-                            <PostMenu postId={post.id} postUserId={post.user_id} />
+                            <PostMenu 
+                              postId={post.id} 
+                              postUserId={post.user_id} 
+                              currentUserId={currentUserId}
+                            />
                           </div>
                         </div>
 
@@ -330,20 +341,6 @@ export default function Feed() {
 
                         {/* Actions */}
                         <div className="px-2 py-1 border-t border-border/50 flex items-center justify-around relative">
-                          {/* Reaction Picker */}
-                          <AnimatePresence>
-                            {showReactions === post.id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                                className="absolute bottom-full left-4 mb-2"
-                              >
-                                <ReactionPicker onSelect={(reaction) => handleLike(post.id, reaction)} />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-
                           <Button
                             variant="ghost"
                             size="sm"
@@ -356,7 +353,7 @@ export default function Feed() {
                             onClick={() => !showReactions && handleLike(post.id)}
                           >
                             {reactionIcon ? (
-                              <span className="text-lg">{reactionIcon.emoji}</span>
+                              <img src={reactionIcon.icon} alt={reactionIcon.type} className="w-5 h-5" />
                             ) : (
                               <Heart className="h-5 w-5" />
                             )}
@@ -387,7 +384,18 @@ export default function Feed() {
           </div>
         </div>
 
-        <CreateStory open={createStoryOpen} onClose={() => setCreateStoryOpen(false)} />
+        {/* Reaction Picker Modal */}
+        <ReactionPicker
+          show={showReactions !== null}
+          onSelect={(reaction) => {
+            if (showReactions) {
+              handleLike(showReactions, reaction);
+            }
+          }}
+          onClose={() => setShowReactions(null)}
+        />
+
+        <CreateStory open={createStoryOpen} onOpenChange={setCreateStoryOpen} />
 
         {galleryImages && (
           <ImageGalleryViewer
