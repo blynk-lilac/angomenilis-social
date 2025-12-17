@@ -132,7 +132,65 @@ export default function Feed() {
     return post.post_reactions?.find(r => r.user_id === currentUserId)?.reaction_type;
   };
 
-  const isVideo = (url: string) => url?.includes(".mp4") || url?.includes(".webm") || url?.includes(".mov");
+  const isVideo = (url: string) => {
+    if (!url) return false;
+    const lowercaseUrl = url.toLowerCase();
+    return lowercaseUrl.includes(".mp4") || lowercaseUrl.includes(".webm") || lowercaseUrl.includes(".mov") || lowercaseUrl.includes(".avi") || lowercaseUrl.includes(".mkv");
+  };
+
+  const VideoPlayer = ({ url }: { url: string }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const togglePlay = () => {
+      if (videoRef.current) {
+        if (videoRef.current.paused) {
+          videoRef.current.play();
+          setIsPlaying(true);
+        } else {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    return (
+      <div className="relative bg-black rounded-lg overflow-hidden" onClick={togglePlay}>
+        <video 
+          ref={videoRef}
+          src={url} 
+          className="w-full max-h-[500px] object-contain cursor-pointer"
+          playsInline
+          preload="metadata"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+        />
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="h-16 w-16 rounded-full bg-black/50 flex items-center justify-center">
+              <Play className="h-8 w-8 text-white fill-white ml-1" />
+            </div>
+          </div>
+        )}
+        <div className="absolute bottom-2 right-2 flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+              }
+            }}
+          >
+            <span className="text-white text-xs">🔊</span>
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   const renderMediaGrid = (mediaUrls: string[]) => {
     if (!mediaUrls || mediaUrls.length === 0) return null;
@@ -140,13 +198,16 @@ export default function Feed() {
     if (mediaUrls.length === 1) {
       const url = mediaUrls[0];
       return (
-        <div className="relative cursor-pointer" onClick={() => !isVideo(url) && setGalleryImages(mediaUrls)}>
+        <div className="relative">
           {isVideo(url) ? (
-            <div className="relative bg-black rounded-lg overflow-hidden">
-              <video src={url} controls className="w-full max-h-[500px] object-contain" />
-            </div>
+            <VideoPlayer url={url} />
           ) : (
-            <img src={url} alt="Post" className="w-full max-h-[500px] object-cover rounded-lg" />
+            <img 
+              src={url} 
+              alt="Post" 
+              className="w-full max-h-[500px] object-cover rounded-lg cursor-pointer" 
+              onClick={() => setGalleryImages(mediaUrls)}
+            />
           )}
         </div>
       );
@@ -158,12 +219,28 @@ export default function Feed() {
           <div 
             key={idx} 
             className={`relative cursor-pointer ${mediaUrls.length === 3 && idx === 0 ? 'row-span-2' : ''} ${idx >= 4 ? 'hidden' : ''}`}
-            onClick={() => { setGalleryImages(mediaUrls); setGalleryIndex(idx); }}
+            onClick={() => { 
+              if (!isVideo(url)) {
+                setGalleryImages(mediaUrls.filter(u => !isVideo(u))); 
+                setGalleryIndex(idx); 
+              }
+            }}
           >
             {isVideo(url) ? (
               <div className="relative aspect-square bg-black">
-                <video src={url} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center">
+                <video 
+                  src={url} 
+                  className="w-full h-full object-cover" 
+                  playsInline
+                  preload="metadata"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const vid = e.currentTarget;
+                    if (vid.paused) vid.play();
+                    else vid.pause();
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <Play className="h-12 w-12 text-white/80 fill-white/80" />
                 </div>
               </div>
