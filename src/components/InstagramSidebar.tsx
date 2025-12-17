@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark } from "lucide-react";
+import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark, Shield, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -17,9 +17,11 @@ export default function InstagramSidebar() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     loadProfile();
+    checkAdminStatus();
   }, []);
 
   const loadProfile = async () => {
@@ -35,6 +37,20 @@ export default function InstagramSidebar() {
     if (data) setProfile(data);
   };
 
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Desconectado");
@@ -48,6 +64,7 @@ export default function InstagramSidebar() {
     { icon: MessageCircle, label: "Mensagens", path: "/messages" },
     { icon: Heart, label: "Notificações", path: "/notifications" },
     { icon: PlusSquare, label: "Criar", path: "/create" },
+    { icon: Users, label: "Amigos", path: "/friends" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
     { icon: Settings, label: "Configurações", path: "/app-settings" },
   ];
@@ -104,6 +121,35 @@ export default function InstagramSidebar() {
               </Link>
             );
           })}
+
+          {/* Admin Link - Only visible for admins */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={cn(
+                "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden",
+                isActive("/admin")
+                  ? "bg-primary/20 font-bold text-primary shadow-sm"
+                  : "hover:bg-primary/10 text-primary/80 hover:text-primary"
+              )}
+            >
+              {isActive("/admin") && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+              )}
+              <Shield 
+                className={cn(
+                  "h-[26px] w-[26px] transition-all flex-shrink-0",
+                  isActive("/admin") ? "stroke-[2.5]" : "stroke-[2] group-hover:scale-110"
+                )} 
+              />
+              <span className={cn(
+                "text-[15px] transition-opacity font-medium",
+                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+              )}>
+                Admin
+              </span>
+            </Link>
+          )}
 
           {/* Profile */}
           <Link

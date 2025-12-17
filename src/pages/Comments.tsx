@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MentionTextarea from "@/components/MentionTextarea";
 import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Heart, MessageCircle, Share2, Send, ArrowLeft, MoreHorizontal, Smile, Search } from "lucide-react";
+import { Heart, MessageCircle, Share2, Send, ArrowLeft, MoreHorizontal, Smile, Search, Image, Video, X, Play } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
@@ -69,6 +69,11 @@ export default function Comments() {
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [translatedContent, setTranslatedContent] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [isVideo, setIsVideo] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { processCommentHashtagsAndMentions } = useHashtagsAndMentions();
 
   useEffect(() => {
@@ -158,35 +163,80 @@ export default function Comments() {
     }
   };
 
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMediaFile(file);
+      const url = URL.createObjectURL(file);
+      setMediaPreview(url);
+      setIsVideo(file.type.startsWith('video/'));
+    }
+  };
+
+  const clearMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    setIsVideo(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleComment = async (audioUrl?: string) => {
-    if (!newComment.trim() && !audioUrl) return;
+    if (!newComment.trim() && !audioUrl && !mediaFile) return;
 
-    const { data: newCommentData, error } = await supabase.from("comments").insert({
-      post_id: postId,
-      user_id: currentUserId,
-      content: audioUrl ? "🎤 Comentário de voz" : newComment,
-      audio_url: audioUrl,
-      parent_comment_id: replyingTo,
-    }).select().single();
+    setUploading(true);
+    try {
+      let mediaUrl = null;
 
-    if (error) {
+      // Upload media if exists
+      if (mediaFile) {
+        const fileExt = mediaFile.name.split('.').pop();
+        const fileName = `comments/${currentUserId}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, mediaFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(fileName);
+        mediaUrl = publicUrl;
+      }
+
+      // Determine content
+      let content = newComment.trim();
+      if (audioUrl) content = "🎤 Comentário de voz";
+      else if (mediaUrl && !content) content = isVideo ? "🎬 Vídeo" : "📷 Imagem";
+
+      const { data: newCommentData, error } = await supabase.from("comments").insert({
+        post_id: postId,
+        user_id: currentUserId,
+        content,
+        audio_url: audioUrl || mediaUrl, // Using audio_url field for media
+        parent_comment_id: replyingTo,
+      }).select().single();
+
+      if (error) throw error;
+
+      // Process mentions
+      if (newCommentData && newComment.trim()) {
+        await processCommentHashtagsAndMentions(
+          newCommentData.id,
+          newComment,
+          currentUserId,
+          postId!
+        );
+      }
+
+      setNewComment("");
+      setReplyingTo(null);
+      clearMedia();
+      loadComments();
+      toast.success("Comentário publicado!");
+    } catch (error: any) {
       toast.error("Erro ao comentar");
-      return;
+    } finally {
+      setUploading(false);
     }
-
-    // Processar menções no comentário
-    if (newCommentData && !audioUrl) {
-      await processCommentHashtagsAndMentions(
-        newCommentData.id,
-        newComment,
-        currentUserId,
-        postId!
-      );
-    }
-
-    setNewComment("");
-    setReplyingTo(null);
-    loadComments();
   };
 
   const handleLikeComment = async (commentId: string) => {
@@ -457,39 +507,99 @@ export default function Comments() {
         )}
 
         {/* Input de comentário */}
-        <div className="border-t p-3 bg-background">
+        <div className="border-t bg-background">
+          {/* Media Preview */}
+          {mediaPreview && (
+            <div className="p-3 border-b">
+              <div className="relative inline-block max-w-xs">
+                {isVideo ? (
+                  <div className="relative rounded-lg overflow-hidden bg-black">
+                    <video src={mediaPreview} className="max-h-32 rounded-lg" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Play className="h-8 w-8 text-white/80 fill-white/80" />
+                    </div>
+                  </div>
+                ) : (
+                  <img src={mediaPreview} alt="Preview" className="max-h-32 rounded-lg" />
+                )}
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={clearMedia}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleComment();
             }}
-            className="flex items-center gap-2 max-w-3xl mx-auto"
+            className="p-3"
           >
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={post.profiles.avatar_url} />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
-              <MentionTextarea
-                value={newComment}
-                onChange={setNewComment}
-                placeholder={
-                  replyingTo
-                    ? "Escrever uma resposta... Use @ para mencionar"
-                    : `Comentar como ${post.profiles.username}. Use @ para mencionar`
-                }
-                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0"
-                rows={1}
-              />
-              <VoiceRecorder onAudioRecorded={(audioUrl) => handleComment(audioUrl)} />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8"
-              >
-                <Smile className="h-5 w-5 text-muted-foreground" />
-              </Button>
+            <div className="flex items-center gap-2 max-w-3xl mx-auto">
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarImage src={post.profiles.avatar_url} />
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 flex items-center gap-1 bg-muted rounded-full px-3 py-2">
+                <MentionTextarea
+                  value={newComment}
+                  onChange={setNewComment}
+                  placeholder={
+                    replyingTo
+                      ? "Escrever uma resposta..."
+                      : "Escreva um comentário..."
+                  }
+                  className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 text-sm"
+                  rows={1}
+                />
+                
+                {/* Media Upload */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleMediaSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Image className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                
+                <VoiceRecorder onAudioRecorded={(audioUrl) => handleComment(audioUrl)} />
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                >
+                  <Smile className="h-5 w-5 text-muted-foreground" />
+                </Button>
+
+                {(newComment.trim() || mediaFile) && (
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-8 w-8 rounded-full shrink-0"
+                    disabled={uploading}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         </div>
