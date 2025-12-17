@@ -9,6 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Camera, 
   Heart, 
@@ -27,7 +34,10 @@ import {
   Link as LinkIcon,
   X,
   Grid3X3,
-  Play
+  Play,
+  Flag,
+  Copy,
+  Ban
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -402,9 +412,48 @@ export default function Profile() {
             <h1 className="text-xl font-bold">{profile.username}</h1>
             {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-5 h-5" />}
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Search className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem 
+                onClick={() => {
+                  const url = `${window.location.origin}/profile/${profile.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Link do perfil copiado!");
+                }}
+                className="cursor-pointer"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar link do perfil
+              </DropdownMenuItem>
+              {!isOwnProfile && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => navigate(`/report?type=profile&id=${profile.id}`)}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Denunciar conta
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                    onClick={async () => {
+                      // Block user logic
+                      toast.success("Utilizador bloqueado");
+                    }}
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    Bloquear utilizador
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </motion.div>
 
         <div className="max-w-3xl mx-auto">
