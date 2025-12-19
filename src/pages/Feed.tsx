@@ -144,12 +144,19 @@ export default function Feed() {
     const [hasError, setHasError] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
+    const getMimeFromUrl = (u: string) => {
+      const lower = u.toLowerCase();
+      if (lower.includes(".webm")) return "video/webm";
+      if (lower.includes(".mov")) return "video/quicktime";
+      return "video/mp4";
+    };
+
     const togglePlay = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (videoRef.current) {
         if (videoRef.current.paused) {
-          videoRef.current.play().catch(err => {
-            console.error('Video play error:', err);
+          videoRef.current.play().catch((err) => {
+            console.error("Video play error:", err);
             setHasError(true);
           });
         } else {
@@ -172,9 +179,9 @@ export default function Feed() {
           <div className="text-center p-4">
             <Play className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Erro ao carregar vídeo</p>
-            <a 
-              href={url} 
-              target="_blank" 
+            <a
+              href={url}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary text-sm underline mt-2 block"
             >
@@ -187,22 +194,26 @@ export default function Feed() {
 
     return (
       <div className="relative bg-black rounded-xl overflow-hidden" onClick={togglePlay}>
-        <video 
+        <video
           ref={videoRef}
-          src={url} 
           className="w-full max-h-[500px] object-contain cursor-pointer"
           playsInline
           muted={isMuted}
-          preload="auto"
+          autoPlay
+          loop
+          preload="metadata"
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
           onError={(e) => {
-            console.error('Video error:', e);
+            console.error("Video error:", url, e);
             setHasError(true);
           }}
-          onLoadedData={() => console.log('Video loaded:', url)}
-        />
+          onLoadedData={() => console.log("Video loaded:", url)}
+        >
+          <source src={url} type={getMimeFromUrl(url)} />
+        </video>
+
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
             <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
@@ -210,6 +221,7 @@ export default function Feed() {
             </div>
           </div>
         )}
+
         <div className="absolute bottom-3 right-3 flex gap-2">
           <Button
             variant="ghost"
@@ -217,8 +229,18 @@ export default function Feed() {
             className="h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm"
             onClick={toggleMute}
           >
-            <span className="text-white text-base">{isMuted ? '🔇' : '🔊'}</span>
+            <span className="text-white text-base emoji-ios">{isMuted ? "🔇" : "🔊"}</span>
           </Button>
+
+          <a
+            href={url}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm"
+            aria-label="Baixar vídeo"
+          >
+            <span className="text-white text-base emoji-ios">⬇️</span>
+          </a>
         </div>
       </div>
     );
@@ -260,10 +282,11 @@ export default function Feed() {
           >
             {isVideo(url) ? (
               <div className="relative aspect-square bg-black">
-                <video 
-                  src={url} 
-                  className="w-full h-full object-cover" 
+                <video
+                  src={url}
+                  className="w-full h-full object-cover"
                   playsInline
+                  muted
                   preload="metadata"
                   onClick={(e) => {
                     e.stopPropagation();
