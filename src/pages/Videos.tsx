@@ -164,13 +164,23 @@ export default function Videos() {
   };
 
   const handleVideoFileChange = (file: File | null) => {
-    setVideoFile(file);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setVideoPreview(url);
-    } else {
+    if (!file) {
+      setVideoFile(null);
       setVideoPreview(null);
+      return;
     }
+
+    const ok = ["video/mp4", "video/webm"].includes(file.type);
+    if (!ok) {
+      toast.error("Formato não suportado. Use MP4 ou WebM.");
+      setVideoFile(null);
+      setVideoPreview(null);
+      return;
+    }
+
+    setVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreview(url);
   };
 
   const togglePlayPause = (videoId: string) => {
@@ -240,18 +250,21 @@ export default function Videos() {
       if (!user) throw new Error("Usuário não autenticado");
 
       // Get file extension and create unique filename
-      const fileExt = videoFile.name.split('.').pop()?.toLowerCase() || 'mp4';
+      const fileExt = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
+
+      // Mantém compatível com browsers (evita uploads que depois ficam "tela preta")
+      if (!['mp4', 'webm'].includes(fileExt)) {
+        toast.error("Formato não suportado. Use MP4 ou WebM.");
+        return;
+      }
+
       const fileName = `videos/${user.id}/${Date.now()}.${fileExt}`;
-      
-      // Determine correct MIME type
+
       const mimeTypes: Record<string, string> = {
-        'mp4': 'video/mp4',
-        'webm': 'video/webm',
-        'mov': 'video/quicktime',
-        'avi': 'video/x-msvideo',
-        'mkv': 'video/x-matroska'
+        mp4: "video/mp4",
+        webm: "video/webm",
       };
-      const contentType = mimeTypes[fileExt] || videoFile.type || 'video/mp4';
+      const contentType = mimeTypes[fileExt] || videoFile.type || "video/mp4";
 
       console.log('Uploading video:', fileName, 'Size:', videoFile.size, 'Type:', contentType);
 

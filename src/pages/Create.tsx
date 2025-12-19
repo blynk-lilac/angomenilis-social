@@ -23,18 +23,35 @@ export default function Create() {
   const { user } = useAuth();
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const picked = Array.from(e.target.files || []);
+
+    const supported = picked.filter((f) => {
+      if (f.type.startsWith("image/")) {
+        return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(f.type);
+      }
+      if (f.type.startsWith("video/")) {
+        // Mantém compatível com browsers (evita uploads que depois ficam "tela preta")
+        return ["video/mp4", "video/webm"].includes(f.type);
+      }
+      return false;
+    });
+
+    if (supported.length !== picked.length) {
+      toast.error("Alguns ficheiros não são suportados. Use JPG/PNG/WEBP ou MP4/WebM.");
+    }
+
+    const files = supported;
     const totalFiles = mediaFiles.length + files.length;
-    
+
     if (totalFiles > 10) {
       toast.error("Máximo de 10 mídias por post");
       return;
     }
 
-    const images = files.filter(f => f.type.startsWith('image/'));
-    const videos = files.filter(f => f.type.startsWith('video/'));
-    const currentImages = mediaFiles.filter(f => f.type.startsWith('image/')).length;
-    const currentVideos = mediaFiles.filter(f => f.type.startsWith('video/')).length;
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const videos = files.filter((f) => f.type.startsWith("video/"));
+    const currentImages = mediaFiles.filter((f) => f.type.startsWith("image/")).length;
+    const currentVideos = mediaFiles.filter((f) => f.type.startsWith("video/")).length;
 
     if (currentImages + images.length > 5) {
       toast.error("Máximo de 5 fotos por post");
@@ -49,7 +66,7 @@ export default function Create() {
     const newFiles = [...mediaFiles, ...files];
     setMediaFiles(newFiles);
 
-    const previews = files.map(file => URL.createObjectURL(file));
+    const previews = files.map((file) => URL.createObjectURL(file));
     setMediaPreviews([...mediaPreviews, ...previews]);
   };
 
@@ -76,21 +93,39 @@ export default function Create() {
       const mediaUrls: string[] = [];
 
       for (const file of mediaFiles) {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
         const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
 
+        // Define content-type explicitamente (evita problemas de reprodução)
+        const contentType =
+          file.type ||
+          (fileExt === "mp4"
+            ? "video/mp4"
+            : fileExt === "webm"
+              ? "video/webm"
+              : fileExt === "jpg" || fileExt === "jpeg"
+                ? "image/jpeg"
+                : fileExt === "png"
+                  ? "image/png"
+                  : fileExt === "gif"
+                    ? "image/gif"
+                    : fileExt === "webp"
+                      ? "image/webp"
+                      : "application/octet-stream");
+
         const { error: uploadError } = await supabase.storage
-          .from('post-images')
+          .from("post-images")
           .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
+            cacheControl: "3600",
+            upsert: false,
+            contentType,
           });
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('post-images')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("post-images").getPublicUrl(fileName);
 
         mediaUrls.push(publicUrl);
       }
