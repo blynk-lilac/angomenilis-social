@@ -239,18 +239,31 @@ export default function Videos() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Convert video to blob for better upload
+      // Get file extension and create unique filename
       const fileExt = videoFile.name.split('.').pop()?.toLowerCase() || 'mp4';
       const fileName = `videos/${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Determine correct MIME type
+      const mimeTypes: Record<string, string> = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mov': 'video/quicktime',
+        'avi': 'video/x-msvideo',
+        'mkv': 'video/x-matroska'
+      };
+      const contentType = mimeTypes[fileExt] || videoFile.type || 'video/mp4';
 
-      console.log('Uploading video:', fileName, 'Size:', videoFile.size);
+      console.log('Uploading video:', fileName, 'Size:', videoFile.size, 'Type:', contentType);
+
+      // Convert file to ArrayBuffer for better upload integrity
+      const arrayBuffer = await videoFile.arrayBuffer();
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('post-images')
-        .upload(fileName, videoFile, {
+        .upload(fileName, arrayBuffer, {
           cacheControl: '3600',
           upsert: false,
-          contentType: videoFile.type || 'video/mp4'
+          contentType: contentType
         });
 
       if (uploadError) {
@@ -355,10 +368,13 @@ export default function Videos() {
                       loop
                       muted={isMuted}
                       playsInline
+                      autoPlay={index === currentVideoIndex}
                       preload="auto"
                       className="w-full h-full object-contain"
                       onPlay={() => setPlayingStates(prev => ({ ...prev, [video.id]: true }))}
                       onPause={() => setPlayingStates(prev => ({ ...prev, [video.id]: false }))}
+                      onError={(e) => console.error('Video error:', video.video_url, e)}
+                      onLoadedData={() => console.log('Video loaded:', video.video_url)}
                     />
                     
                     {/* Play/Pause Overlay */}
