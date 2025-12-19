@@ -140,52 +140,84 @@ export default function Feed() {
 
   const VideoPlayer = ({ url }: { url: string }) => {
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+    const [hasError, setHasError] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    const togglePlay = () => {
+    const togglePlay = (e: React.MouseEvent) => {
+      e.stopPropagation();
       if (videoRef.current) {
         if (videoRef.current.paused) {
-          videoRef.current.play();
-          setIsPlaying(true);
+          videoRef.current.play().catch(err => {
+            console.error('Video play error:', err);
+            setHasError(true);
+          });
         } else {
           videoRef.current.pause();
-          setIsPlaying(false);
         }
       }
     };
 
+    const toggleMute = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (videoRef.current) {
+        videoRef.current.muted = !videoRef.current.muted;
+        setIsMuted(videoRef.current.muted);
+      }
+    };
+
+    if (hasError) {
+      return (
+        <div className="relative bg-muted rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+          <div className="text-center p-4">
+            <Play className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Erro ao carregar vídeo</p>
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary text-sm underline mt-2 block"
+            >
+              Abrir em nova aba
+            </a>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="relative bg-black rounded-lg overflow-hidden" onClick={togglePlay}>
+      <div className="relative bg-black rounded-xl overflow-hidden" onClick={togglePlay}>
         <video 
           ref={videoRef}
           src={url} 
           className="w-full max-h-[500px] object-contain cursor-pointer"
           playsInline
-          preload="metadata"
+          muted={isMuted}
+          preload="auto"
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
+          onError={(e) => {
+            console.error('Video error:', e);
+            setHasError(true);
+          }}
+          onLoadedData={() => console.log('Video loaded:', url)}
         />
         {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-16 w-16 rounded-full bg-black/50 flex items-center justify-center">
-              <Play className="h-8 w-8 text-white fill-white ml-1" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+            <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+              <Play className="h-8 w-8 text-foreground fill-foreground ml-1" />
             </div>
           </div>
         )}
-        <div className="absolute bottom-2 right-2 flex gap-2">
+        <div className="absolute bottom-3 right-3 flex gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (videoRef.current) {
-                videoRef.current.muted = !videoRef.current.muted;
-              }
-            }}
+            className="h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm"
+            onClick={toggleMute}
           >
-            <span className="text-white text-xs">🔊</span>
+            <span className="text-white text-base">{isMuted ? '🔇' : '🔊'}</span>
           </Button>
         </div>
       </div>
@@ -341,7 +373,7 @@ export default function Feed() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <Card className="bg-card border shadow-sm rounded-xl overflow-hidden">
+                      <Card className="bg-card border-0 shadow-[var(--shadow-card)] rounded-none md:rounded-xl overflow-hidden">
                         {/* Post Header */}
                         <div className="p-4 pb-3">
                           <div className="flex items-center justify-between">
@@ -429,12 +461,10 @@ export default function Feed() {
                           </div>
                         )}
 
-                        {/* Actions */}
-                        <div className="px-2 py-1 border-t border-border/50 flex items-center justify-around relative">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`flex-1 gap-2 rounded-lg ${userReaction ? 'text-primary' : ''}`}
+                        {/* Actions - Facebook Style */}
+                        <div className="px-2 py-1 border-t border-border/50 flex items-center gap-1">
+                          <button
+                            className={`fb-action-btn ${userReaction ? 'active' : ''}`}
                             onMouseDown={() => handleLongPress(post.id)}
                             onMouseUp={handlePressEnd}
                             onMouseLeave={handlePressEnd}
@@ -445,25 +475,23 @@ export default function Feed() {
                             {reactionIcon ? (
                               <img src={reactionIcon.icon} alt={reactionIcon.type} className="w-5 h-5" />
                             ) : (
-                              <Heart className="h-5 w-5" />
+                              <span className="text-lg emoji-ios">👍</span>
                             )}
-                            <span className="font-medium text-sm">Gosto</span>
-                          </Button>
+                            <span>Gosto</span>
+                          </button>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex-1 gap-2 rounded-lg"
+                          <button
+                            className="fb-action-btn"
                             onClick={() => navigate(`/comments/${post.id}`)}
                           >
-                            <MessageSquare className="h-5 w-5" />
-                            <span className="font-medium text-sm">Comentar</span>
-                          </Button>
+                            <span className="text-lg emoji-ios">💬</span>
+                            <span>Comentar</span>
+                          </button>
 
-                          <Button variant="ghost" size="sm" className="flex-1 gap-2 rounded-lg">
-                            <Send className="h-5 w-5" />
-                            <span className="font-medium text-sm">Enviar</span>
-                          </Button>
+                          <button className="fb-action-btn">
+                            <span className="text-lg emoji-ios">↗️</span>
+                            <span>Enviar</span>
+                          </button>
                         </div>
                       </Card>
                     </motion.div>

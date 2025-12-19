@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Blynk - Instagram/Threads Style Design System */
+    /* Blynk - Clean White Design System */
     --background: 0 0% 100%;
     --foreground: 0 0% 7%;
 
@@ -18,18 +18,18 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
 
-    /* Instagram-inspired Primary Color */
-    --primary: 335 80% 55%;
+    /* Facebook-inspired Blue Primary */
+    --primary: 214 89% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 335 100% 65%;
+    --primary-glow: 214 100% 60%;
 
-    --secondary: 0 0% 96%;
+    --secondary: 210 20% 96%;
     --secondary-foreground: 0 0% 7%;
 
-    --muted: 0 0% 96%;
+    --muted: 210 20% 96%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 204 100% 55%;
+    --accent: 214 89% 52%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -41,38 +41,34 @@ All colors MUST be HSL.
     --warning: 45 100% 50%;
     --warning-foreground: 0 0% 7%;
 
-    --border: 0 0% 92%;
-    --input: 0 0% 96%;
-    --ring: 335 80% 55%;
+    --border: 214 20% 90%;
+    --input: 210 20% 96%;
+    --ring: 214 89% 52%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Instagram-inspired gradients */
-    --gradient-instagram: linear-gradient(45deg, hsl(45 100% 60%), hsl(335 80% 55%), hsl(280 80% 60%));
-    --gradient-stories: linear-gradient(45deg, hsl(45 100% 60%), hsl(25 100% 60%), hsl(335 80% 55%), hsl(280 80% 60%));
-    --gradient-primary: linear-gradient(135deg, hsl(335 80% 55%), hsl(280 80% 60%));
-    --gradient-accent: linear-gradient(135deg, hsl(204 100% 55%), hsl(220 100% 60%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    /* Clean gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(214 89% 52%), hsl(214 89% 62%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 20% 98%));
     
     /* Shadows */
-    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
-    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
-    --shadow-glow: 0 0 30px hsl(335 80% 55% / 0.3);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .dark {
-    --background: 0 0% 0%;
+    --background: 0 0% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 6%;
+    --card: 0 0% 7%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 6%;
+    --popover: 0 0% 7%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 335 80% 60%;
+    --primary: 214 89% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 335 100% 70%;
+    --primary-glow: 214 100% 65%;
 
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
@@ -80,7 +76,7 @@ All colors MUST be HSL.
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 204 100% 60%;
+    --accent: 214 89% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -94,12 +90,11 @@ All colors MUST be HSL.
 
     --border: 0 0% 16%;
     --input: 0 0% 12%;
-    --ring: 335 80% 60%;
+    --ring: 214 89% 55%;
 
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 3%));
-    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
-    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --shadow-glow: 0 0 40px hsl(335 80% 60% / 0.4);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 7%), hsl(0 0% 4%));
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -192,5 +187,28 @@ All colors MUST be HSL.
 
   .active\:scale-98:active {
     transform: scale(0.98);
+  }
+
+  /* iOS Emoji Style */
+  .emoji-ios {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  }
+
+  /* Facebook-style card */
+  .fb-card {
+    @apply bg-card rounded-none md:rounded-lg border-0 shadow-[var(--shadow-card)];
+  }
+
+  /* Facebook action button */
+  .fb-action-btn {
+    @apply flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-muted-foreground hover:bg-muted transition-colors font-medium text-sm;
+  }
+
+  .fb-action-btn:hover {
+    @apply text-foreground;
+  }
+
+  .fb-action-btn.active {
+    @apply text-primary;
   }
 }
