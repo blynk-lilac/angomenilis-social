@@ -398,20 +398,33 @@ export default function Feed() {
                         {/* Reactions Count */}
                         {(totalReactions > 0 || post.comments.length > 0) && (
                           <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-t border-border/50">
-                            <div className="flex items-center gap-1">
+                            <div 
+                              className="flex items-center gap-1 cursor-pointer hover:underline"
+                              onClick={() => navigate(`/post/${post.id}/likes`)}
+                            >
                               {totalReactions > 0 && (
                                 <>
                                   <div className="flex -space-x-1">
-                                    {['heart', 'laughing', 'sad'].slice(0, Math.min(3, totalReactions)).map((_, i) => (
-                                      <span key={i} className="text-sm">❤️</span>
-                                    ))}
+                                    {post.post_reactions?.slice(0, 3).map((reaction, i) => {
+                                      const emoji = reaction.reaction_type === 'heart' ? '❤️' : 
+                                                   reaction.reaction_type === 'laughing' ? '😂' : 
+                                                   reaction.reaction_type === 'sad' ? '😢' : 
+                                                   reaction.reaction_type === 'angry' ? '😡' : 
+                                                   reaction.reaction_type === 'thumbs-up' ? '👍' : '❤️';
+                                      return <span key={i} className="text-sm">{emoji}</span>;
+                                    })}
                                   </div>
                                   <span className="ml-1">{totalReactions}</span>
                                 </>
                               )}
                             </div>
                             {post.comments.length > 0 && (
-                              <span>{post.comments.length} comentários</span>
+                              <span 
+                                className="cursor-pointer hover:underline"
+                                onClick={() => navigate(`/comments/${post.id}`)}
+                              >
+                                {post.comments.length} comentários
+                              </span>
                             )}
                           </div>
                         )}

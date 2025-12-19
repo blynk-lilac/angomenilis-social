@@ -51,6 +51,8 @@ import NotFound from "./pages/NotFound";
 import Blocked from "./pages/Blocked";
 import Help from "./pages/Help";
 import Terms from "./pages/Terms";
+import Admin from "./pages/Admin";
+import PostLikes from "./pages/PostLikes";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -435,6 +437,26 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Terms />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Route */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Post Likes Route */}
+        <Route
+          path="/post/:postId/likes"
+          element={
+            <ProtectedRoute>
+              <PostLikes />
             </ProtectedRoute>
           }
         />
