@@ -239,18 +239,32 @@ export default function Videos() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const fileExt = videoFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Convert video to blob for better upload
+      const fileExt = videoFile.name.split('.').pop()?.toLowerCase() || 'mp4';
+      const fileName = `videos/${user.id}/${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading video:', fileName, 'Size:', videoFile.size);
+
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('post-images')
-        .upload(fileName, videoFile);
+        .upload(fileName, videoFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: videoFile.type || 'video/mp4'
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload success:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('post-images')
         .getPublicUrl(fileName);
+
+      console.log('Public URL:', publicUrl);
 
       const { error } = await supabase.from("verification_videos").insert({
         user_id: user.id,
@@ -258,7 +272,10 @@ export default function Videos() {
         caption,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
       toast.success("Vídeo publicado!");
       setUploadOpen(false);
@@ -267,6 +284,7 @@ export default function Videos() {
       setCaption("");
       loadVideos();
     } catch (error: any) {
+      console.error('Full error:', error);
       toast.error(error.message || "Erro ao publicar vídeo");
     } finally {
       setUploading(false);
