@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserPlus, UserCheck, Search, Users, ChevronRight, X } from 'lucide-react';
+import { Search, Users, X, TrendingUp, Hash, Play, Grid3X3, Film, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { OnlineIndicator } from '@/components/OnlineIndicator';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import VerificationBadge from '@/components/VerificationBadge';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface Profile {
   id: string;
@@ -39,6 +40,40 @@ interface MutualFriend {
   first_name: string;
 }
 
+interface TrendingHashtag {
+  id: string;
+  name: string;
+  post_count: number;
+}
+
+interface Video {
+  id: string;
+  video_url: string;
+  caption: string | null;
+  user_id: string;
+  created_at: string;
+  profile?: {
+    username: string;
+    first_name: string;
+    avatar_url: string | null;
+    verified?: boolean;
+  };
+}
+
+interface Post {
+  id: string;
+  content: string;
+  media_urls: string[] | null;
+  user_id: string;
+  created_at: string;
+  profiles?: {
+    username: string;
+    first_name: string;
+    avatar_url: string | null;
+    verified?: boolean;
+  };
+}
+
 export default function Friends() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -50,9 +85,14 @@ export default function Friends() {
   const [friendProfiles, setFriendProfiles] = useState<Profile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [mutualFriendsMap, setMutualFriendsMap] = useState<{ [userId: string]: MutualFriend[] }>({});
-  const [activeTab, setActiveTab] = useState('suggestions');
+  const [activeTab, setActiveTab] = useState('discover');
+  const [trendingHashtags, setTrendingHashtags] = useState<TrendingHashtag[]>([]);
+  const [trendingVideos, setTrendingVideos] = useState<Video[]>([]);
+  const [searchResults, setSearchResults] = useState<{ users: Profile[]; videos: Video[]; posts: Post[] }>({ users: [], videos: [], posts: [] });
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [fullscreenSheet, setFullscreenSheet] = useState(false);
+  const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
   
-  // Calculate online friends count
   const onlineFriendsCount = friendProfiles.filter(u => onlineUsers.has(u.id)).length;
 
   useEffect(() => {
@@ -60,9 +100,10 @@ export default function Friends() {
       loadUsers();
       loadFriendRequests();
       loadFriends();
+      loadTrendingHashtags();
+      loadTrendingVideos();
     }
 
-    // Real-time subscription for friendships
     const channel = supabase
       .channel('friendships-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => {
@@ -83,6 +124,37 @@ export default function Friends() {
       loadMutualFriends();
     }
   }, [allUsers, friends]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      handleSearch();
+    } else {
+      setSearchResults({ users: [], videos: [], posts: [] });
+    }
+  }, [searchQuery]);
+
+  // Intersection Observer for video autoplay
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) observer.observe(video);
+    });
+
+    return () => observer.disconnect();
+  }, [trendingVideos]);
 
   const loadUsers = async () => {
     const { data } = await supabase
@@ -130,7 +202,6 @@ export default function Friends() {
       );
       setFriends(friendIds);
 
-      // Load friend profiles
       if (friendIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
@@ -144,11 +215,9 @@ export default function Friends() {
 
   const loadMutualFriends = async () => {
     if (!user || friends.length === 0) return;
-
     const mutualMap: { [userId: string]: MutualFriend[] } = {};
 
-    // For each non-friend user, find mutual friends
-    for (const profile of allUsers) {
+    for (const profile of allUsers.slice(0, 20)) {
       if (friends.includes(profile.id)) continue;
 
       const { data: theirFriendships } = await supabase
@@ -179,6 +248,66 @@ export default function Friends() {
     }
 
     setMutualFriendsMap(mutualMap);
+  };
+
+  const loadTrendingHashtags = async () => {
+    const { data } = await supabase
+      .from('hashtags')
+      .select('id, name, post_count')
+      .order('post_count', { ascending: false })
+      .limit(10);
+    
+    if (data) setTrendingHashtags(data);
+  };
+
+  const loadTrendingVideos = async () => {
+    const { data } = await supabase
+      .from('verification_videos')
+      .select(`
+        id, video_url, caption, user_id, created_at,
+        profile:profiles!verification_videos_user_id_fkey(username, first_name, avatar_url, verified)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(12);
+    
+    if (data) setTrendingVideos(data as any);
+  };
+
+  const handleSearch = async () => {
+    const query = searchQuery.toLowerCase();
+    
+    // Search users
+    const { data: users } = await supabase
+      .from('profiles')
+      .select('id, username, first_name, full_name, avatar_url, verified, badge_type')
+      .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,full_name.ilike.%${query}%`)
+      .limit(10);
+
+    // Search videos
+    const { data: videos } = await supabase
+      .from('verification_videos')
+      .select(`
+        id, video_url, caption, user_id, created_at,
+        profile:profiles!verification_videos_user_id_fkey(username, first_name, avatar_url, verified)
+      `)
+      .ilike('caption', `%${query}%`)
+      .limit(10);
+
+    // Search posts
+    const { data: posts } = await supabase
+      .from('posts')
+      .select(`
+        id, content, media_urls, user_id, created_at,
+        profiles(username, first_name, avatar_url, verified)
+      `)
+      .ilike('content', `%${query}%`)
+      .limit(10);
+
+    setSearchResults({
+      users: users || [],
+      videos: videos as any || [],
+      posts: posts as any || []
+    });
   };
 
   const sendFriendRequest = async (receiverId: string) => {
@@ -234,12 +363,10 @@ export default function Friends() {
     navigate(`/profile/${userId}`);
   };
 
-  // Filter users by search query
-  const filteredUsers = allUsers.filter(profile => 
-    profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    profile.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const openPostFullscreen = (post: Post) => {
+    setSelectedPost(post);
+    setFullscreenSheet(true);
+  };
 
   const filteredFriends = friendProfiles.filter(profile =>
     profile.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -248,7 +375,7 @@ export default function Friends() {
   );
 
   return (
-    <MainLayout title="Amigos">
+    <MainLayout title="Explorar">
       <div className="max-w-2xl mx-auto pb-20">
         {/* Header with Search */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b">
@@ -257,10 +384,10 @@ export default function Friends() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
               <Input
                 type="text"
-                placeholder="Pesquisar pessoas"
+                placeholder="Pesquisar pessoas, vídeos, hashtags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 bg-muted/40 border-0 rounded-full h-11 text-[15px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="pl-12 bg-muted/40 border-0 rounded-xl h-11 text-[15px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
               {searchQuery && (
                 <Button
@@ -275,11 +402,11 @@ export default function Friends() {
             </div>
           </div>
 
-          {/* Stats Bar */}
+          {/* Stats */}
           <div className="flex items-center gap-3 px-4 py-2 border-t border-border/50">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 rounded-full">
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm font-medium text-primary">{onlineFriendsCount} online</span>
+              <span className="text-sm font-medium text-green-600">{onlineFriendsCount} online</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full">
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -288,264 +415,392 @@ export default function Friends() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-transparent border-b rounded-none h-auto p-0">
-            <TabsTrigger 
-              value="suggestions"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-12 text-sm font-semibold"
-            >
-              Sugestões
-            </TabsTrigger>
-            <TabsTrigger 
-              value="friends"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-12 text-sm font-semibold"
-            >
-              Amigos ({friends.length})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="requests"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-12 text-sm font-semibold relative"
-            >
-              Pedidos
-              {friendRequests.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-destructive text-destructive-foreground rounded-full">
-                  {friendRequests.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Suggestions Tab */}
-          <TabsContent value="suggestions" className="mt-0">
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              <div className="divide-y divide-border/30">
-                <AnimatePresence>
-                  {filteredUsers.filter(p => !friends.includes(p.id)).map((profile, index) => {
-                    const requestSent = sentRequests.includes(profile.id);
-                    const mutualFriends = mutualFriendsMap[profile.id] || [];
-
-                    return (
-                      <motion.div
-                        key={profile.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="flex items-start gap-3 p-4 hover:bg-muted/30 transition-colors"
-                      >
-                        <div 
-                          className="relative cursor-pointer"
-                          onClick={() => navigateToProfile(profile.id)}
-                        >
-                          <Avatar className="h-14 w-14 border-2 border-border/50">
-                            <AvatarImage src={profile.avatar_url || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
-                              {profile.first_name?.[0] || profile.username?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <OnlineIndicator userId={profile.id} size="md" />
+        {/* Search Results */}
+        {searchQuery && (searchResults.users.length > 0 || searchResults.videos.length > 0 || searchResults.posts.length > 0) && (
+          <div className="p-4 space-y-6">
+            {/* Users Results */}
+            {searchResults.users.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Pessoas
+                </h3>
+                <div className="space-y-2">
+                  {searchResults.users.map(profile => (
+                    <div
+                      key={profile.id}
+                      className="flex items-center gap-3 p-3 bg-card rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigateToProfile(profile.id)}
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={profile.avatar_url || undefined} />
+                        <AvatarFallback>{profile.first_name?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">{profile.first_name}</span>
+                          {profile.verified && <VerificationBadge verified badgeType={profile.badge_type} size="sm" />}
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div 
-                              className="min-w-0 flex-1 cursor-pointer"
-                              onClick={() => navigateToProfile(profile.id)}
-                            >
-                              <div className="flex items-center gap-1">
-                                <p className="font-bold text-[15px] truncate hover:underline">
-                                  {profile.full_name || profile.first_name}
-                                </p>
-                                {profile.verified && (
-                                  <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} size="sm" />
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground truncate">@{profile.username}</p>
-                              
-                              {/* Mutual Friends with Avatars */}
-                              {mutualFriends.length > 0 && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <div className="flex -space-x-2">
-                                    {mutualFriends.map((mf) => (
-                                      <Avatar key={mf.id} className="h-6 w-6 border-2 border-background">
-                                        <AvatarImage src={mf.avatar_url || undefined} />
-                                        <AvatarFallback className="text-[10px] bg-muted">
-                                          {mf.first_name?.[0]}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                    ))}
-                                  </div>
-                                  <span className="text-xs text-muted-foreground">
-                                    {mutualFriends.length} amigo{mutualFriends.length > 1 ? 's' : ''} em comum
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {requestSent ? (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                disabled 
-                                className="h-9 px-4 rounded-full text-xs font-bold shrink-0"
-                              >
-                                Pendente
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => sendFriendRequest(profile.id)}
-                                className="h-9 px-4 rounded-full text-xs font-bold shrink-0"
-                              >
-                                <UserPlus className="h-4 w-4 mr-1" />
-                                Adicionar
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          {/* Friends Tab */}
-          <TabsContent value="friends" className="mt-0">
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              {filteredFriends.length === 0 ? (
-                <div className="text-center py-20 px-4">
-                  <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
-                  <h3 className="text-xl font-bold mb-2">Nenhum amigo ainda</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Adicione amigos para vê-los aqui
-                  </p>
+                        <span className="text-sm text-muted-foreground">@{profile.username}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="divide-y divide-border/30">
-                  <AnimatePresence>
-                    {filteredFriends.map((profile, index) => (
-                      <motion.div
-                        key={profile.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
-                        onClick={() => navigateToProfile(profile.id)}
-                      >
-                        <div className="relative">
-                          <Avatar className="h-14 w-14 border-2 border-border/50">
-                            <AvatarImage src={profile.avatar_url || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
-                              {profile.first_name?.[0] || profile.username?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <OnlineIndicator userId={profile.id} size="md" />
+              </div>
+            )}
+
+            {/* Videos Results */}
+            {searchResults.videos.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Film className="h-4 w-4" /> Vídeos
+                </h3>
+                <div className="grid grid-cols-3 gap-1">
+                  {searchResults.videos.map(video => (
+                    <div
+                      key={video.id}
+                      className="relative aspect-[9/16] bg-black rounded-lg overflow-hidden cursor-pointer"
+                      onClick={() => navigate(`/videos?id=${video.id}`)}
+                    >
+                      <video
+                        src={video.video_url}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-white/80 fill-white/80" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Posts Results */}
+            {searchResults.posts.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Grid3X3 className="h-4 w-4" /> Publicações
+                </h3>
+                <div className="grid grid-cols-3 gap-1">
+                  {searchResults.posts.map(post => (
+                    <div
+                      key={post.id}
+                      className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer group"
+                      onClick={() => openPostFullscreen(post)}
+                    >
+                      {post.media_urls?.[0] ? (
+                        <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1">
-                            <p className="font-bold text-[15px] truncate hover:underline">
-                              {profile.full_name || profile.first_name}
-                            </p>
-                            {profile.verified && (
-                              <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} size="sm" />
-                            )}
+                      )}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreHorizontal className="h-5 w-5 text-white drop-shadow" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Content */}
+        {!searchQuery && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-transparent border-b rounded-none h-auto p-0">
+              <TabsTrigger 
+                value="discover"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent h-12 text-sm font-semibold"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Descobrir
+              </TabsTrigger>
+              <TabsTrigger 
+                value="friends"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent h-12 text-sm font-semibold"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Amigos
+              </TabsTrigger>
+              <TabsTrigger 
+                value="requests"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent h-12 text-sm font-semibold relative"
+              >
+                Pedidos
+                {friendRequests.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-destructive text-destructive-foreground rounded-full">
+                    {friendRequests.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Discover Tab */}
+            <TabsContent value="discover" className="mt-0">
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {/* Trending Hashtags */}
+                <div className="p-4">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Hash className="h-5 w-5 text-primary" />
+                    Hashtags em alta
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {trendingHashtags.map(tag => (
+                      <button
+                        key={tag.id}
+                        onClick={() => navigate(`/hashtag/${tag.name}`)}
+                        className="px-4 py-2 bg-muted/50 hover:bg-muted rounded-full text-sm font-medium transition-colors"
+                      >
+                        #{tag.name}
+                        <span className="ml-2 text-muted-foreground">{tag.post_count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Trending Videos */}
+                <div className="p-4">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Play className="h-5 w-5 text-primary" />
+                    Vídeos em destaque
+                  </h3>
+                  <div className="grid grid-cols-3 gap-1">
+                    {trendingVideos.map(video => (
+                      <div
+                        key={video.id}
+                        className="relative aspect-[9/16] bg-black rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => navigate(`/videos?id=${video.id}`)}
+                      >
+                        <video
+                          ref={(el) => { if (el) videoRefs.current[video.id] = el; }}
+                          src={video.video_url}
+                          className="w-full h-full object-cover"
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar className="h-6 w-6 border border-white">
+                              <AvatarImage src={video.profile?.avatar_url || undefined} />
+                              <AvatarFallback className="text-[10px]">{video.profile?.first_name?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-white text-xs font-medium truncate">{video.profile?.username}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">@{profile.username}</p>
-                          {onlineUsers.has(profile.id) && (
-                            <span className="text-xs text-green-500 font-medium">Online agora</span>
+                          {video.caption && (
+                            <p className="text-white text-[10px] line-clamp-2">{video.caption}</p>
                           )}
                         </div>
-
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      </motion.div>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Play className="h-10 w-10 text-white fill-white" />
+                        </div>
+                      </div>
                     ))}
-                  </AnimatePresence>
+                  </div>
                 </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
+              </ScrollArea>
+            </TabsContent>
 
-          {/* Requests Tab */}
-          <TabsContent value="requests" className="mt-0">
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              {friendRequests.length === 0 ? (
-                <div className="text-center py-20 px-4">
-                  <UserPlus className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
-                  <h3 className="text-xl font-bold mb-2">Nenhum pedido</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Quando alguém te enviar um pedido de amizade, ele aparecerá aqui.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border/30">
-                  <AnimatePresence>
-                    {friendRequests.map((request, index) => (
-                      <motion.div
-                        key={request.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div 
-                            className="relative cursor-pointer"
-                            onClick={() => navigateToProfile(request.sender.id)}
-                          >
+            {/* Friends Tab */}
+            <TabsContent value="friends" className="mt-0">
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {filteredFriends.length === 0 ? (
+                  <div className="text-center py-20 px-4">
+                    <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
+                    <h3 className="text-xl font-bold mb-2">Nenhum amigo ainda</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Adicione amigos para vê-los aqui
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/30">
+                    <AnimatePresence>
+                      {filteredFriends.map((profile, index) => (
+                        <motion.div
+                          key={profile.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.03 }}
+                          className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                          onClick={() => navigateToProfile(profile.id)}
+                        >
+                          <div className="relative">
                             <Avatar className="h-14 w-14 border-2 border-border/50">
-                              <AvatarImage src={request.sender.avatar_url || undefined} />
+                              <AvatarImage src={profile.avatar_url || undefined} />
                               <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
-                                {request.sender.first_name?.[0] || request.sender.username?.[0]}
+                                {profile.first_name?.[0] || profile.username?.[0]}
                               </AvatarFallback>
                             </Avatar>
-                            <OnlineIndicator userId={request.sender.id} size="md" />
+                            <OnlineIndicator userId={profile.id} size="md" />
                           </div>
                           
                           <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <p className="font-bold text-[15px] truncate hover:underline">
+                                {profile.full_name || profile.first_name}
+                              </p>
+                              {profile.verified && (
+                                <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} size="sm" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">@{profile.username}</p>
+                            {onlineUsers.has(profile.id) && (
+                              <span className="text-xs text-green-500 font-medium">Online agora</span>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+
+            {/* Requests Tab */}
+            <TabsContent value="requests" className="mt-0">
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                {friendRequests.length === 0 ? (
+                  <div className="text-center py-20 px-4">
+                    <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
+                    <h3 className="text-xl font-bold mb-2">Nenhum pedido</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Quando alguém te enviar um pedido de amizade, ele aparecerá aqui.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/30">
+                    <AnimatePresence>
+                      {friendRequests.map((request, index) => (
+                        <motion.div
+                          key={request.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="p-4"
+                        >
+                          <div className="flex items-start gap-3">
                             <div 
-                              className="cursor-pointer"
+                              className="relative cursor-pointer"
                               onClick={() => navigateToProfile(request.sender.id)}
                             >
-                              <div className="flex items-center gap-1">
-                                <p className="font-bold text-[15px] truncate hover:underline">
-                                  {request.sender.full_name || request.sender.first_name}
-                                </p>
-                                {request.sender.verified && (
-                                  <VerificationBadge verified={request.sender.verified} badgeType={request.sender.badge_type} size="sm" />
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground truncate">@{request.sender.username}</p>
+                              <Avatar className="h-14 w-14 border-2 border-border/50">
+                                <AvatarImage src={request.sender.avatar_url || undefined} />
+                                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
+                                  {request.sender.first_name?.[0] || request.sender.username?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <OnlineIndicator userId={request.sender.id} size="md" />
                             </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div 
+                                className="cursor-pointer"
+                                onClick={() => navigateToProfile(request.sender.id)}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <p className="font-bold text-[15px] truncate hover:underline">
+                                    {request.sender.full_name || request.sender.first_name}
+                                  </p>
+                                  {request.sender.verified && (
+                                    <VerificationBadge verified={request.sender.verified} badgeType={request.sender.badge_type} size="sm" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">@{request.sender.username}</p>
+                              </div>
 
-                            <div className="flex gap-2 mt-3">
-                              <Button
-                                size="sm"
-                                onClick={() => acceptFriendRequest(request.id, request.sender_id)}
-                                className="flex-1 h-9 rounded-full font-bold"
-                              >
-                                Aceitar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => rejectFriendRequest(request.id)}
-                                className="flex-1 h-9 rounded-full font-bold"
-                              >
-                                Rejeitar
-                              </Button>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  onClick={() => acceptFriendRequest(request.id, request.sender_id)}
+                                  className="flex-1 h-9 rounded-xl font-bold"
+                                >
+                                  Aceitar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => rejectFriendRequest(request.id)}
+                                  className="flex-1 h-9 rounded-xl font-bold"
+                                >
+                                  Rejeitar
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Fullscreen Post Sheet */}
+        <Sheet open={fullscreenSheet} onOpenChange={setFullscreenSheet}>
+          <SheetContent side="bottom" className="h-full p-0 rounded-none">
+            {selectedPost && (
+              <div className="h-full flex flex-col bg-black">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 bg-background">
+                  <Button variant="ghost" size="icon" onClick={() => setFullscreenSheet(false)}>
+                    <X className="h-6 w-6" />
+                  </Button>
+                  <span className="font-semibold">Publicação</span>
+                  <Button variant="ghost" size="icon" onClick={() => navigate(`/post/${selectedPost.id}`)}>
+                    <MoreHorizontal className="h-6 w-6" />
+                  </Button>
                 </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+
+                {/* Content */}
+                <div className="flex-1 flex items-center justify-center">
+                  {selectedPost.media_urls?.[0] ? (
+                    selectedPost.media_urls[0].includes('.mp4') || selectedPost.media_urls[0].includes('.webm') ? (
+                      <video
+                        src={selectedPost.media_urls[0]}
+                        className="max-w-full max-h-full object-contain"
+                        controls
+                        autoPlay
+                      />
+                    ) : (
+                      <img
+                        src={selectedPost.media_urls[0]}
+                        alt=""
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    )
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-lg text-white">{selectedPost.content}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Caption */}
+                <div className="p-4 bg-background">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={selectedPost.profiles?.avatar_url || undefined} />
+                      <AvatarFallback>{selectedPost.profiles?.first_name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="font-semibold">{selectedPost.profiles?.username}</span>
+                    </div>
+                  </div>
+                  {selectedPost.content && (
+                    <p className="text-sm">{selectedPost.content}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </MainLayout>
   );
