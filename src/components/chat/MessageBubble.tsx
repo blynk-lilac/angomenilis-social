@@ -6,6 +6,7 @@ import { ReactionPicker } from './ReactionPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import AudioWaveform from './AudioWaveform';
 
 interface Reaction {
   emoji: string;
@@ -227,12 +228,12 @@ export default function MessageBubble({ message, isSent, hideMedia = false, isGr
 
     if (message.message_type === 'audio' && message.media_url) {
       return (
-        <div className="flex items-center gap-3 mb-2 p-2 bg-background/50 rounded-lg">
-          <Play className="h-5 w-5" />
-          <audio src={message.media_url} controls className="max-w-[250px]" />
-          {message.duration && (
-            <span className="text-sm">{message.duration}s</span>
-          )}
+        <div className="mb-2">
+          <AudioWaveform 
+            src={message.media_url} 
+            duration={message.duration} 
+            isSent={isSent}
+          />
         </div>
       );
     }
