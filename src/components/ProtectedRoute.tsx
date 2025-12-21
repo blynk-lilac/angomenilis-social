@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 
+// Email that can never be blocked
+const PROTECTED_EMAIL = 'isaacmuaco582@gmail.com';
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
@@ -17,17 +20,25 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       
-      // Verificar se a conta está bloqueada
+      // Verificar se a conta está bloqueada (exceto conta protegida)
       if (session?.user) {
-        const { data: blocked } = await supabase
-          .from('blocked_accounts')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        if (blocked && window.location.pathname !== '/blocked') {
-          window.location.href = '/blocked';
-          return;
+        // Se for a conta protegida, remover bloqueio automaticamente
+        if (session.user.email === PROTECTED_EMAIL) {
+          await supabase
+            .from('blocked_accounts')
+            .delete()
+            .eq('user_id', session.user.id);
+        } else {
+          const { data: blocked } = await supabase
+            .from('blocked_accounts')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (blocked && window.location.pathname !== '/blocked') {
+            window.location.href = '/blocked';
+            return;
+          }
         }
       }
       

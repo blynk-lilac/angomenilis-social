@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_history: {
+        Row: {
+          action_type: string
+          city: string | null
+          country: string | null
+          created_at: string | null
+          device_id: string | null
+          id: string
+          ip_address: string | null
+          risk_level: string | null
+          success: boolean | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip_address?: string | null
+          risk_level?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip_address?: string | null
+          risk_level?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_history_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "user_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_comments: {
         Row: {
           ad_id: string
@@ -1542,6 +1592,125 @@ export type Database = {
           },
         ]
       }
+      security_alerts: {
+        Row: {
+          action_taken: string | null
+          alert_type: string
+          created_at: string | null
+          device_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          alert_type: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          alert_type?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_alerts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "user_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_settings: {
+        Row: {
+          account_at_risk: boolean | null
+          created_at: string | null
+          id: string
+          kick_old_sessions: boolean | null
+          max_devices: number | null
+          require_confirmation_ads: boolean | null
+          require_confirmation_email: boolean | null
+          require_confirmation_password: boolean | null
+          trusted_devices_only: boolean | null
+          two_factor_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_at_risk?: boolean | null
+          created_at?: string | null
+          id?: string
+          kick_old_sessions?: boolean | null
+          max_devices?: number | null
+          require_confirmation_ads?: boolean | null
+          require_confirmation_email?: boolean | null
+          require_confirmation_password?: boolean | null
+          trusted_devices_only?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_at_risk?: boolean | null
+          created_at?: string | null
+          id?: string
+          kick_old_sessions?: boolean | null
+          max_devices?: number | null
+          require_confirmation_ads?: boolean | null
+          require_confirmation_email?: boolean | null
+          require_confirmation_password?: boolean | null
+          trusted_devices_only?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sensitive_actions: {
+        Row: {
+          action_data: Json | null
+          action_type: string
+          confirmation_code: string | null
+          confirmed: boolean | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_data?: Json | null
+          action_type: string
+          confirmation_code?: string | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_data?: Json | null
+          action_type?: string
+          confirmation_code?: string | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sponsored_ads: {
         Row: {
           company_logo: string
@@ -1819,6 +1988,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_devices: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          device_name: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          is_trusted: boolean | null
+          last_active: string | null
+          latitude: number | null
+          longitude: number | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          is_trusted?: boolean | null
+          last_active?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          is_trusted?: boolean | null
+          last_active?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           is_online: boolean | null
@@ -1863,6 +2086,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          device_id: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          session_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_id?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          session_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          session_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "user_devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {

@@ -158,6 +158,7 @@ export default function Settings() {
 
   const accountSettings = [
     { label: 'Palavra-passe e segurança', icon: Lock, path: '/settings/change-password', description: 'Gere as tuas palavras-passe, as preferências de acesso e os métodos de recuperação.' },
+    { label: 'Dispositivos e segurança', icon: Smartphone, path: '/settings/devices', description: 'Gere os teus dispositivos, sessões e histórico de acessos.' },
     { label: 'Dados pessoais', icon: FileText, path: '/settings/contact-info', description: 'Informações da tua conta.' },
     { label: 'As tuas informações e permissões', icon: Eye, path: '/settings/security', description: 'Revê os problemas de segurança.' },
     { label: 'Preferências de publicidade', icon: Settings2, path: '#', description: 'Configura as preferências de anúncios.' },

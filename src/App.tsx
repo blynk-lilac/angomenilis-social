@@ -31,6 +31,8 @@ import Settings from "./pages/Settings";
 import ChangePassword from "./pages/settings/ChangePassword";
 import ContactInfo from "./pages/settings/ContactInfo";
 import Security from "./pages/settings/Security";
+import DeviceSecurity from "./pages/settings/DeviceSecurity";
+import EditProfile from "./pages/settings/EditProfile";
 import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import Create from "./pages/Create";
@@ -327,6 +329,22 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Security />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/devices"
+          element={
+            <ProtectedRoute>
+              <DeviceSecurity />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
             </ProtectedRoute>
           }
         />
