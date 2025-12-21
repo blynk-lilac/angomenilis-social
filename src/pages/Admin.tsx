@@ -17,7 +17,11 @@ import {
   Search,
   Trash2,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  TrendingUp,
+  Settings,
+  BarChart3,
+  UserCheck
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VerificationBadge from "@/components/VerificationBadge";
@@ -167,7 +171,6 @@ export default function Admin() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Check if this is the protected account
     const { data: profileData } = await supabase
       .from("profiles")
       .select("email")
@@ -193,7 +196,6 @@ export default function Admin() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    // Check if this is the protected account
     const { data: profileData } = await supabase
       .from("profiles")
       .select("email")
@@ -206,12 +208,10 @@ export default function Admin() {
       return;
     }
 
-    // Delete user's posts first
     await supabase.from("posts").delete().eq("user_id", userId);
     await supabase.from("stories").delete().eq("user_id", userId);
     await supabase.from("verification_videos").delete().eq("user_id", userId);
     
-    // Delete profile
     const { error } = await supabase.from("profiles").delete().eq("id", userId);
 
     if (error) {
@@ -268,99 +268,134 @@ export default function Admin() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b">
-          <div className="flex items-center justify-between px-4 h-14">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+        {/* Modern Header */}
+        <div className="sticky top-0 z-50 bg-gradient-to-r from-primary via-primary/90 to-accent text-white">
+          <div className="flex items-center justify-between px-4 h-16">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white hover:bg-white/10">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-lg">Painel Admin</h1>
+                  <p className="text-xs text-white/70">Gerir plataforma</p>
+                </div>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+              <Settings className="h-5 w-5" />
             </Button>
-            <h1 className="font-semibold text-lg flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Painel Admin
-            </h1>
-            <div className="w-10" />
           </div>
         </div>
 
-        <div className="pt-16 pb-8 px-4 max-w-4xl mx-auto">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <Card className="p-4 bg-card">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalUsers}</p>
-                  <p className="text-xs text-muted-foreground">Usuários</p>
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="p-4 bg-card">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.verifiedUsers}</p>
-                  <p className="text-xs text-muted-foreground">Verificados</p>
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="p-4 bg-card">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                  <FileWarning className="h-5 w-5 text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.pendingReports}</p>
-                  <p className="text-xs text-muted-foreground">Denúncias</p>
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="p-4 bg-card">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                  <Ban className="h-5 w-5 text-red-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.blockedAccounts}</p>
-                  <p className="text-xs text-muted-foreground">Bloqueados</p>
-                </div>
-              </div>
-            </Card>
+        <div className="pb-20">
+          {/* Stats Grid */}
+          <div className="px-4 py-6">
+            <div className="grid grid-cols-2 gap-3">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{stats.totalUsers}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Total Usuários</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Card className="p-4 bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/25">
+                      <UserCheck className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{stats.verifiedUsers}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Verificados</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+                      <AlertTriangle className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{stats.pendingReports}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Denúncias</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <Card className="p-4 bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/25">
+                      <Ban className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{stats.blockedAccounts}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Bloqueados</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            </div>
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="users" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="users" className="gap-2">
+          <Tabs defaultValue="users" className="w-full px-4">
+            <TabsList className="w-full grid grid-cols-2 mb-4 h-12 bg-muted/50 p-1 rounded-xl">
+              <TabsTrigger value="users" className="gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Users className="h-4 w-4" />
                 Usuários
               </TabsTrigger>
-              <TabsTrigger value="reports" className="gap-2">
+              <TabsTrigger value="reports" className="gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
                 <FileWarning className="h-4 w-4" />
                 Denúncias
                 {stats.pendingReports > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-5 px-1.5">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
                     {stats.pendingReports}
-                  </Badge>
+                  </span>
                 )}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="users" className="space-y-4">
+            <TabsContent value="users" className="space-y-3 mt-0">
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   placeholder="Pesquisar usuários..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-12 h-12 rounded-xl bg-muted/50 border-0"
                 />
               </div>
 
@@ -369,25 +404,25 @@ export default function Admin() {
                 {filteredUsers.map((user, index) => (
                   <motion.div
                     key={user.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.02 }}
                   >
-                    <Card className="p-4">
+                    <Card className="p-4 hover:bg-muted/30 transition-colors">
                       <div className="flex items-center gap-3">
                         <Avatar 
-                          className="h-12 w-12 cursor-pointer"
+                          className="h-14 w-14 cursor-pointer ring-2 ring-border"
                           onClick={() => navigate(`/profile/${user.id}`)}
                         >
                           <AvatarImage src={user.avatar_url} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
                             {user.first_name?.[0] || user.username?.[0]}
                           </AvatarFallback>
                         </Avatar>
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold truncate">
+                            <span className="font-bold truncate">
                               {user.full_name || user.first_name || user.username}
                             </span>
                             {user.verified && (
@@ -401,11 +436,11 @@ export default function Admin() {
                           <p className="text-sm text-muted-foreground">@{user.username}</p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-9 w-9 rounded-full"
                             onClick={() => navigate(`/profile/${user.id}`)}
                           >
                             <Eye className="h-4 w-4" />
@@ -414,6 +449,7 @@ export default function Admin() {
                           <Button
                             variant={user.verified ? "outline" : "default"}
                             size="sm"
+                            className="h-9 rounded-full text-xs font-semibold"
                             onClick={() => handleVerifyUser(user.id, !user.verified)}
                           >
                             {user.verified ? "Remover" : "Verificar"}
@@ -422,7 +458,7 @@ export default function Admin() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-orange-500"
+                            className="h-9 w-9 rounded-full text-orange-500 hover:bg-orange-500/10"
                             onClick={() => handleBlockUser(user.id)}
                           >
                             <Ban className="h-4 w-4" />
@@ -431,7 +467,7 @@ export default function Admin() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive"
+                            className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10"
                             onClick={() => setDeleteDialog({ open: true, userId: user.id, username: user.username })}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -444,12 +480,14 @@ export default function Admin() {
               </div>
             </TabsContent>
 
-            <TabsContent value="reports" className="space-y-4">
+            <TabsContent value="reports" className="space-y-3 mt-0">
               {reports.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <CheckCircle2 className="h-12 w-12 mx-auto text-green-500 mb-4" />
-                  <p className="text-lg font-medium">Nenhuma denúncia pendente</p>
-                  <p className="text-sm text-muted-foreground">Todas as denúncias foram resolvidas</p>
+                <Card className="p-12 text-center">
+                  <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="h-10 w-10 text-green-500" />
+                  </div>
+                  <p className="text-xl font-bold mb-2">Tudo limpo!</p>
+                  <p className="text-muted-foreground">Nenhuma denúncia pendente</p>
                 </Card>
               ) : (
                 reports.map((report, index) => (
@@ -462,11 +500,13 @@ export default function Admin() {
                     <Card className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="h-4 w-4 text-orange-500" />
-                            <Badge variant="outline">{report.content_type}</Badge>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-orange-500/10 flex items-center justify-center">
+                              <AlertTriangle className="h-4 w-4 text-orange-500" />
+                            </div>
+                            <Badge variant="outline" className="rounded-full">{report.content_type}</Badge>
                           </div>
-                          <p className="text-sm mb-2">{report.reason}</p>
+                          <p className="text-sm mb-2 font-medium">{report.reason}</p>
                           <p className="text-xs text-muted-foreground">
                             ID: {report.reported_content_id}
                           </p>
@@ -476,13 +516,14 @@ export default function Admin() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="rounded-full"
                             onClick={() => handleResolveReport(report.id, "dismissed")}
                           >
                             Ignorar
                           </Button>
                           <Button
-                            variant="default"
                             size="sm"
+                            className="rounded-full"
                             onClick={() => handleResolveReport(report.id, "resolved")}
                           >
                             Resolver
@@ -498,19 +539,19 @@ export default function Admin() {
         </div>
 
         {/* Delete Dialog */}
-        <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
-          <AlertDialogContent>
+        <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+          <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+              <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
               <AlertDialogDescription>
                 Tem certeza que deseja excluir @{deleteDialog.username}? Esta ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              <AlertDialogCancel className="rounded-full">Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
                 onClick={() => handleDeleteUser(deleteDialog.userId)}
+                className="bg-destructive hover:bg-destructive/90 rounded-full"
               >
                 Excluir
               </AlertDialogAction>
