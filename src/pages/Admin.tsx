@@ -167,6 +167,18 @@ export default function Admin() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Check if this is the protected account
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .single();
+
+    if (profileData?.email === "isaacmuaco582@gmail.com") {
+      toast.error("Esta conta não pode ser bloqueada");
+      return;
+    }
+
     const { error } = await supabase
       .from("blocked_accounts")
       .insert({ user_id: userId, blocked_by: user.id, reason: "Bloqueado pelo admin" });
@@ -181,6 +193,19 @@ export default function Admin() {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    // Check if this is the protected account
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .single();
+
+    if (profileData?.email === "isaacmuaco582@gmail.com") {
+      toast.error("Esta conta não pode ser excluída");
+      setDeleteDialog({ open: false, userId: "", username: "" });
+      return;
+    }
+
     // Delete user's posts first
     await supabase.from("posts").delete().eq("user_id", userId);
     await supabase.from("stories").delete().eq("user_id", userId);

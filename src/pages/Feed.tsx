@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageSquare, Share2, Globe, MoreHorizontal, Send, Bookmark, Play } from "lucide-react";
+import { Heart, MessageSquare, Share2, Globe, MoreHorizontal, Send, Bookmark, Play, Download, Repeat2, Copy, ExternalLink } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -500,7 +500,7 @@ export default function Feed() {
                             ) : (
                               <span className="text-lg emoji-ios">👍</span>
                             )}
-                            <span>Gosto</span>
+                            <span className="hidden sm:inline">Gosto</span>
                           </button>
 
                           <button
@@ -508,12 +508,40 @@ export default function Feed() {
                             onClick={() => navigate(`/comments/${post.id}`)}
                           >
                             <span className="text-lg emoji-ios">💬</span>
-                            <span>Comentar</span>
+                            <span className="hidden sm:inline">Comentar</span>
                           </button>
 
-                          <button className="fb-action-btn">
+                          <button 
+                            className="fb-action-btn"
+                            onClick={() => {
+                              navigator.share?.({
+                                title: 'Publicação',
+                                text: post.content?.slice(0, 100),
+                                url: `${window.location.origin}/post/${post.id}`
+                              }).catch(() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                                toast.success("Link copiado!");
+                              });
+                            }}
+                          >
                             <span className="text-lg emoji-ios">↗️</span>
-                            <span>Enviar</span>
+                            <span className="hidden sm:inline">Partilhar</span>
+                          </button>
+
+                          <button 
+                            className="fb-action-btn"
+                            onClick={async () => {
+                              await supabase.from('posts').insert({
+                                user_id: currentUserId,
+                                content: `Republicado de @${post.profiles.username}: ${post.content || ''}`,
+                                media_urls: post.media_urls
+                              });
+                              toast.success("Republicado!");
+                              loadPosts();
+                            }}
+                          >
+                            <Repeat2 className="h-5 w-5" />
+                            <span className="hidden sm:inline">Republicar</span>
                           </button>
                         </div>
                       </Card>

@@ -53,6 +53,7 @@ import Help from "./pages/Help";
 import Terms from "./pages/Terms";
 import Admin from "./pages/Admin";
 import PostLikes from "./pages/PostLikes";
+import OnlineFriends from "./pages/OnlineFriends";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -457,6 +458,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <PostLikes />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Online Friends Route */}
+        <Route
+          path="/online-friends"
+          element={
+            <ProtectedRoute>
+              <OnlineFriends />
             </ProtectedRoute>
           }
         />
