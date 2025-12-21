@@ -37,7 +37,14 @@ import {
   Play,
   Flag,
   Copy,
-  Ban
+  Ban,
+  Clapperboard,
+  Repeat2,
+  UserSquare2,
+  ChevronDown,
+  Music,
+  Settings,
+  Plus
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -93,6 +100,14 @@ interface Video {
   likes_count: number;
   comments_count: number;
   user_liked: boolean;
+  views_count?: number;
+}
+
+interface Story {
+  id: string;
+  media_url: string;
+  media_type: string;
+  created_at: string;
 }
 
 export default function Profile() {
@@ -104,9 +119,11 @@ export default function Profile() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [friendsCount, setFriendsCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"followers" | "following" | "friends">("followers");
   const [modalUsers, setModalUsers] = useState<Profile[]>([]);
@@ -115,6 +132,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [activeTab, setActiveTab] = useState("posts");
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -145,6 +163,7 @@ export default function Profile() {
           loadPosts(profileId),
           loadVideos(profileId),
           loadFriends(profileId),
+          loadStories(profileId),
         ]);
         
         if (profileId !== user.id) {
@@ -159,15 +178,28 @@ export default function Profile() {
   };
 
   const loadStats = async (profileId: string) => {
-    const [followers, following, friendships] = await Promise.all([
+    const [followers, following, friendships, postsData] = await Promise.all([
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
-      supabase.from("friendships").select("*", { count: "exact", head: true }).or(`user_id_1.eq.${profileId},user_id_2.eq.${profileId}`)
+      supabase.from("friendships").select("*", { count: "exact", head: true }).or(`user_id_1.eq.${profileId},user_id_2.eq.${profileId}`),
+      supabase.from("posts").select("*", { count: "exact", head: true }).eq("user_id", profileId)
     ]);
 
     setFollowersCount(followers.count || 0);
     setFollowingCount(following.count || 0);
     setFriendsCount(friendships.count || 0);
+    setPostsCount(postsData.count || 0);
+  };
+
+  const loadStories = async (profileId: string) => {
+    const { data } = await supabase
+      .from("stories")
+      .select("*")
+      .eq("user_id", profileId)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false });
+    
+    if (data) setStories(data);
   };
 
   const checkFollowing = async (currentUserId: string, profileId: string) => {
@@ -243,25 +275,24 @@ export default function Profile() {
     if (data) {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const videosWithLikes = await Promise.all(
+      const videosWithData = await Promise.all(
         data.map(async (video) => {
-          const { data: userLike } = await supabase
-            .from("verification_video_likes")
-            .select("*")
-            .eq("video_id", video.id)
-            .eq("user_id", user?.id)
-            .maybeSingle();
+          const [userLike, viewsCount] = await Promise.all([
+            supabase.from("verification_video_likes").select("*").eq("video_id", video.id).eq("user_id", user?.id).maybeSingle(),
+            supabase.from("video_views").select("*", { count: "exact", head: true }).eq("video_id", video.id)
+          ]);
 
           return {
             ...video,
             likes_count: video.likes[0]?.count || 0,
             comments_count: video.comments[0]?.count || 0,
-            user_liked: !!userLike,
+            user_liked: !!userLike.data,
+            views_count: viewsCount.count || 0
           };
         })
       );
 
-      setVideos(videosWithLikes);
+      setVideos(videosWithData);
     }
   };
 
@@ -276,19 +307,6 @@ export default function Profile() {
       await supabase.from("follows").insert({ follower_id: currentUserId, following_id: profile.id });
       setIsFollowing(true);
       setFollowersCount(prev => prev + 1);
-    }
-  };
-
-  const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    if (post.user_liked) {
-      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", currentUserId);
-      setPosts(posts.map(p => p.id === postId ? { ...p, user_liked: false, likes_count: p.likes_count - 1 } : p));
-    } else {
-      await supabase.from("post_likes").insert({ post_id: postId, user_id: currentUserId });
-      setPosts(posts.map(p => p.id === postId ? { ...p, user_liked: true, likes_count: p.likes_count + 1 } : p));
     }
   };
 
@@ -383,6 +401,12 @@ export default function Profile() {
     u.first_name?.toLowerCase().includes(modalSearch.toLowerCase())
   );
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
   if (loading || !profile) {
     return (
       <ProtectedRoute>
@@ -397,233 +421,340 @@ export default function Profile() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20">
-        <TopBar />
-
-        {/* Header */}
+        {/* Instagram-style Header */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="sticky top-14 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-2 flex items-center justify-between"
+          className="sticky top-0 z-50 bg-background border-b"
         >
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold">{profile.username}</h1>
-            {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-5 h-5" />}
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <MoreHorizontal className="h-5 w-5" />
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem 
-                onClick={() => {
-                  const url = `${window.location.origin}/profile/${profile.id}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success("Link do perfil copiado!");
-                }}
-                className="cursor-pointer"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar link do perfil
-              </DropdownMenuItem>
-              {!isOwnProfile && (
-                <>
-                  <DropdownMenuSeparator />
+              <div className="flex items-center gap-1">
+                <h1 className="text-lg font-bold">{profile.username}</h1>
+                {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-4 h-4" />}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              {isOwnProfile && (
+                <Button variant="ghost" size="icon" onClick={() => navigate('/settings/edit-profile')} className="rounded-full">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem 
-                    onClick={() => navigate(`/report?type=profile&id=${profile.id}`)}
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <Flag className="h-4 w-4 mr-2" />
-                    Denunciar conta
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                    onClick={async () => {
-                      // Block user logic
-                      toast.success("Utilizador bloqueado");
+                    onClick={() => {
+                      const url = `${window.location.origin}/profile/${profile.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success("Link do perfil copiado!");
                     }}
                   >
-                    <Ban className="h-4 w-4 mr-2" />
-                    Bloquear utilizador
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar link do perfil
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {!isOwnProfile && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => navigate(`/report?type=profile&id=${profile.id}`)}
+                        className="text-destructive"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        Denunciar conta
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </motion.div>
 
-        <div className="max-w-3xl mx-auto">
-          {/* Banner e Avatar */}
+        <div className="max-w-lg mx-auto">
+          {/* Profile Info Section */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="relative"
+            className="px-4 py-5"
           >
-            <div className="h-48 sm:h-56 bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/20 overflow-hidden relative group">
-              {profile.banner_url ? (
-                <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10" />
-              )}
-              {isOwnProfile && (
-                <>
-                  <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
-                  <button
-                    onClick={() => bannerInputRef.current?.click()}
-                    disabled={uploadingBanner}
-                    className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Camera className="h-4 w-4" />
-                    {uploadingBanner ? 'Enviando...' : 'Editar capa'}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="px-4 pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-16 sm:-mt-20 gap-4">
-                <div className="relative">
-                  <Avatar className="h-28 w-28 sm:h-36 sm:w-36 border-4 border-background ring-4 ring-primary/20 shadow-xl">
+            {/* Avatar and Stats Row */}
+            <div className="flex items-center gap-6 mb-4">
+              {/* Avatar with Story Ring */}
+              <div className="relative">
+                <div className={`p-0.5 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500' : ''}`}>
+                  <Avatar className={`h-20 w-20 border-2 ${stories.length > 0 ? 'border-background' : 'border-border'}`}>
                     <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback className="text-4xl bg-gradient-to-br from-primary to-accent text-white">
+                    <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
                       {profile.username?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  {isOwnProfile && (
-                    <>
-                      <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                      <button
-                        onClick={() => avatarInputRef.current?.click()}
-                        disabled={uploadingAvatar}
-                        className="absolute bottom-2 right-2 h-9 w-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
                 </div>
-
                 {isOwnProfile && (
-                  <div className="flex flex-wrap gap-2 sm:pb-4">
-                    <Button onClick={() => navigate("/professional-panel")} size="sm" className="rounded-full px-4 h-9 text-sm font-semibold shadow-sm">
-                      Painel profissional
-                    </Button>
-                    <Button onClick={() => navigate("/settings/edit-profile")} variant="outline" size="sm" className="rounded-full px-4 h-9 text-sm font-semibold">
-                      Editar perfil
-                    </Button>
-                  </div>
-                )}
-
-                {!isOwnProfile && (
-                  <div className="flex gap-2 sm:pb-4">
-                    <Button onClick={handleFollow} className="rounded-full px-6" variant={isFollowing ? "outline" : "default"}>
-                      {isFollowing ? <><UserCheck className="h-4 w-4 mr-2" />A seguir</> : <><UserPlus className="h-4 w-4 mr-2" />Seguir</>}
-                    </Button>
-                    <Button variant="outline" size="icon" className="rounded-full">
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <>
+                    <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 h-7 w-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-2 border-background shadow-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </>
                 )}
               </div>
 
-              <div className="mt-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-2xl font-bold">{profile.full_name || profile.first_name || profile.username}</h2>
-                  {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-6 h-6" />}
-                </div>
-                <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                
-                {profile.category && (
-                  <p className="text-sm text-primary mt-1">{profile.category}</p>
-                )}
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 mt-3 text-sm">
-                  <button onClick={() => handleOpenModal("followers")} className="hover:underline">
-                    <span className="font-bold">{followersCount}</span> <span className="text-muted-foreground">seguidores</span>
-                  </button>
-                  <button onClick={() => handleOpenModal("following")} className="hover:underline">
-                    <span className="font-bold">{followingCount}</span> <span className="text-muted-foreground">a seguir</span>
-                  </button>
-                </div>
-
-                {profile.bio && <p className="mt-3 text-sm">{profile.bio}</p>}
-
-                {/* Info extra */}
-                <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
-                  {profile.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{profile.location}</span>
-                    </div>
-                  )}
-                  {profile.website && (
-                    <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                      <LinkIcon className="h-4 w-4" />
-                      <span>{profile.website.replace(/https?:\/\//, '')}</span>
-                    </a>
-                  )}
-                </div>
-
-                {isOwnProfile && <AssociatedAccounts userId={currentUserId} />}
+              {/* Stats */}
+              <div className="flex-1 flex justify-around">
+                <button className="text-center" onClick={() => {}}>
+                  <p className="text-lg font-bold">{formatNumber(postsCount)}</p>
+                  <p className="text-xs text-muted-foreground">publicações</p>
+                </button>
+                <button className="text-center" onClick={() => handleOpenModal("followers")}>
+                  <p className="text-lg font-bold">{formatNumber(followersCount)}</p>
+                  <p className="text-xs text-muted-foreground">seguidores</p>
+                </button>
+                <button className="text-center" onClick={() => handleOpenModal("following")}>
+                  <p className="text-lg font-bold">{formatNumber(followingCount)}</p>
+                  <p className="text-xs text-muted-foreground">a seguir</p>
+                </button>
               </div>
+            </div>
+
+            {/* Name and Bio */}
+            <div className="mb-4">
+              <div className="flex items-center gap-1">
+                <p className="font-bold">{profile.full_name || profile.first_name}</p>
+                {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-4 h-4" />}
+              </div>
+              {profile.category && (
+                <p className="text-sm text-muted-foreground">{profile.category}</p>
+              )}
+              {profile.bio && (
+                <p className="text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
+              )}
+              {profile.website && (
+                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary font-semibold">
+                  {profile.website.replace('https://', '').replace('http://', '')}
+                </a>
+              )}
+            </div>
+
+            {/* Professional Panel Link */}
+            {isOwnProfile && (
+              <button 
+                onClick={() => navigate('/professional')}
+                className="w-full mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between hover:bg-muted transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">Painel Profissional</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground rotate-[-90deg]" />
+              </button>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {isOwnProfile ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-9 rounded-lg font-semibold"
+                    onClick={() => navigate('/settings/edit-profile')}
+                  >
+                    Editar perfil
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-9 rounded-lg font-semibold"
+                    onClick={() => {
+                      const url = `${window.location.origin}/profile/${profile.id}`;
+                      navigator.share?.({ url }) || navigator.clipboard.writeText(url);
+                      toast.success("Link copiado!");
+                    }}
+                  >
+                    Partilhar perfil
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    onClick={() => navigate('/friends')}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant={isFollowing ? "outline" : "default"}
+                    className="flex-1 h-9 rounded-lg font-semibold"
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? "A seguir" : "Seguir"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-9 rounded-lg font-semibold"
+                    onClick={() => navigate(`/chat/${profile.id}`)}
+                  >
+                    Mensagem
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
 
+          {/* Story Highlights */}
+          {(isOwnProfile || stories.length > 0) && (
+            <div className="px-4 pb-4">
+              <ScrollArea className="w-full">
+                <div className="flex gap-4">
+                  {isOwnProfile && (
+                    <div className="flex flex-col items-center gap-1">
+                      <button 
+                        className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center"
+                        onClick={() => navigate('/create')}
+                      >
+                        <Plus className="h-6 w-6 text-muted-foreground" />
+                      </button>
+                      <span className="text-xs">Novo</span>
+                    </div>
+                  )}
+                  {/* Highlight circles would go here */}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
           {/* Tabs */}
-          <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-12 p-0 px-4 gap-2">
-              <TabsTrigger value="posts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-semibold px-4">
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Posts
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 bg-transparent border-y h-12 rounded-none p-0">
+              <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
+                <Grid3X3 className="h-5 w-5" />
               </TabsTrigger>
-              <TabsTrigger value="reels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-semibold px-4">
-                <Play className="h-4 w-4 mr-2" />
-                Reels
+              <TabsTrigger value="reels" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
+                <Clapperboard className="h-5 w-5" />
+              </TabsTrigger>
+              <TabsTrigger value="reposts" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
+                <Repeat2 className="h-5 w-5" />
+              </TabsTrigger>
+              <TabsTrigger value="tagged" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
+                <UserSquare2 className="h-5 w-5" />
               </TabsTrigger>
             </TabsList>
 
+            {/* Posts Grid */}
             <TabsContent value="posts" className="mt-0">
               {posts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <Grid3X3 className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">Nenhuma publicação ainda</p>
+                <div className="flex flex-col items-center justify-center py-20 px-4">
+                  <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
+                    <Camera className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-1">Partilhar fotos</h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Quando partilhares fotos, elas aparecem aqui.
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-0.5 p-1">
-                  {posts.map((post) => (
-                    <motion.div
-                      key={post.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.02 }}
-                      onClick={() => navigate(`/comments/${post.id}`)}
-                      className="aspect-square bg-muted overflow-hidden cursor-pointer relative group"
-                    >
-                      {post.media_urls && post.media_urls[0] ? (
-                        post.media_urls[0].includes('.mp4') || post.media_urls[0].includes('.webm') ? (
-                          <video src={post.media_urls[0]} className="w-full h-full object-cover" />
+                <div className="grid grid-cols-3 gap-0.5">
+                  {posts.map((post, idx) => {
+                    const hasMedia = post.media_urls && post.media_urls.length > 0;
+                    const firstMedia = hasMedia ? post.media_urls[0] : null;
+                    const isVideo = firstMedia?.includes('.mp4') || firstMedia?.includes('.webm');
+
+                    return (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="aspect-square relative cursor-pointer group"
+                        onClick={() => navigate(`/post/${post.id}`)}
+                      >
+                        {hasMedia ? (
+                          <>
+                            {isVideo ? (
+                              <video src={firstMedia!} className="w-full h-full object-cover" muted />
+                            ) : (
+                              <img src={firstMedia!} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {post.media_urls!.length > 1 && (
+                              <div className="absolute top-2 right-2">
+                                <Copy className="h-4 w-4 text-white drop-shadow-lg" />
+                              </div>
+                            )}
+                            {isVideo && (
+                              <div className="absolute top-2 right-2">
+                                <Play className="h-4 w-4 text-white drop-shadow-lg fill-white" />
+                              </div>
+                            )}
+                          </>
                         ) : (
-                          <img src={post.media_urls[0]} alt="" className="w-full h-full object-cover" />
-                        )
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-2">
-                          <p className="text-xs text-center line-clamp-3">{post.content}</p>
+                          <div className="w-full h-full bg-muted flex items-center justify-center p-2">
+                            <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
+                          </div>
+                        )}
+                        
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                          <div className="flex items-center gap-1 text-white">
+                            <Heart className="h-5 w-5 fill-white" />
+                            <span className="font-bold">{formatNumber(post.likes_count)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-white">
+                            <MessageCircle className="h-5 w-5 fill-white" />
+                            <span className="font-bold">{formatNumber(post.comments_count)}</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
-                        <div className="flex items-center gap-1">
-                          <Heart className="h-5 w-5 fill-white" />
-                          <span className="font-semibold">{post.likes_count}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="h-5 w-5 fill-white" />
-                          <span className="font-semibold">{post.comments_count}</span>
-                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Reels Grid */}
+            <TabsContent value="reels" className="mt-0">
+              {videos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-4">
+                  <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
+                    <Clapperboard className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-1">Reels</h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Quando partilhares reels, eles aparecem aqui.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-0.5">
+                  {videos.map((video, idx) => (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.02 }}
+                      className="aspect-[9/16] relative cursor-pointer group"
+                      onClick={() => navigate(`/videos?v=${video.id}`)}
+                    >
+                      <video src={video.video_url} className="w-full h-full object-cover" muted />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white">
+                        <Play className="h-4 w-4 fill-white" />
+                        <span className="text-xs font-semibold">{formatNumber(video.views_count || 0)}</span>
                       </div>
                     </motion.div>
                   ))}
@@ -631,95 +762,70 @@ export default function Profile() {
               )}
             </TabsContent>
 
-            <TabsContent value="reels" className="mt-0">
-              {videos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <Play className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">Nenhum reel ainda</p>
+            {/* Reposts */}
+            <TabsContent value="reposts" className="mt-0">
+              <div className="flex flex-col items-center justify-center py-20 px-4">
+                <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
+                  <Repeat2 className="h-10 w-10" />
                 </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-0.5 p-1">
-                  {videos.map((video) => (
-                    <motion.div
-                      key={video.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.02 }}
-                      onClick={() => navigate(`/videos/${video.id}`)}
-                      className="aspect-[9/16] bg-black overflow-hidden cursor-pointer relative group"
-                    >
-                      <video src={video.video_url} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-2 left-2 flex items-center gap-2 text-white text-xs">
-                        <Play className="h-3 w-3 fill-white" />
-                        <span>{video.likes_count}</span>
-                      </div>
-                    </motion.div>
-                  ))}
+                <h3 className="text-2xl font-bold mb-1">Republicações</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Quando republicares, aparecem aqui.
+                </p>
+              </div>
+            </TabsContent>
+
+            {/* Tagged */}
+            <TabsContent value="tagged" className="mt-0">
+              <div className="flex flex-col items-center justify-center py-20 px-4">
+                <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
+                  <UserSquare2 className="h-10 w-10" />
                 </div>
-              )}
+                <h3 className="text-2xl font-bold mb-1">Fotos com etiquetas</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Quando forem etiquetadas fotos, aparecem aqui.
+                </p>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Fullscreen Modal for Followers/Following */}
+        {/* Modal for Followers/Following/Friends */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-lg h-[90vh] p-0 gap-0">
+          <DialogContent className="max-w-md h-[70vh] flex flex-col p-0">
             <DialogHeader className="p-4 border-b">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-bold">
-                  {modalType === "followers" ? "Seguidores" : modalType === "following" ? "A seguir" : "Amigos"}
-                </DialogTitle>
-                <Button variant="ghost" size="icon" onClick={() => setModalOpen(false)} className="rounded-full">
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="relative mt-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <DialogTitle className="text-center">
+                {modalType === "followers" ? "Seguidores" : modalType === "following" ? "A seguir" : "Amigos"}
+              </DialogTitle>
+              <div className="pt-3">
                 <Input
                   placeholder="Pesquisar..."
                   value={modalSearch}
                   onChange={(e) => setModalSearch(e.target.value)}
-                  className="pl-10 h-10 rounded-full bg-muted border-0"
+                  className="rounded-lg bg-muted/50 border-0"
                 />
               </div>
             </DialogHeader>
             <ScrollArea className="flex-1">
-              <div className="p-2">
-                {filteredModalUsers.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground">
-                    Nenhum usuário encontrado
+              {filteredModalUsers.map(user => (
+                <div 
+                  key={user.id}
+                  className="flex items-center gap-3 p-4 hover:bg-muted/50 cursor-pointer"
+                  onClick={() => { setModalOpen(false); navigate(`/profile/${user.id}`); }}
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user.avatar_url} />
+                    <AvatarFallback>{user.first_name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <p className="font-semibold truncate">{user.username}</p>
+                      {user.verified && <VerificationBadge verified={user.verified} badgeType={user.badge_type} size="sm" />}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{user.full_name || user.first_name}</p>
                   </div>
-                ) : (
-                  filteredModalUsers.map((user) => (
-                    <motion.button
-                      key={user.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
-                      onClick={() => {
-                        setModalOpen(false);
-                        navigate(`/profile/${user.id}`);
-                      }}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors"
-                    >
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
-                          {(user.first_name || user.username)?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold">{user.full_name || user.first_name || user.username}</span>
-                          {user.verified && <VerificationBadge verified={user.verified} badgeType={user.badge_type} className="w-4 h-4" />}
-                        </div>
-                        <span className="text-sm text-muted-foreground">@{user.username}</span>
-                      </div>
-                    </motion.button>
-                  ))
-                )}
-              </div>
+                </div>
+              ))}
             </ScrollArea>
           </DialogContent>
         </Dialog>
