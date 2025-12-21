@@ -24,12 +24,14 @@ import {
   Megaphone,
   Home,
   Bell,
-  RefreshCw
+  RefreshCw,
+  CircleDot
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import VerificationBadge from "@/components/VerificationBadge";
+import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount";
 
 interface Profile {
   username: string;
@@ -46,6 +48,7 @@ export default function SideMenu() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const { activeProfile } = useActiveProfile();
+  const onlineFriendsCount = useOnlineFriendsCount();
 
   useEffect(() => {
     loadProfile();
@@ -105,8 +108,9 @@ export default function SideMenu() {
   ];
 
   const mainMenuItems = [
-    { icon: Users, label: "Amigos (29 online)", path: "/friends", color: "text-cyan-500" },
-    { icon: BarChart3, label: "Painel Profissional", path: "/admin", color: "text-orange-500", adminOnly: true },
+    { icon: CircleDot, label: `Amigos Online (${onlineFriendsCount})`, path: "/online-friends", color: "text-green-500", showDot: onlineFriendsCount > 0 },
+    { icon: Users, label: "Amigos", path: "/friends", color: "text-cyan-500" },
+    { icon: Shield, label: "Painel Admin", path: "/admin", color: "text-red-500", adminOnly: true },
     { icon: Clock, label: "Memórias", path: "#", color: "text-blue-500" },
     { icon: Bookmark, label: "Guardados", path: "/saved", color: "text-purple-500" },
     { icon: Users, label: "Grupos", path: "/groups", color: "text-cyan-500" },
@@ -190,9 +194,14 @@ export default function SideMenu() {
                 <Link
                   key={idx}
                   to={item.path}
-                  className="flex flex-col items-start gap-2 p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors shadow-sm"
+                  className="flex flex-col items-start gap-2 p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors shadow-sm relative"
                 >
-                  <item.icon className={`h-6 w-6 ${item.color}`} />
+                  <div className="relative">
+                    <item.icon className={`h-6 w-6 ${item.color}`} />
+                    {item.showDot && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
+                    )}
+                  </div>
                   <span className="text-sm font-medium text-foreground">{item.label}</span>
                 </Link>
               ))}
