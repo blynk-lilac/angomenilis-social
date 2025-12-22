@@ -671,60 +671,66 @@ export default function Profile() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-0.5">
-                  {posts.map((post, idx) => {
-                    const hasMedia = post.media_urls && post.media_urls.length > 0;
-                    const firstMedia = hasMedia ? post.media_urls[0] : null;
-                    const isVideo = firstMedia?.includes('.mp4') || firstMedia?.includes('.webm');
+                <>
+                  <div className="grid grid-cols-3 gap-0.5">
+                    {posts.map((post, idx) => {
+                      const hasMedia = post.media_urls && post.media_urls.length > 0;
+                      const firstMedia = hasMedia ? post.media_urls[0] : null;
+                      const isVideo = firstMedia?.includes('.mp4') || firstMedia?.includes('.webm');
 
-                    return (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.02 }}
-                        className="aspect-square relative cursor-pointer group"
-                        onClick={() => navigate(`/post/${post.id}`)}
-                      >
-                        {hasMedia ? (
-                          <>
-                            {isVideo ? (
-                              <video src={firstMedia!} className="w-full h-full object-cover" muted />
-                            ) : (
-                              <img src={firstMedia!} alt="" className="w-full h-full object-cover" />
-                            )}
-                            {post.media_urls!.length > 1 && (
-                              <div className="absolute top-2 right-2">
-                                <Copy className="h-4 w-4 text-white drop-shadow-lg" />
-                              </div>
-                            )}
-                            {isVideo && (
-                              <div className="absolute top-2 right-2">
-                                <Play className="h-4 w-4 text-white drop-shadow-lg fill-white" />
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center p-2">
-                            <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
+                      return (
+                        <motion.div
+                          key={post.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: idx * 0.02 }}
+                          className="aspect-square relative cursor-pointer group"
+                          onClick={() => navigate(`/post/${post.id}`)}
+                        >
+                          {hasMedia ? (
+                            <>
+                              {isVideo ? (
+                                <video src={firstMedia!} className="w-full h-full object-cover" muted />
+                              ) : (
+                                <img src={firstMedia!} alt="" className="w-full h-full object-cover" />
+                              )}
+                              {post.media_urls!.length > 1 && (
+                                <div className="absolute top-2 right-2">
+                                  <Copy className="h-4 w-4 text-white drop-shadow-lg" />
+                                </div>
+                              )}
+                              {isVideo && (
+                                <div className="absolute top-2 right-2">
+                                  <Play className="h-4 w-4 text-white drop-shadow-lg fill-white" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center p-2">
+                              <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
+                            </div>
+                          )}
+                          
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                            <div className="flex items-center gap-1 text-white">
+                              <Heart className="h-5 w-5 fill-white" />
+                              <span className="font-bold">{formatNumber(post.likes_count)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-white">
+                              <MessageCircle className="h-5 w-5 fill-white" />
+                              <span className="font-bold">{formatNumber(post.comments_count)}</span>
+                            </div>
                           </div>
-                        )}
-                        
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                          <div className="flex items-center gap-1 text-white">
-                            <Heart className="h-5 w-5 fill-white" />
-                            <span className="font-bold">{formatNumber(post.likes_count)}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-white">
-                            <MessageCircle className="h-5 w-5 fill-white" />
-                            <span className="font-bold">{formatNumber(post.comments_count)}</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  {/* End of posts indicator */}
+                  <div className="py-8 text-center border-t border-border mt-1">
+                    <p className="text-muted-foreground text-sm">Fim das publicações</p>
+                  </div>
+                </>
               )}
             </TabsContent>
 
@@ -741,24 +747,30 @@ export default function Profile() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-0.5">
-                  {videos.map((video, idx) => (
-                    <motion.div
-                      key={video.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: idx * 0.02 }}
-                      className="aspect-[9/16] relative cursor-pointer group"
-                      onClick={() => navigate(`/videos?v=${video.id}`)}
-                    >
-                      <video src={video.video_url} className="w-full h-full object-cover" muted />
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white">
-                        <Play className="h-4 w-4 fill-white" />
-                        <span className="text-xs font-semibold">{formatNumber(video.views_count || 0)}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-3 gap-0.5">
+                    {videos.map((video, idx) => (
+                      <motion.div
+                        key={video.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="aspect-[9/16] relative cursor-pointer group"
+                        onClick={() => navigate(`/videos?v=${video.id}`)}
+                      >
+                        <video src={video.video_url} className="w-full h-full object-cover" muted />
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white">
+                          <Play className="h-4 w-4 fill-white" />
+                          <span className="text-xs font-semibold">{formatNumber(video.views_count || 0)}</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {/* End of posts indicator */}
+                  <div className="py-8 text-center border-t border-border mt-1">
+                    <p className="text-muted-foreground text-sm">Fim das publicações</p>
+                  </div>
+                </>
               )}
             </TabsContent>
 

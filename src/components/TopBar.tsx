@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import SideMenu from "@/components/SideMenu";
+import ChristmasHat from "@/components/ChristmasHat";
 
 interface Profile {
   avatar_url: string | null;
@@ -77,11 +78,14 @@ export const TopBar = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <div className="flex items-center justify-between h-14 px-3 max-w-screen-2xl mx-auto">
-        {/* Logo */}
-        <Link to="/feed" className="flex items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Blynk
-          </h1>
+        {/* Logo with Christmas Hat */}
+        <Link to="/feed" className="flex items-center relative">
+          <div className="relative">
+            <ChristmasHat className="absolute -top-3 -left-1 w-6 h-5 transform -rotate-12 z-10" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Blynk
+            </h1>
+          </div>
         </Link>
 
         {/* Ações do topo */}
