@@ -56,6 +56,7 @@ import Terms from "./pages/Terms";
 import Admin from "./pages/Admin";
 import PostLikes from "./pages/PostLikes";
 import OnlineFriends from "./pages/OnlineFriends";
+import VideoEditor from "./pages/VideoEditor";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -486,6 +487,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <OnlineFriends />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Video Editor Route */}
+        <Route
+          path="/video-editor"
+          element={
+            <ProtectedRoute>
+              <VideoEditor />
             </ProtectedRoute>
           }
         />
