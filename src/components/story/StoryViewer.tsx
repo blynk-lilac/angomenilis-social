@@ -75,9 +75,15 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     // Carregar música automaticamente quando o story abre
     if (currentStory.music_name) {
       console.log('🎵 Story tem música, carregando automaticamente...');
-      loadMusicData().then(loadedAudio => {
+      loadMusicData().then(async (loadedAudio) => {
         if (loadedAudio) {
-          console.log('✅ Música carregada, pronta para tocar');
+          console.log('✅ Música carregada, tentando autoplay...');
+          try {
+            await loadedAudio.play();
+            setAudioEnabled(true);
+          } catch (err) {
+            console.log('⚠️ Autoplay bloqueado, usuário precisa tocar para ativar:', err);
+          }
         }
       });
     }
@@ -96,13 +102,24 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
     return () => {
       clearInterval(interval);
+      // pause seguro na troca/fecho (evita áudio continuar a tocar em background)
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
+  }, [currentIndex, currentStory, user]);
+
+  // Garantir pausa do áudio ao fechar/desmontar (sempre pega o último audio)
+  useEffect(() => {
+    return () => {
       if (audio) {
         audio.pause();
         audio.src = '';
         audio.load();
       }
     };
-  }, [currentIndex, currentStory, user]);
+  }, [audio]);
 
   const loadMusicData = async (): Promise<HTMLAudioElement | null> => {
     try {
@@ -305,12 +322,20 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
     setUserReaction(data?.reaction_type || null);
   };
 
+  const handleClose = () => {
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    onClose();
+  };
+
   const handleNext = () => {
     if (currentIndex < stories.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setProgress(0);
     } else {
-      onClose();
+      handleClose();
     }
   };
 
@@ -334,7 +359,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
 
       toast.success('Story deletada!');
       onDelete?.();
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Error deleting story:', error);
       toast.error('Erro ao deletar story');
@@ -550,7 +575,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={handleClose}
               className="h-9 w-9 text-background hover:bg-background/20"
             >
               <X className="h-5 w-5" />

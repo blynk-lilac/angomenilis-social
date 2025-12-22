@@ -52,7 +52,22 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
   const initCall = async () => {
     try {
       console.log('Iniciando chamada WebRTC...', { callId, isVideo });
-      
+
+      const { data: callRow, error: callErr } = await supabase
+        .from('calls')
+        .select('caller_id, receiver_id, status')
+        .eq('id', callId)
+        .single();
+
+      if (callErr || !callRow) {
+        console.error('Erro ao carregar chamada:', callErr);
+        onEnd();
+        return;
+      }
+
+      const isCaller = callRow.caller_id === user?.id;
+      console.log('Call role:', isCaller ? 'caller' : 'receiver');
+
       // Get user media - CRITICAL for real voice
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -93,7 +108,7 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
       // Handle remote stream - CRITICAL for hearing other user
       peerConnection.ontrack = (event) => {
         console.log('Received remote track:', event.track.kind);
-        
+
         if (event.track.kind === 'audio') {
           // For audio calls, use audio element
           if (remoteAudioRef.current) {
@@ -101,20 +116,70 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
             remoteAudioRef.current.play().catch(console.error);
           }
         }
-        
+
         if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
 
-      // Handle ICE candidates
+      // Signaling channel via Supabase Realtime
+      const channel = supabase
+        .channel(`call-${callId}`)
+        .on('broadcast', { event: 'signal' }, async ({ payload }) => {
+          if (payload?.from && payload.from === user?.id) return;
+
+          console.log('Signal received:', payload.type);
+
+          try {
+            if (payload.type === 'offer' && !isCaller) {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer));
+              const answer = await peerConnection.createAnswer();
+              await peerConnection.setLocalDescription(answer);
+
+              channel.send({
+                type: 'broadcast',
+                event: 'signal',
+                payload: { type: 'answer', answer, from: user?.id },
+              });
+            } else if (payload.type === 'answer' && isCaller) {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
+            } else if (payload.type === 'ice-candidate' && payload.candidate) {
+              await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            }
+          } catch (err) {
+            console.error('Signal handling error:', err);
+          }
+        })
+        .subscribe(async (status) => {
+          console.log('Channel status:', status);
+          if (status === 'SUBSCRIBED') {
+            // Only caller creates the offer (avoids glare)
+            if (isCaller) {
+              const offer = await peerConnection.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: isVideo,
+              });
+              await peerConnection.setLocalDescription(offer);
+
+              channel.send({
+                type: 'broadcast',
+                event: 'signal',
+                payload: { type: 'offer', offer, from: user?.id },
+              });
+            }
+          }
+        });
+
+      channelRef.current = channel;
+
+      // Handle ICE candidates (after channel is ready)
       peerConnection.onicecandidate = (event) => {
         if (event.candidate && channelRef.current) {
           console.log('Sending ICE candidate');
           channelRef.current.send({
             type: 'broadcast',
             event: 'signal',
-            payload: { type: 'ice-candidate', candidate: event.candidate.toJSON() },
+            payload: { type: 'ice-candidate', candidate: event.candidate.toJSON(), from: user?.id },
           });
         }
       };
@@ -129,52 +194,6 @@ export default function CallInterface({ callId, isVideo, onEnd }: CallInterfaceP
       peerConnection.oniceconnectionstatechange = () => {
         console.log('ICE connection state:', peerConnection.iceConnectionState);
       };
-
-      // Signaling channel via Supabase Realtime
-      const channel = supabase
-        .channel(`call-${callId}`)
-        .on('broadcast', { event: 'signal' }, async ({ payload }) => {
-          console.log('Signal received:', payload.type);
-          
-          try {
-            if (payload.type === 'offer' && peerConnection.signalingState === 'stable') {
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer));
-              const answer = await peerConnection.createAnswer();
-              await peerConnection.setLocalDescription(answer);
-              
-              channel.send({
-                type: 'broadcast',
-                event: 'signal',
-                payload: { type: 'answer', answer: answer },
-              });
-            } else if (payload.type === 'answer' && peerConnection.signalingState === 'have-local-offer') {
-              await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
-            } else if (payload.type === 'ice-candidate' && payload.candidate) {
-              await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
-            }
-          } catch (err) {
-            console.error('Signal handling error:', err);
-          }
-        })
-        .subscribe(async (status) => {
-          console.log('Channel status:', status);
-          if (status === 'SUBSCRIBED') {
-            // Create and send offer
-            const offer = await peerConnection.createOffer({
-              offerToReceiveAudio: true,
-              offerToReceiveVideo: isVideo,
-            });
-            await peerConnection.setLocalDescription(offer);
-            
-            channel.send({
-              type: 'broadcast',
-              event: 'signal',
-              payload: { type: 'offer', offer: offer },
-            });
-          }
-        });
-
-      channelRef.current = channel;
 
       await supabase.from('calls').update({ status: 'ongoing' }).eq('id', callId);
 
