@@ -5,13 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video, Image as ImageIcon, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, Image as ImageIcon, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck, Camera, Sticker, Plus } from 'lucide-react';
 import { format } from 'date-fns';
-import MessageBubble from '@/components/chat/MessageBubble';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
 import ChatPinProtection from '@/components/chat/ChatPinProtection';
 import WallpaperPicker from '@/components/chat/WallpaperPicker';
+import AudioWaveform from '@/components/chat/AudioWaveform';
+import TypingIndicator from '@/components/chat/TypingIndicator';
+import MessageActionsSheet from '@/components/chat/MessageActionsSheet';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -19,6 +21,7 @@ import { useScreenshotProtection } from '@/hooks/useScreenshotProtection';
 import { useTemporaryMessages } from '@/hooks/useTemporaryMessages';
 import { ChatSkeleton } from '@/components/loading/ChatSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
