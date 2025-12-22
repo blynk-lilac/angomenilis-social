@@ -14,6 +14,7 @@ import WallpaperPicker from '@/components/chat/WallpaperPicker';
 import AudioWaveform from '@/components/chat/AudioWaveform';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import MessageActionsSheet from '@/components/chat/MessageActionsSheet';
+import EmojiPicker from '@/components/chat/EmojiPicker';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -61,6 +62,16 @@ export default function Chat() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const recordingTimeRef = useRef(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordStreamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const { isOnline } = useUserPresence(friendId);
   const { typingUsers, setTyping } = useTypingIndicator(friendId || '');
@@ -349,6 +360,95 @@ export default function Chat() {
     e.target.value = '';
   };
 
+  const uploadChatAudio = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+    const filePath = `audios/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('chat-media')
+      .upload(filePath, file, { contentType: file.type });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('chat-media').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const startVoiceRecording = async () => {
+    if (isRecording) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      recordStreamRef.current = stream;
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      setRecordingTime(0);
+      recordingTimeRef.current = 0;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        try {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
+
+          const url = await uploadChatAudio(file);
+          await handleMediaSelect(url, 'audio', recordingTimeRef.current);
+        } catch (error) {
+          console.error('Error sending voice message:', error);
+          toast.error('Erro ao enviar áudio');
+        } finally {
+          recordStreamRef.current?.getTracks().forEach((t) => t.stop());
+          recordStreamRef.current = null;
+          chunksRef.current = [];
+          setRecordingTime(0);
+          recordingTimeRef.current = 0;
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast.success('Gravando...');
+
+      recordTimerRef.current = setInterval(() => {
+        recordingTimeRef.current += 1;
+        setRecordingTime(recordingTimeRef.current);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      toast.error('Permita o acesso ao microfone');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (!isRecording) return;
+
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+
+    setIsRecording(false);
+    mediaRecorderRef.current?.stop();
+  };
+
   const startCall = async (type: 'voice' | 'video') => {
     if (!user || !friendId) return;
 
@@ -358,6 +458,8 @@ export default function Chat() {
         caller_id: user.id,
         receiver_id: friendId,
         call_type: type,
+        status: 'calling',
+        started_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -587,23 +689,12 @@ export default function Chat() {
                         )}
                         
                         {message.message_type === 'audio' && message.media_url && (
-                          <div className="flex items-center gap-2 min-w-[200px]">
-                            <Avatar className="h-10 w-10 flex-shrink-0">
-                              <AvatarImage src={isOwn ? undefined : friend.avatar_url || undefined} />
-                              <AvatarFallback className={isOwn ? 'bg-primary-foreground/20' : ''}>
-                                {isOwn ? user?.email?.[0]?.toUpperCase() : friend.first_name[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <audio 
-                              src={message.media_url} 
-                              controls 
-                              className="flex-1 h-8"
+                          <div className="mb-1">
+                            <AudioWaveform
+                              src={message.media_url}
+                              duration={message.duration}
+                              isSent={isOwn}
                             />
-                            {message.duration && (
-                              <span className={`text-xs ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                {Math.floor(message.duration / 60)}:{(message.duration % 60).toString().padStart(2, '0')}
-                              </span>
-                            )}
                           </div>
                         )}
                         
@@ -668,6 +759,7 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setShowEmojiPicker(true)}
           >
             <Smile className="h-5 w-5" />
           </Button>
@@ -717,13 +809,30 @@ export default function Chat() {
             <Button
               type="button"
               size="icon"
+              onClick={() => {
+                if (isRecording) stopVoiceRecording();
+                else startVoiceRecording();
+              }}
               className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
             >
-              <Mic className="h-5 w-5" />
+              {isRecording ? (
+                <span className="text-xs font-semibold tabular-nums">{recordingTime}s</span>
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
             </Button>
           )}
         </form>
       </div>
+
+      <EmojiPicker
+        open={showEmojiPicker}
+        onOpenChange={setShowEmojiPicker}
+        onSelect={(emoji) => {
+          handleTyping(`${newMessage}${emoji}`);
+          setShowEmojiPicker(false);
+        }}
+      />
 
       {/* Wallpaper Picker */}
       <WallpaperPicker

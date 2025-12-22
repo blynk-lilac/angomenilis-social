@@ -60,7 +60,8 @@ export default function Feed() {
   const [mutedVideos, setMutedVideos] = useState<{ [key: string]: boolean }>({});
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
-  const navigate = useNavigate();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const observedVideosRef = useRef<Set<HTMLVideoElement>>(new Set());
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,27 +89,51 @@ export default function Feed() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Intersection Observer for video autoplay
+  // Intersection Observer for video autoplay/pause (scroll)
   useEffect(() => {
+    observerRef.current?.disconnect();
+    observedVideosRef.current = new Set();
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const video = entry.target as HTMLVideoElement;
+
           if (entry.isIntersecting) {
-            video.play().catch(() => {});
+            // Pause all other videos
+            observedVideosRef.current.forEach((v) => {
+              if (v !== video && !v.paused) v.pause();
+            });
+
+            video.play().catch((err) => {
+              // Autoplay can be blocked depending on device/audio state
+              console.log('[Feed] autoplay blocked:', err);
+            });
           } else {
-            video.pause();
+            if (!video.paused) video.pause();
           }
         });
       },
-      { threshold: 0.6 }
+      {
+        threshold: 0.55,
+        rootMargin: '0px 0px -20% 0px',
+      }
     );
 
+    observerRef.current = observer;
+
+    // Observe all current videos
     Object.values(videoRefs.current).forEach((video) => {
-      if (video) observer.observe(video);
+      if (!video) return;
+      observedVideosRef.current.add(video);
+      observer.observe(video);
     });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      observerRef.current = null;
+      observedVideosRef.current.clear();
+    };
   }, [posts]);
 
   const loadPosts = async () => {
@@ -190,6 +215,23 @@ export default function Feed() {
     }
   };
 
+  const registerVideoRef = (key: string) => (el: HTMLVideoElement | null) => {
+    const prev = videoRefs.current[key];
+
+    if (prev && observerRef.current) {
+      observerRef.current.unobserve(prev);
+      observedVideosRef.current.delete(prev);
+    }
+
+    if (el) {
+      videoRefs.current[key] = el;
+      observedVideosRef.current.add(el);
+      observerRef.current?.observe(el);
+    } else {
+      delete videoRefs.current[key];
+    }
+  };
+
   const VideoPlayer = ({ url, postId }: { url: string; postId: string }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [hasError, setHasError] = useState(false);
@@ -215,7 +257,7 @@ export default function Feed() {
         }
       }}>
         <video
-          ref={(el) => { if (el) videoRefs.current[postId] = el; }}
+          ref={registerVideoRef(postId)}
           className="w-full max-h-[600px] object-contain cursor-pointer"
           playsInline
           muted={isMuted}
