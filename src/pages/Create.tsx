@@ -26,7 +26,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 import { useActiveProfile } from "@/contexts/ActiveProfileContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// Dialog removed - using full-screen MusicSearch instead
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MusicSearch from "@/components/MusicSearch";
@@ -622,15 +622,13 @@ export default function Create() {
           </div>
         )}
 
-        {/* Music Dialog */}
-        <Dialog open={musicDialogOpen} onOpenChange={setMusicDialogOpen}>
-          <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden p-0">
-            <DialogHeader className="p-4 border-b">
-              <DialogTitle>Escolher música</DialogTitle>
-            </DialogHeader>
-            <MusicSearch onSelect={handleMusicSelect} />
-          </DialogContent>
-        </Dialog>
+        {/* Full-screen Music Selector */}
+        {musicDialogOpen && (
+          <MusicSearch 
+            onSelect={handleMusicSelect} 
+            onClose={() => setMusicDialogOpen(false)} 
+          />
+        )}
       </div>
     </ProtectedRoute>
   );
