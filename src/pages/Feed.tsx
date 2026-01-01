@@ -46,6 +46,7 @@ interface Post {
 
 export default function Feed() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
