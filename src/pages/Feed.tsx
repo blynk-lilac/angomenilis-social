@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, Bookmark, Play, Volume2, VolumeX, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -23,6 +23,8 @@ import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 import { UserSuggestions } from "@/components/UserSuggestions";
 import { motion, AnimatePresence } from "framer-motion";
 import PostOptionsSheet from "@/components/PostOptionsSheet";
+import { LikesSheet } from "@/components/post/LikesSheet";
+import { Blynk2026Announcement } from "@/components/Blynk2026Announcement";
 
 interface Post {
   id: string;
@@ -410,6 +412,9 @@ export default function Feed() {
                 </div>
               </Card>
             </motion.div>
+
+            {/* Blynk 2026 Announcement */}
+            <Blynk2026Announcement />
 
             {/* User Suggestions */}
             <div className="px-4 mb-4">
