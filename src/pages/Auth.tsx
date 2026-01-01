@@ -24,6 +24,7 @@ import {
   Camera,
   Users
 } from 'lucide-react';
+import { Logo2026 } from '@/components/Logo2026';
 
 type AuthModeType = 'welcome' | 'login' | 'signup' | 'forgotPassword';
 type SignupStep = 1 | 2 | 3 | 4;
@@ -221,33 +222,15 @@ export default function Auth() {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
           >
-            {/* Animated Logo */}
+            {/* Animated Logo 2026 */}
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", duration: 1, bounce: 0.5 }}
               className="mb-6"
             >
-              <div className="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center shadow-2xl shadow-primary/30">
-                <motion.span
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5, type: "spring" }}
-                  className="text-5xl font-black text-primary-foreground"
-                >
-                  B
-                </motion.span>
-              </div>
+              <Logo2026 size="xl" />
             </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-5xl font-black bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent mb-2"
-            >
-              Blynk
-            </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}

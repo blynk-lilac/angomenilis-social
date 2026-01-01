@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trash2, ChevronRight, ChevronLeft, Music } from 'lucide-react';
+import { X, Trash2, ChevronRight, ChevronLeft, Music, Eye } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { showNotification } from '@/utils/pushNotifications';
+import { StoryViewersSheet } from './StoryViewersSheet';
 import heartIcon from "@/assets/reactions/heart.png";
 import laughingIcon from "@/assets/reactions/laughing.png";
 import thumbsUpIcon from "@/assets/reactions/thumbs-up.png";
@@ -45,6 +46,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [musicCover, setMusicCover] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [viewersSheetOpen, setViewersSheetOpen] = useState(false);
   
   const currentStory = stories[currentIndex];
   const isOwnStory = currentStory.user_id === user?.id;
@@ -561,7 +563,15 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
             
             {isOwnStory && (
               <>
-                <span className="text-background text-xs mr-1">{views}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewersSheetOpen(true)}
+                  className="h-9 px-3 text-background hover:bg-background/20 flex items-center gap-1"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">{views}</span>
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -738,6 +748,14 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           </div>
         )}
       </div>
+      
+      {/* Story Viewers Sheet */}
+      <StoryViewersSheet
+        open={viewersSheetOpen}
+        onOpenChange={setViewersSheetOpen}
+        storyId={currentStory.id}
+        viewCount={views}
+      />
     </div>,
     document.body
   );

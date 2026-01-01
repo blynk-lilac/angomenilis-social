@@ -55,6 +55,8 @@ import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import AssociatedAccounts from "@/components/AssociatedAccounts";
 import { motion, AnimatePresence } from "framer-motion";
+import { OnlineIndicator } from "@/components/OnlineIndicator";
+import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 
 interface Profile {
   id: string;
@@ -135,6 +137,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("posts");
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const onlineUsers = useOnlineUsers();
 
   useEffect(() => {
     loadProfile();
@@ -487,7 +490,7 @@ export default function Profile() {
           >
             {/* Avatar and Stats Row */}
             <div className="flex items-center gap-6 mb-4">
-              {/* Avatar with Story Ring */}
+              {/* Avatar with Story Ring and Online Indicator */}
               <div className="relative">
                 <div className={`p-0.5 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500' : ''}`}>
                   <Avatar className={`h-20 w-20 border-2 ${stories.length > 0 ? 'border-background' : 'border-border'}`}>
@@ -497,6 +500,16 @@ export default function Profile() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
+                
+                {/* Online/Offline indicator */}
+                {!isOwnProfile && (
+                  <div 
+                    className={`absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-background ${
+                      onlineUsers.has(profile.id) ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                  />
+                )}
+                
                 {isOwnProfile && (
                   <>
                     <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />

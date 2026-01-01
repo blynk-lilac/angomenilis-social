@@ -1468,6 +1468,7 @@ export type Database = {
           twitter: string | null
           updated_at: string | null
           username: string
+          username_last_changed: string | null
           verified: boolean | null
           website: string | null
           youtube: string | null
@@ -1491,6 +1492,7 @@ export type Database = {
           twitter?: string | null
           updated_at?: string | null
           username: string
+          username_last_changed?: string | null
           verified?: boolean | null
           website?: string | null
           youtube?: string | null
@@ -1514,6 +1516,7 @@ export type Database = {
           twitter?: string | null
           updated_at?: string | null
           username?: string
+          username_last_changed?: string | null
           verified?: boolean | null
           website?: string | null
           youtube?: string | null
