@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import VerificationBadge from "./VerificationBadge";
 import { TranslateButton } from "./TranslateButton";
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, ThumbsUp } from "lucide-react";
 
 interface CommentCardProps {
   comment: {
@@ -175,29 +175,36 @@ export const CommentCard = ({ comment, onLike, onReply, isReply = false }: Comme
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3 mt-1 px-3">
-          <button
-            onClick={() => onLike(comment.id)}
-            className={`text-xs font-semibold hover:underline transition-colors ${
-              comment.user_liked ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            Gosto
-            {likesCount > 0 && ` · ${likesCount}`}
-          </button>
-          <button
-            onClick={() => onReply(comment.id)}
-            className="text-xs font-semibold text-muted-foreground hover:underline"
-          >
-            Responder
-          </button>
+        {/* Actions - Facebook Style */}
+        <div className="flex items-center gap-4 mt-1 px-3">
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(comment.created_at), {
               addSuffix: false,
               locale: ptBR,
             }).replace('cerca de ', '')}
           </span>
+          <button
+            onClick={() => onLike(comment.id)}
+            className={`text-xs font-bold hover:underline transition-colors ${
+              comment.user_liked ? "text-blue-500" : "text-muted-foreground"
+            }`}
+          >
+            Gosto
+          </button>
+          <button
+            onClick={() => onReply(comment.id)}
+            className="text-xs font-bold text-muted-foreground hover:underline"
+          >
+            Responder
+          </button>
+          {likesCount > 0 && (
+            <div className="flex items-center gap-1 ml-auto">
+              <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
+                <ThumbsUp className="h-2.5 w-2.5 text-white fill-white" />
+              </div>
+              <span className="text-xs text-muted-foreground">{likesCount}</span>
+            </div>
+          )}
         </div>
 
         {/* Replies */}

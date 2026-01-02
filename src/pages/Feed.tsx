@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Sparkles } from "lucide-react";
+import { ThumbsUp, MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Globe, Heart, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -24,7 +24,7 @@ import { UserSuggestions } from "@/components/UserSuggestions";
 import { motion, AnimatePresence } from "framer-motion";
 import PostOptionsSheet from "@/components/PostOptionsSheet";
 import { LikesSheet } from "@/components/post/LikesSheet";
-import { Blynk2026Announcement } from "@/components/Blynk2026Announcement";
+
 
 interface Post {
   id: string;
@@ -413,9 +413,6 @@ export default function Feed() {
               </Card>
             </motion.div>
 
-            {/* Blynk 2026 Announcement */}
-            <Blynk2026Announcement />
-
             {/* User Suggestions */}
             <div className="px-4 mb-4">
               <UserSuggestions />
@@ -448,42 +445,55 @@ export default function Feed() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                     >
-                      <Card className="bg-card border-0 border-b border-border/30 rounded-none overflow-hidden">
-                        {/* Post Header - Instagram Style */}
+                      <Card className="bg-card border-0 shadow-sm mb-3 rounded-lg overflow-hidden fb-card">
+                        {/* Post Header - Facebook Style */}
                         <div className="flex items-center justify-between px-4 py-3">
                           <div 
                             className="flex items-center gap-3 cursor-pointer"
                             onClick={() => navigate(`/profile/${post.profiles.id}`)}
                           >
-                            <Avatar className="h-9 w-9 ring-2 ring-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 ring-offset-2 ring-offset-background">
+                            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
                               <AvatarImage src={post.profiles.avatar_url} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold text-sm">
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                                 {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="flex items-center gap-1">
-                                <span className="font-semibold text-sm">
-                                  {post.profiles.username}
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[15px]">
+                                  {post.profiles.full_name || post.profiles.first_name || post.profiles.username}
                                 </span>
                                 {post.profiles.verified && (
-                                  <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} className="w-3.5 h-3.5" />
+                                  <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} className="w-4 h-4" />
                                 )}
                               </div>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}
-                              </span>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}</span>
+                                <span>•</span>
+                                <Globe className="h-3 w-3" />
+                              </div>
                             </div>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => setOptionsSheet({ open: true, post })}
-                          >
-                            <MoreHorizontal className="h-5 w-5" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => setOptionsSheet({ open: true, post })}
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                          </div>
                         </div>
+
+                        {/* Content */}
+                        {post.content && (
+                          <div className="px-4 pb-3">
+                            <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed">
+                              {parseTextWithLinksAndMentions(post.content)}
+                            </p>
+                          </div>
+                        )}
 
                         {/* Media */}
                         {post.media_urls && post.media_urls.length > 0 && (
@@ -492,87 +502,81 @@ export default function Feed() {
                           </div>
                         )}
 
-                        {/* Actions - Instagram Style */}
-                        <div className="px-4 py-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <button
-                                className="hover:opacity-60 transition-opacity"
-                                onMouseDown={() => handleLongPress(post.id)}
-                                onMouseUp={handlePressEnd}
-                                onMouseLeave={handlePressEnd}
-                                onTouchStart={() => handleLongPress(post.id)}
-                                onTouchEnd={handlePressEnd}
-                                onClick={() => !showReactions && handleLike(post.id)}
-                              >
-                                {reactionIcon ? (
-                                  <img src={reactionIcon.icon} alt={reactionIcon.type} className="w-7 h-7" />
-                                ) : (
-                                  <Heart className={`h-7 w-7 ${userReaction ? 'fill-red-500 text-red-500' : ''}`} />
-                                )}
-                              </button>
-
-                              <button
-                                className="hover:opacity-60 transition-opacity"
+                        {/* Reactions & Comments Count - Facebook Style */}
+                        <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-b border-border/30">
+                          <button 
+                            className="flex items-center gap-1 hover:underline"
+                            onClick={() => navigate(`/post/${post.id}/likes`)}
+                          >
+                            {totalReactions > 0 && (
+                              <>
+                                <div className="flex -space-x-1">
+                                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <ThumbsUp className="h-3 w-3 text-white fill-white" />
+                                  </div>
+                                  <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
+                                    <Heart className="h-3 w-3 text-white fill-white" />
+                                  </div>
+                                </div>
+                                <span>{totalReactions}</span>
+                              </>
+                            )}
+                          </button>
+                          <div className="flex items-center gap-3">
+                            {post.comments.length > 0 && (
+                              <button 
+                                className="hover:underline"
                                 onClick={() => navigate(`/comments/${post.id}`)}
                               >
-                                <MessageCircle className="h-7 w-7" />
+                                {post.comments.length} comentário{post.comments.length !== 1 ? 's' : ''}
                               </button>
-
-                              <button 
-                                className="hover:opacity-60 transition-opacity"
-                                onClick={() => {
-                                  navigator.share?.({
-                                    title: 'Publicação',
-                                    text: post.content?.slice(0, 100),
-                                    url: `${window.location.origin}/post/${post.id}`
-                                  }).catch(() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                                    toast.success("Link copiado!");
-                                  });
-                                }}
-                              >
-                                <Send className="h-6 w-6" />
-                              </button>
-                            </div>
-
-                            <button 
-                              className="hover:opacity-60 transition-opacity"
-                              onClick={() => handleSave(post.id)}
-                            >
-                              <Bookmark className={`h-7 w-7 ${isSaved ? 'fill-current' : ''}`} />
-                            </button>
+                            )}
                           </div>
+                        </div>
 
-                          {/* Likes Count */}
-                          {totalReactions > 0 && (
-                            <button 
-                              className="mt-2 font-semibold text-sm"
-                              onClick={() => navigate(`/post/${post.id}/likes`)}
-                            >
-                              {totalReactions} gosto{totalReactions !== 1 ? 's' : ''}
-                            </button>
-                          )}
+                        {/* Actions - Facebook Style */}
+                        <div className="grid grid-cols-3 border-t border-border/30">
+                          <button
+                            className={`flex items-center justify-center gap-2 py-3 hover:bg-muted/50 transition-colors fb-action-btn ${userReaction ? 'text-blue-500' : 'text-muted-foreground'}`}
+                            onMouseDown={() => handleLongPress(post.id)}
+                            onMouseUp={handlePressEnd}
+                            onMouseLeave={handlePressEnd}
+                            onTouchStart={() => handleLongPress(post.id)}
+                            onTouchEnd={handlePressEnd}
+                            onClick={() => !showReactions && handleLike(post.id)}
+                          >
+                            {reactionIcon ? (
+                              <img src={reactionIcon.icon} alt={reactionIcon.type} className="w-5 h-5 animate-like" />
+                            ) : (
+                              <ThumbsUp className={`h-5 w-5 ${userReaction ? 'fill-blue-500' : ''}`} />
+                            )}
+                            <span className="font-semibold text-sm">Gosto</span>
+                          </button>
 
-                          {/* Caption */}
-                          {post.content && (
-                            <div className="mt-1">
-                              <span className="text-sm">
-                                <span className="font-semibold mr-1">{post.profiles.username}</span>
-                                {parseTextWithLinksAndMentions(post.content)}
-                              </span>
-                            </div>
-                          )}
+                          <button
+                            className="flex items-center justify-center gap-2 py-3 text-muted-foreground hover:bg-muted/50 transition-colors fb-action-btn"
+                            onClick={() => navigate(`/comments/${post.id}`)}
+                          >
+                            <MessageCircle className="h-5 w-5" />
+                            <span className="font-semibold text-sm">Comentar</span>
+                          </button>
 
-                          {/* Comments Link */}
-                          {post.comments.length > 0 && (
-                            <button 
-                              className="mt-1 text-sm text-muted-foreground"
-                              onClick={() => navigate(`/comments/${post.id}`)}
-                            >
-                              Ver {post.comments.length > 1 ? `todos os ${post.comments.length} comentários` : '1 comentário'}
-                            </button>
-                          )}
+                          <button 
+                            className="flex items-center justify-center gap-2 py-3 text-muted-foreground hover:bg-muted/50 transition-colors fb-action-btn"
+                            onClick={() => {
+                              navigator.share?.({
+                                title: 'Publicação',
+                                text: post.content?.slice(0, 100),
+                                url: `${window.location.origin}/post/${post.id}`
+                              }).catch(() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                                toast.success("Link copiado!");
+                              });
+                            }}
+                          >
+                            <Share2 className="h-5 w-5" />
+                            <span className="font-semibold text-sm">Partilhar</span>
+                          </button>
                         </div>
                       </Card>
                     </motion.div>
