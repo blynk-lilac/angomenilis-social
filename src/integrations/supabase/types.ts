@@ -1414,6 +1414,9 @@ export type Database = {
           expires_at: string | null
           id: string
           media_urls: string[] | null
+          music_artist: string | null
+          music_name: string | null
+          music_url: string | null
           updated_at: string | null
           user_id: string
           visibility: string | null
@@ -1424,6 +1427,9 @@ export type Database = {
           expires_at?: string | null
           id?: string
           media_urls?: string[] | null
+          music_artist?: string | null
+          music_name?: string | null
+          music_url?: string | null
           updated_at?: string | null
           user_id: string
           visibility?: string | null
@@ -1434,6 +1440,9 @@ export type Database = {
           expires_at?: string | null
           id?: string
           media_urls?: string[] | null
+          music_artist?: string | null
+          music_name?: string | null
+          music_url?: string | null
           updated_at?: string | null
           user_id?: string
           visibility?: string | null
