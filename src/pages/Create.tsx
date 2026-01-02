@@ -206,6 +206,9 @@ export default function Create() {
         user_id: postUserId,
         content,
         media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+        music_name: selectedMusic?.name || null,
+        music_artist: selectedMusic?.artist || null,
+        music_url: selectedMusic?.url || null,
       }).select().single();
 
       if (error) throw error;

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,13 +6,26 @@ import { supabase } from "@/lib/supabase";
 
 interface AudioRecorderProps {
   onAudioRecorded: (audioUrl: string) => void;
+  maxDuration?: number; // in seconds
 }
 
-export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
+export default function AudioRecorder({ onAudioRecorded, maxDuration = 59 }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const startRecording = async () => {
     try {
@@ -25,6 +38,8 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
         } 
       });
 
+      streamRef.current = stream;
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
         audioBitsPerSecond: 128000
@@ -32,6 +47,7 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+      setRecordingTime(0);
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -44,10 +60,24 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
         await uploadAudio(audioBlob);
         
         stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       };
 
       mediaRecorder.start();
       setIsRecording(true);
+      
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= maxDuration) {
+            stopRecording();
+            toast.info(`Limite de ${maxDuration} segundos atingido`);
+          }
+          return newTime;
+        });
+      }, 1000);
+
       toast.success("Gravação iniciada");
     } catch (error) {
       console.error("Erro ao iniciar gravação:", error);
@@ -56,6 +86,11 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
   };
 
   const stopRecording = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -72,15 +107,11 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
         return;
       }
 
-      // Gerar nome único para o arquivo
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(7);
       const fileName = `${user.id}/${timestamp}-${randomStr}.webm`;
       const filePath = `audio-messages/${fileName}`;
 
-      console.log("Iniciando upload do áudio...", { filePath, size: audioBlob.size });
-
-      // Upload do arquivo
       const { error: uploadError } = await supabase.storage
         .from('post-images')
         .upload(filePath, audioBlob, {
@@ -95,7 +126,6 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
         return;
       }
 
-      // Obter URL pública
       const { data: urlData } = supabase.storage
         .from('post-images')
         .getPublicUrl(filePath);
@@ -104,7 +134,6 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
         throw new Error("Não foi possível obter URL do áudio");
       }
 
-      console.log("Upload concluído com sucesso:", urlData.publicUrl);
       onAudioRecorded(urlData.publicUrl);
       toast.success("Áudio gravado!");
     } catch (error) {
@@ -112,7 +141,14 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
       toast.error("Erro ao salvar áudio");
     } finally {
       setIsUploading(false);
+      setRecordingTime(0);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -120,37 +156,39 @@ export default function AudioRecorder({ onAudioRecorded }: AudioRecorderProps) {
       {!isRecording && !isUploading && (
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={startRecording}
-          className="rounded-full"
+          className="h-8 w-8 rounded-full hover:bg-primary/10"
         >
-          <Mic className="h-4 w-4" />
+          <Mic className="h-5 w-5 text-muted-foreground" />
         </Button>
       )}
       
       {isRecording && (
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          onClick={stopRecording}
-          className="rounded-full animate-pulse"
-        >
-          <Square className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 bg-red-500/10 rounded-full px-3 py-1.5">
+          <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-xs font-medium text-red-500 min-w-[32px]">
+            {formatTime(recordingTime)}
+          </span>
+          <span className="text-xs text-muted-foreground">/ {formatTime(maxDuration)}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={stopRecording}
+            className="h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white ml-1"
+          >
+            <Square className="h-3 w-3 fill-white" />
+          </Button>
+        </div>
       )}
       
       {isUploading && (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          disabled
-          className="rounded-full"
-        >
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
+        <div className="flex items-center gap-2 px-3 py-1.5">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Enviando...</span>
+        </div>
       )}
     </div>
   );

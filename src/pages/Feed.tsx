@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThumbsUp, MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Globe, Heart, Send } from "lucide-react";
+import { ThumbsUp, MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Globe, Heart, Send, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -31,6 +31,9 @@ interface Post {
   content: string;
   user_id: string;
   media_urls?: string[];
+  music_name?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
   created_at: string;
   profiles: {
     id: string;
@@ -499,6 +502,44 @@ export default function Feed() {
                         {post.media_urls && post.media_urls.length > 0 && (
                           <div className="relative">
                             {renderMediaGrid(post.media_urls, post.id)}
+                            
+                            {/* Music overlay on media */}
+                            {post.music_name && (
+                              <div className="absolute bottom-3 left-3 right-3">
+                                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 max-w-fit">
+                                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                    <Music className="h-4 w-4 text-primary-foreground" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-white text-xs font-medium truncate max-w-[180px]">
+                                      {post.music_name}
+                                    </p>
+                                    {post.music_artist && (
+                                      <p className="text-white/70 text-[10px] truncate max-w-[180px]">
+                                        {post.music_artist}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Music without media */}
+                        {post.music_name && (!post.media_urls || post.media_urls.length === 0) && (
+                          <div className="px-4 pb-3">
+                            <div className="flex items-center gap-3 bg-muted/50 rounded-xl p-3">
+                              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Music className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm truncate">{post.music_name}</p>
+                                {post.music_artist && (
+                                  <p className="text-muted-foreground text-xs truncate">{post.music_artist}</p>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         )}
 
