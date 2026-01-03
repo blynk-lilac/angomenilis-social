@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus } from "lucide-react";
 import { StoryViewer } from "@/components/story/StoryViewer";
+import { motion } from "framer-motion";
 
 interface Story {
   id: string;
@@ -27,10 +28,12 @@ export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number>(0);
   const [selectedUserStories, setSelectedUserStories] = useState<Story[]>([]);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewedStories, setViewedStories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadCurrentUser();
     loadStories();
+    loadViewedStories();
 
     const channel = supabase
       .channel("stories-changes")
@@ -55,6 +58,20 @@ export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
+  };
+
+  const loadViewedStories = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("story_views")
+      .select("story_id")
+      .eq("viewer_id", user.id);
+
+    if (data) {
+      setViewedStories(new Set(data.map(v => v.story_id)));
+    }
   };
 
   const loadStories = async () => {
@@ -99,76 +116,112 @@ export default function StoriesBar({ onCreateStory }: StoriesBarProps) {
 
   const hasOwnStory = currentUserId && groupedStories[currentUserId]?.length > 0;
 
+  // Check if all stories from a user are viewed
+  const isUserStoriesViewed = (userStories: Story[]) => {
+    return userStories.every(story => viewedStories.has(story.id));
+  };
+
   return (
     <>
-      <div className="bg-card rounded-xl border border-border p-4 mb-4">
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          {/* Criar novo story (estilo cartão do Facebook) */}
-          <button
+      {/* Instagram-style Stories Bar */}
+      <div className="bg-card border-b border-border">
+        <div className="flex gap-4 overflow-x-auto py-4 px-4 scrollbar-hide">
+          {/* Your Story / Add Story */}
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0 }}
             type="button"
             onClick={onCreateStory}
-            className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+            className="flex flex-col items-center gap-1 flex-shrink-0"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/20" />
-            <div className="absolute bottom-0 left-0 right-0 p-2 flex flex-col items-center gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground border-2 border-background">
+            <div className="relative">
+              {hasOwnStory ? (
+                <div className="p-[3px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500">
+                  <Avatar className="h-16 w-16 border-[3px] border-background">
+                    <AvatarImage src={groupedStories[currentUserId][0].profile.avatar_url || ''} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 text-lg font-bold">
+                      {groupedStories[currentUserId][0].profile.first_name?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              ) : (
+                <Avatar className="h-16 w-16 border-2 border-border">
+                  <AvatarFallback className="bg-muted">
+                    <Plus className="h-6 w-6 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center border-2 border-background">
                 <Plus className="h-4 w-4" />
               </div>
-              <span className="text-[11px] font-semibold text-background text-center leading-tight">
-                Criar história
-              </span>
             </div>
-          </button>
+            <span className="text-xs font-medium max-w-[70px] truncate text-center">
+              Seu story
+            </span>
+          </motion.button>
 
-          {/* Seu story se existir */}
+          {/* Own stories (if exists) - click to view */}
           {hasOwnStory && (
-            <button
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 }}
               type="button"
               onClick={() => handleViewStory(groupedStories[currentUserId], 0)}
-              className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+              className="flex flex-col items-center gap-1 flex-shrink-0"
             >
-              <img
-                src={groupedStories[currentUserId][0].media_url}
-                alt="Seu story"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute top-2 left-2 flex items-center justify-center h-6 min-w-[1.5rem] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
-                {groupedStories[currentUserId].length}
+              <div className={`p-[3px] rounded-full ${
+                isUserStoriesViewed(groupedStories[currentUserId]) 
+                  ? 'bg-muted-foreground/30' 
+                  : 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500'
+              }`}>
+                <Avatar className="h-16 w-16 border-[3px] border-background">
+                  <AvatarImage src={groupedStories[currentUserId][0].profile.avatar_url || ''} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 text-lg font-bold">
+                    {groupedStories[currentUserId][0].profile.first_name?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              <div className="absolute bottom-2 left-2 right-2">
-                <p className="text-[11px] font-semibold text-background line-clamp-2">Seu story</p>
-              </div>
-            </button>
+              <span className="text-xs font-medium max-w-[70px] truncate text-center">
+                Meu story
+              </span>
+            </motion.button>
           )}
 
           {/* Stories de outros usuários */}
           {Object.entries(groupedStories)
             .filter(([userId]) => userId !== currentUserId)
-            .map(([userId, userStories]) => {
+            .map(([userId, userStories], idx) => {
               const firstStory = userStories[0];
+              const allViewed = isUserStoriesViewed(userStories);
+              
               return (
-                <button
-                  type="button"
+                <motion.button
                   key={userId}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: (idx + 2) * 0.05 }}
+                  type="button"
                   onClick={() => handleViewStory(userStories, 0)}
-                  className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                  className="flex flex-col items-center gap-1 flex-shrink-0"
                 >
-                  <img
-                    src={firstStory.media_url}
-                    alt={firstStory.profile.first_name}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute top-2 left-2 flex items-center justify-center h-6 min-w-[1.5rem] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
-                    {userStories.length}
+                  <div className={`p-[3px] rounded-full ${
+                    allViewed 
+                      ? 'bg-muted-foreground/30' 
+                      : 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500'
+                  }`}>
+                    <Avatar className="h-16 w-16 border-[3px] border-background">
+                      <AvatarImage src={firstStory.profile.avatar_url || ''} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 text-lg font-bold">
+                        {firstStory.profile.first_name?.[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <p className="text-[11px] font-semibold text-background line-clamp-2">
-                      {firstStory.profile.first_name}
-                    </p>
-                  </div>
-                </button>
+                  <span className="text-xs font-medium max-w-[70px] truncate text-center">
+                    {firstStory.profile.first_name}
+                  </span>
+                </motion.button>
               );
             })}
         </div>

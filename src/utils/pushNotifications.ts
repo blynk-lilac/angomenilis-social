@@ -35,3 +35,22 @@ export const showNotification = (title: string, options?: NotificationOptions & 
     }
   }
 };
+
+export const showMessageNotification = async (
+  senderName: string,
+  messageContent: string,
+  senderAvatar?: string,
+  senderId?: string
+) => {
+  const hasPermission = await requestNotificationPermission();
+  if (!hasPermission) return;
+
+  const preview = messageContent.length > 80 
+    ? messageContent.substring(0, 77) + '...' 
+    : messageContent;
+
+  showNotification(senderName, {
+    body: preview,
+    icon: senderAvatar || '/logo-192.png',
+  });
+};
