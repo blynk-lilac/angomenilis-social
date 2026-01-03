@@ -44,7 +44,10 @@ import {
   ChevronDown,
   Music,
   Settings,
-  Plus
+  Plus,
+  Users,
+  Globe,
+  Info
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -424,31 +427,31 @@ export default function Profile() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background pb-20">
-        {/* Instagram-style Header */}
+        {/* Facebook-style Header */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-50 bg-background border-b"
+          className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b"
         >
-          <div className="flex items-center justify-between px-4 h-14">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+          <div className="flex items-center justify-between px-4 h-12">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full h-9 w-9">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-1">
-                <h1 className="text-lg font-bold">{profile.username}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-base font-bold">{profile.first_name}</h1>
                 {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-4 h-4" />}
               </div>
             </div>
             <div className="flex items-center gap-1">
               {isOwnProfile && (
-                <Button variant="ghost" size="icon" onClick={() => navigate('/settings/edit-profile')} className="rounded-full">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/settings/edit-profile')} className="rounded-full h-9 w-9">
                   <Settings className="h-5 w-5" />
                 </Button>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -481,22 +484,61 @@ export default function Profile() {
           </div>
         </motion.div>
 
-        <div className="max-w-lg mx-auto">
-          {/* Profile Info Section */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="px-4 py-5"
-          >
-            {/* Avatar and Stats Row */}
-            <div className="flex items-center gap-6 mb-4">
-              {/* Avatar with Story Ring and Online Indicator */}
+        {/* Banner Section - Facebook Style */}
+        <div className="relative">
+          {/* Cover Photo */}
+          <div className="relative h-44 bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/20 overflow-hidden">
+            {profile.banner_url ? (
+              <img 
+                src={profile.banner_url} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-pink-500/20" />
+            )}
+            {isOwnProfile && (
+              <>
+                <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute bottom-3 right-3 gap-2 rounded-lg shadow-lg"
+                  onClick={() => bannerInputRef.current?.click()}
+                  disabled={uploadingBanner}
+                >
+                  <Camera className="h-4 w-4" />
+                  {uploadingBanner ? 'Enviando...' : 'Editar capa'}
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Profile Info Container */}
+          <div className="px-4 pb-4">
+            {/* Avatar Row - Facebook style with avatar on right */}
+            <div className="flex items-end justify-between -mt-16 mb-4">
+              {/* Name and info on left */}
+              <div className="flex-1 pt-20">
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-2xl font-bold">{profile.full_name || profile.first_name}</h1>
+                  {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-5 h-5" />}
+                </div>
+                {profile.username && (
+                  <p className="text-muted-foreground text-sm">@{profile.username}</p>
+                )}
+                {profile.category && (
+                  <p className="text-sm text-primary font-medium mt-1">{profile.category}</p>
+                )}
+              </div>
+
+              {/* Avatar on right */}
               <div className="relative">
-                <div className={`p-0.5 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500' : ''}`}>
-                  <Avatar className={`h-20 w-20 border-2 ${stories.length > 0 ? 'border-background' : 'border-border'}`}>
+                <div className={`p-1 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500' : 'bg-background'}`}>
+                  <Avatar className={`h-32 w-32 border-4 border-background shadow-xl ${stories.length > 0 ? '' : ''}`}>
                     <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
-                      {profile.username?.[0]?.toUpperCase()}
+                    <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
+                      {profile.first_name?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -504,7 +546,7 @@ export default function Profile() {
                 {/* Online/Offline indicator */}
                 {!isOwnProfile && (
                   <div 
-                    className={`absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-background ${
+                    className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-3 border-background shadow-sm ${
                       onlineUsers.has(profile.id) ? 'bg-green-500' : 'bg-red-500'
                     }`}
                   />
@@ -515,47 +557,117 @@ export default function Profile() {
                     <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                     <button
                       onClick={() => avatarInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 h-7 w-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-2 border-background shadow-lg"
+                      className="absolute bottom-2 right-2 h-9 w-9 bg-muted hover:bg-muted/80 text-foreground rounded-full flex items-center justify-center border-2 border-background shadow-lg transition-colors"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Camera className="h-4 w-4" />
                     </button>
                   </>
                 )}
               </div>
-
-              {/* Stats */}
-              <div className="flex-1 flex justify-around">
-                <button className="text-center" onClick={() => {}}>
-                  <p className="text-lg font-bold">{formatNumber(postsCount)}</p>
-                  <p className="text-xs text-muted-foreground">publicações</p>
-                </button>
-                <button className="text-center" onClick={() => handleOpenModal("followers")}>
-                  <p className="text-lg font-bold">{formatNumber(followersCount)}</p>
-                  <p className="text-xs text-muted-foreground">seguidores</p>
-                </button>
-                <button className="text-center" onClick={() => handleOpenModal("following")}>
-                  <p className="text-lg font-bold">{formatNumber(followingCount)}</p>
-                  <p className="text-xs text-muted-foreground">a seguir</p>
-                </button>
-              </div>
             </div>
 
-            {/* Name and Bio */}
-            <div className="mb-4">
-              <div className="flex items-center gap-1">
-                <p className="font-bold">{profile.full_name || profile.first_name}</p>
-                {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-4 h-4" />}
-              </div>
-              {profile.category && (
-                <p className="text-sm text-muted-foreground">{profile.category}</p>
-              )}
-              {profile.bio && (
-                <p className="text-sm mt-1 whitespace-pre-wrap">{profile.bio}</p>
+            {/* Bio */}
+            {profile.bio && (
+              <p className="text-sm mb-4 whitespace-pre-wrap">{profile.bio}</p>
+            )}
+
+            {/* Location and Website */}
+            <div className="flex flex-wrap gap-4 mb-4 text-sm text-muted-foreground">
+              {profile.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{profile.location}</span>
+                </div>
               )}
               {profile.website && (
-                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary font-semibold">
-                  {profile.website.replace('https://', '').replace('http://', '')}
+                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                  <LinkIcon className="h-4 w-4" />
+                  <span>{profile.website.replace('https://', '').replace('http://', '')}</span>
                 </a>
+              )}
+            </div>
+
+            {/* Stats Row - Facebook style with "Filhar" */}
+            <div className="flex items-center gap-6 mb-4 py-3 border-y border-border">
+              <button className="flex flex-col items-center" onClick={() => {}}>
+                <span className="text-xl font-bold">{formatNumber(postsCount)}</span>
+                <span className="text-xs text-muted-foreground">Publicações</span>
+              </button>
+              <button className="flex flex-col items-center" onClick={() => handleOpenModal("followers")}>
+                <span className="text-xl font-bold">{formatNumber(followersCount)}</span>
+                <span className="text-xs text-muted-foreground">Filharam</span>
+              </button>
+              <button className="flex flex-col items-center" onClick={() => handleOpenModal("following")}>
+                <span className="text-xl font-bold">{formatNumber(followingCount)}</span>
+                <span className="text-xs text-muted-foreground">A filhar</span>
+              </button>
+              <button className="flex flex-col items-center" onClick={() => handleOpenModal("friends")}>
+                <span className="text-xl font-bold">{formatNumber(friendsCount)}</span>
+                <span className="text-xs text-muted-foreground">Amigos</span>
+              </button>
+            </div>
+
+            {/* Action Buttons - Facebook style */}
+            <div className="flex gap-2">
+              {isOwnProfile ? (
+                <>
+                  <Button 
+                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    onClick={() => navigate('/create')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Criar publicação
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    onClick={() => navigate('/settings/edit-profile')}
+                  >
+                    Editar perfil
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="icon"
+                    className="h-10 w-10 rounded-lg"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant={isFollowing ? "secondary" : "default"}
+                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserCheck className="h-4 w-4" />
+                        Filhou
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Filhar
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    onClick={() => navigate(`/chat/${profile.id}`)}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Mensagem
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="icon"
+                    className="h-10 w-10 rounded-lg"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </>
               )}
             </div>
 
@@ -563,271 +675,244 @@ export default function Profile() {
             {isOwnProfile && (
               <button 
                 onClick={() => navigate('/professional')}
-                className="w-full mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between hover:bg-muted transition-colors"
+                className="w-full mt-4 p-3 bg-muted/50 rounded-xl flex items-center justify-between hover:bg-muted transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold">Painel Profissional</span>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-semibold block">Painel Profissional</span>
+                    <span className="text-xs text-muted-foreground">Gerir a tua conta profissional</span>
+                  </div>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground rotate-[-90deg]" />
+                <ChevronDown className="h-5 w-5 text-muted-foreground rotate-[-90deg]" />
               </button>
             )}
+          </div>
+        </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              {isOwnProfile ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 h-9 rounded-lg font-semibold"
-                    onClick={() => navigate('/settings/edit-profile')}
-                  >
-                    Editar perfil
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 h-9 rounded-lg font-semibold"
-                    onClick={() => {
-                      const url = `${window.location.origin}/profile/${profile.id}`;
-                      navigator.share?.({ url }) || navigator.clipboard.writeText(url);
-                      toast.success("Link copiado!");
-                    }}
-                  >
-                    Partilhar perfil
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    className="h-9 w-9 rounded-lg"
-                    onClick={() => navigate('/friends')}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    variant={isFollowing ? "outline" : "default"}
-                    className="flex-1 h-9 rounded-lg font-semibold"
-                    onClick={handleFollow}
-                  >
-                    {isFollowing ? "A seguir" : "Seguir"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 h-9 rounded-lg font-semibold"
-                    onClick={() => navigate(`/chat/${profile.id}`)}
-                  >
-                    Mensagem
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    className="h-9 w-9 rounded-lg"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </motion.div>
+        {/* Tabs - Facebook style */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-transparent border-y h-12 rounded-none p-0">
+            <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none h-full data-[state=active]:shadow-none font-semibold">
+              Publicações
+            </TabsTrigger>
+            <TabsTrigger value="reels" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none h-full data-[state=active]:shadow-none font-semibold">
+              Reels
+            </TabsTrigger>
+            <TabsTrigger value="about" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none h-full data-[state=active]:shadow-none font-semibold">
+              Sobre
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Story Highlights */}
-          {(isOwnProfile || stories.length > 0) && (
-            <div className="px-4 pb-4">
-              <ScrollArea className="w-full">
-                <div className="flex gap-4">
-                  {isOwnProfile && (
-                    <div className="flex flex-col items-center gap-1">
-                      <button 
-                        className="h-16 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center"
-                        onClick={() => navigate('/create')}
-                      >
-                        <Plus className="h-6 w-6 text-muted-foreground" />
-                      </button>
-                      <span className="text-xs">Novo</span>
-                    </div>
-                  )}
-                  {/* Highlight circles would go here */}
+          {/* Posts Grid */}
+          <TabsContent value="posts" className="mt-0">
+            {posts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4">
+                <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Camera className="h-10 w-10 text-muted-foreground" />
                 </div>
-              </ScrollArea>
-            </div>
-          )}
+                <h3 className="text-xl font-bold mb-2">Sem publicações</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Quando partilhares publicações, elas aparecem aqui.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-0.5">
+                  {posts.map((post, idx) => {
+                    const hasMedia = post.media_urls && post.media_urls.length > 0;
+                    const firstMedia = hasMedia ? post.media_urls[0] : null;
+                    const isVideo = firstMedia?.includes('.mp4') || firstMedia?.includes('.webm');
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-transparent border-y h-12 rounded-none p-0">
-              <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
-                <Grid3X3 className="h-5 w-5" />
-              </TabsTrigger>
-              <TabsTrigger value="reels" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
-                <Clapperboard className="h-5 w-5" />
-              </TabsTrigger>
-              <TabsTrigger value="reposts" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
-                <Repeat2 className="h-5 w-5" />
-              </TabsTrigger>
-              <TabsTrigger value="tagged" className="data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none h-full data-[state=active]:shadow-none">
-                <UserSquare2 className="h-5 w-5" />
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Posts Grid */}
-            <TabsContent value="posts" className="mt-0">
-              {posts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 px-4">
-                  <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
-                    <Camera className="h-10 w-10" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-1">Partilhar fotos</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Quando partilhares fotos, elas aparecem aqui.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-3 gap-0.5">
-                    {posts.map((post, idx) => {
-                      const hasMedia = post.media_urls && post.media_urls.length > 0;
-                      const firstMedia = hasMedia ? post.media_urls[0] : null;
-                      const isVideo = firstMedia?.includes('.mp4') || firstMedia?.includes('.webm');
-
-                      return (
-                        <motion.div
-                          key={post.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: idx * 0.02 }}
-                          className="aspect-square relative cursor-pointer group"
-                          onClick={() => navigate(`/post/${post.id}`)}
-                        >
-                          {hasMedia ? (
-                            <>
-                              {isVideo ? (
-                                <video src={firstMedia!} className="w-full h-full object-cover" muted />
-                              ) : (
-                                <img src={firstMedia!} alt="" className="w-full h-full object-cover" />
-                              )}
-                              {post.media_urls!.length > 1 && (
-                                <div className="absolute top-2 right-2">
-                                  <Copy className="h-4 w-4 text-white drop-shadow-lg" />
-                                </div>
-                              )}
-                              {isVideo && (
-                                <div className="absolute top-2 right-2">
-                                  <Play className="h-4 w-4 text-white drop-shadow-lg fill-white" />
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center p-2">
-                              <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
-                            </div>
-                          )}
-                          
-                          {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                            <div className="flex items-center gap-1 text-white">
-                              <Heart className="h-5 w-5 fill-white" />
-                              <span className="font-bold">{formatNumber(post.likes_count)}</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-white">
-                              <MessageCircle className="h-5 w-5 fill-white" />
-                              <span className="font-bold">{formatNumber(post.comments_count)}</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                  {/* End of posts indicator */}
-                  <div className="py-8 text-center border-t border-border mt-1">
-                    <p className="text-muted-foreground text-sm">Fim das publicações</p>
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            {/* Reels Grid */}
-            <TabsContent value="reels" className="mt-0">
-              {videos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 px-4">
-                  <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
-                    <Clapperboard className="h-10 w-10" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-1">Reels</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Quando partilhares reels, eles aparecem aqui.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-3 gap-0.5">
-                    {videos.map((video, idx) => (
+                    return (
                       <motion.div
-                        key={video.id}
+                        key={post.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: idx * 0.02 }}
-                        className="aspect-[9/16] relative cursor-pointer group"
-                        onClick={() => navigate(`/videos?v=${video.id}`)}
+                        className="aspect-square relative cursor-pointer group"
+                        onClick={() => navigate(`/post/${post.id}`)}
                       >
-                        <video src={video.video_url} className="w-full h-full object-cover" muted />
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white">
-                          <Play className="h-4 w-4 fill-white" />
-                          <span className="text-xs font-semibold">{formatNumber(video.views_count || 0)}</span>
+                        {hasMedia ? (
+                          <>
+                            {isVideo ? (
+                              <video src={firstMedia!} className="w-full h-full object-cover" muted />
+                            ) : (
+                              <img src={firstMedia!} alt="" className="w-full h-full object-cover" />
+                            )}
+                            {post.media_urls!.length > 1 && (
+                              <div className="absolute top-2 right-2">
+                                <Copy className="h-4 w-4 text-white drop-shadow-lg" />
+                              </div>
+                            )}
+                            {isVideo && (
+                              <div className="absolute top-2 right-2">
+                                <Play className="h-4 w-4 text-white drop-shadow-lg fill-white" />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center p-2">
+                            <p className="text-xs text-muted-foreground line-clamp-4">{post.content}</p>
+                          </div>
+                        )}
+                        
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                          <div className="flex items-center gap-1 text-white">
+                            <Heart className="h-5 w-5 fill-white" />
+                            <span className="font-bold">{formatNumber(post.likes_count)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-white">
+                            <MessageCircle className="h-5 w-5 fill-white" />
+                            <span className="font-bold">{formatNumber(post.comments_count)}</span>
+                          </div>
                         </div>
                       </motion.div>
+                    );
+                  })}
+                </div>
+                {/* End of posts indicator */}
+                <div className="py-8 text-center border-t border-border mt-1">
+                  <p className="text-muted-foreground text-sm">Fim das publicações</p>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Reels Grid */}
+          <TabsContent value="reels" className="mt-0">
+            {videos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4">
+                <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Clapperboard className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Sem reels</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Quando partilhares reels, eles aparecem aqui.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-0.5">
+                  {videos.map((video, idx) => (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.02 }}
+                      className="aspect-[9/16] relative cursor-pointer group"
+                      onClick={() => navigate(`/videos?v=${video.id}`)}
+                    >
+                      <video src={video.video_url} className="w-full h-full object-cover" muted />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white">
+                        <Play className="h-4 w-4 fill-white" />
+                        <span className="text-xs font-semibold">{formatNumber(video.views_count || 0)}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+                {/* End of posts indicator */}
+                <div className="py-8 text-center border-t border-border mt-1">
+                  <p className="text-muted-foreground text-sm">Fim dos reels</p>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* About Tab */}
+          <TabsContent value="about" className="mt-0 p-4">
+            <div className="space-y-4">
+              <div className="bg-card rounded-xl p-4 border">
+                <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  Detalhes
+                </h3>
+                <div className="space-y-3">
+                  {profile.category && (
+                    <div className="flex items-center gap-3">
+                      <Briefcase className="h-5 w-5 text-muted-foreground" />
+                      <span>{profile.category}</span>
+                    </div>
+                  )}
+                  {profile.location && (
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground" />
+                      <span>{profile.location}</span>
+                    </div>
+                  )}
+                  {profile.civil_status && (
+                    <div className="flex items-center gap-3">
+                      <Heart className="h-5 w-5 text-muted-foreground" />
+                      <span>{profile.civil_status}</span>
+                    </div>
+                  )}
+                  {profile.website && (
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {profile.website.replace('https://', '').replace('http://', '')}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Friends Section */}
+              {friends.length > 0 && (
+                <div className="bg-card rounded-xl p-4 border">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Amigos
+                    </h3>
+                    <span className="text-sm text-muted-foreground">{friends.length} amigos</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {friends.slice(0, 6).map(friend => (
+                      <button
+                        key={friend.id}
+                        onClick={() => navigate(`/profile/${friend.id}`)}
+                        className="flex flex-col items-center p-2 rounded-xl hover:bg-muted transition-colors"
+                      >
+                        <Avatar className="h-16 w-16 mb-1">
+                          <AvatarImage src={friend.avatar_url} />
+                          <AvatarFallback>{friend.first_name?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium text-center line-clamp-1">{friend.first_name}</span>
+                      </button>
                     ))}
                   </div>
-                  {/* End of posts indicator */}
-                  <div className="py-8 text-center border-t border-border mt-1">
-                    <p className="text-muted-foreground text-sm">Fim das publicações</p>
-                  </div>
-                </>
+                  {friends.length > 6 && (
+                    <Button 
+                      variant="ghost" 
+                      className="w-full mt-2"
+                      onClick={() => handleOpenModal("friends")}
+                    >
+                      Ver todos os amigos
+                    </Button>
+                  )}
+                </div>
               )}
-            </TabsContent>
-
-            {/* Reposts */}
-            <TabsContent value="reposts" className="mt-0">
-              <div className="flex flex-col items-center justify-center py-20 px-4">
-                <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
-                  <Repeat2 className="h-10 w-10" />
-                </div>
-                <h3 className="text-2xl font-bold mb-1">Republicações</h3>
-                <p className="text-sm text-muted-foreground text-center">
-                  Quando republicares, aparecem aqui.
-                </p>
-              </div>
-            </TabsContent>
-
-            {/* Tagged */}
-            <TabsContent value="tagged" className="mt-0">
-              <div className="flex flex-col items-center justify-center py-20 px-4">
-                <div className="h-20 w-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
-                  <UserSquare2 className="h-10 w-10" />
-                </div>
-                <h3 className="text-2xl font-bold mb-1">Fotos com etiquetas</h3>
-                <p className="text-sm text-muted-foreground text-center">
-                  Quando forem etiquetadas fotos, aparecem aqui.
-                </p>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Modal for Followers/Following/Friends */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="max-w-md h-[70vh] flex flex-col p-0">
             <DialogHeader className="p-4 border-b">
               <DialogTitle className="text-center">
-                {modalType === "followers" ? "Seguidores" : modalType === "following" ? "A seguir" : "Amigos"}
+                {modalType === "followers" ? "Pessoas que filharam" : modalType === "following" ? "A filhar" : "Amigos"}
               </DialogTitle>
               <div className="pt-3">
                 <Input
                   placeholder="Pesquisar..."
                   value={modalSearch}
                   onChange={(e) => setModalSearch(e.target.value)}
-                  className="rounded-lg bg-muted/50 border-0"
+                  className="rounded-full bg-muted/50 border-0"
                 />
               </div>
             </DialogHeader>
@@ -844,10 +929,10 @@ export default function Profile() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
-                      <p className="font-semibold truncate">{user.username}</p>
+                      <p className="font-semibold truncate">{user.first_name}</p>
                       {user.verified && <VerificationBadge verified={user.verified} badgeType={user.badge_type} size="sm" />}
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{user.full_name || user.first_name}</p>
+                    <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
                   </div>
                 </div>
               ))}
