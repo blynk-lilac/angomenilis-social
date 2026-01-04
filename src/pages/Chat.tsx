@@ -5,16 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video, Image as ImageIcon, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck, Camera, Sticker, Plus } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck, Image as ImageIcon, Palette, Copy, Trash2, Heart, Clock, Edit3, X } from 'lucide-react';
 import { format } from 'date-fns';
 import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
 import ChatPinProtection from '@/components/chat/ChatPinProtection';
 import WallpaperPicker from '@/components/chat/WallpaperPicker';
 import AudioWaveform from '@/components/chat/AudioWaveform';
-import TypingIndicator from '@/components/chat/TypingIndicator';
-import MessageActionsSheet from '@/components/chat/MessageActionsSheet';
 import EmojiPicker from '@/components/chat/EmojiPicker';
+import { ImageViewer } from '@/components/chat/ImageViewer';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -23,6 +22,19 @@ import { useTemporaryMessages } from '@/hooks/useTemporaryMessages';
 import { ChatSkeleton } from '@/components/loading/ChatSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 interface Message {
   id: string;
@@ -34,6 +46,7 @@ interface Message {
   media_url?: string;
   duration?: number;
   read?: boolean;
+  edited?: boolean;
 }
 
 interface Profile {
@@ -41,6 +54,8 @@ interface Profile {
   username: string;
   first_name: string;
   avatar_url: string | null;
+  verified?: boolean;
+  badge_type?: string | null;
 }
 
 export default function Chat() {
@@ -59,11 +74,16 @@ export default function Chat() {
   const [wallpaper, setWallpaper] = useState<string>('');
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [showMessageActions, setShowMessageActions] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState('');
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState('');
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -92,7 +112,7 @@ export default function Chat() {
       await Promise.all([loadFriend(), loadChatSettings(), loadMessages(), loadWallpaper()]);
       
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 2000 - elapsed);
+      const remaining = Math.max(0, 1500 - elapsed);
       setTimeout(() => {
         setLoading(false);
       }, remaining);
@@ -469,6 +489,77 @@ export default function Chat() {
     }
   };
 
+  // Message Actions
+  const handleCopyMessage = (message: Message) => {
+    navigator.clipboard.writeText(message.content || message.media_url || '');
+    toast.success('Mensagem copiada!');
+    setShowMessageActions(false);
+  };
+
+  const handleDeleteMessage = async (message: Message) => {
+    await supabase.from('messages').delete().eq('id', message.id);
+    setMessages(prev => prev.filter(m => m.id !== message.id));
+    toast.success('Mensagem eliminada!');
+    setShowMessageActions(false);
+  };
+
+  const handleEditMessage = (message: Message) => {
+    setEditingMessage(message);
+    setEditText(message.content);
+    setShowMessageActions(false);
+  };
+
+  const saveEditedMessage = async () => {
+    if (!editingMessage || !editText.trim()) return;
+
+    await supabase
+      .from('messages')
+      .update({ content: editText.trim() })
+      .eq('id', editingMessage.id);
+
+    setMessages(prev => prev.map(m => 
+      m.id === editingMessage.id ? { ...m, content: editText.trim(), edited: true } : m
+    ));
+    
+    setEditingMessage(null);
+    setEditText('');
+    toast.success('Mensagem editada!');
+  };
+
+  const handleReactToMessage = async (message: Message, emoji: string) => {
+    if (!user) return;
+    
+    // Check if reaction exists
+    const { data: existing } = await supabase
+      .from('message_reactions')
+      .select('*')
+      .eq('message_id', message.id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existing) {
+      if (existing.emoji === emoji) {
+        await supabase.from('message_reactions').delete().eq('id', existing.id);
+      } else {
+        await supabase.from('message_reactions').update({ emoji }).eq('id', existing.id);
+      }
+    } else {
+      await supabase.from('message_reactions').insert({
+        message_id: message.id,
+        user_id: user.id,
+        emoji,
+      });
+    }
+    
+    toast.success('Reação adicionada!');
+    setShowMessageActions(false);
+  };
+
+  const openImageViewer = (url: string) => {
+    setSelectedImageUrl(url);
+    setImageViewerOpen(true);
+  };
+
   if (chatSettings?.is_locked && !isUnlocked && chatSettings?.pin_code) {
     return (
       <ChatPinProtection
@@ -523,14 +614,14 @@ export default function Chat() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* WhatsApp-style Header */}
-      <header className="flex-shrink-0 z-50 bg-primary text-primary-foreground px-3 py-2 safe-area-top">
+      {/* Header */}
+      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-3 py-2 safe-area-top">
         <div className="flex items-center gap-3 w-full">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/messages')}
-            className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+            className="h-9 w-9 rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -539,14 +630,14 @@ export default function Chat() {
             className="relative flex-shrink-0 cursor-pointer"
             onClick={() => navigate(`/profile/${friend.id}`)}
           >
-            <Avatar className="h-10 w-10 border-2 border-primary-foreground/20">
+            <Avatar className="h-10 w-10 border-2 border-primary/20">
               <AvatarImage src={friend.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm">
+              <AvatarFallback className="bg-primary/10 text-primary text-sm">
                 {friend.first_name[0]}
               </AvatarFallback>
             </Avatar>
             {isOnline && (
-              <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-primary" />
+              <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
             )}
           </div>
           
@@ -562,7 +653,7 @@ export default function Chat() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-xs text-primary-foreground/80"
+                  className="text-xs text-primary"
                 >
                   digitando...
                 </motion.p>
@@ -572,7 +663,7 @@ export default function Chat() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-xs text-primary-foreground/70"
+                  className="text-xs text-muted-foreground"
                 >
                   {isOnline ? 'online' : 'offline'}
                 </motion.p>
@@ -584,7 +675,7 @@ export default function Chat() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              className="h-9 w-9 rounded-full"
               onClick={() => startCall('video')}
             >
               <Video className="h-5 w-5" />
@@ -592,31 +683,45 @@ export default function Chat() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              className="h-9 w-9 rounded-full"
               onClick={() => startCall('voice')}
             >
               <Phone className="h-5 w-5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => navigate(`/chat/${friendId}/settings`)}
-            >
-              <MoreVertical className="h-5 w-5" />
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setShowWallpaperPicker(true)}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Mudar papel de parede
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/chat/${friendId}/settings`)}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Mensagens temporárias
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate(`/profile/${friend.id}`)}>
+                  Ver perfil
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      {/* Messages Area with WhatsApp-style background */}
+      {/* Messages Area */}
       <div 
         className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
         style={{
           backgroundImage: wallpaper ? `url(${wallpaper})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundColor: wallpaper ? undefined : 'hsl(var(--muted))',
+          backgroundColor: wallpaper ? undefined : 'hsl(var(--muted) / 0.3)',
         }}
       >
         <div className="max-w-3xl mx-auto space-y-1">
@@ -651,70 +756,82 @@ export default function Chat() {
                       )}
                       {!isOwn && !showAvatar && <div className="w-6" />}
                       
-                      <div
-                        className={`relative px-3 py-2 rounded-2xl shadow-sm ${
-                          isOwn
-                            ? 'bg-primary text-primary-foreground rounded-br-md'
-                            : 'bg-card text-foreground rounded-bl-md'
-                        }`}
-                      >
-                        {/* Tail */}
-                        <div 
-                          className={`absolute bottom-0 w-3 h-3 ${
-                            isOwn 
-                              ? 'right-0 translate-x-1/2 bg-primary' 
-                              : 'left-0 -translate-x-1/2 bg-card'
-                          }`}
-                          style={{
-                            clipPath: isOwn 
-                              ? 'polygon(0 0, 100% 100%, 0 100%)' 
-                              : 'polygon(100% 0, 100% 100%, 0 100%)'
-                          }}
-                        />
-                        
-                        {message.message_type === 'image' && message.media_url && (
+                      {/* Image messages - no bubble */}
+                      {message.message_type === 'image' && message.media_url ? (
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => openImageViewer(message.media_url!)}
+                          className="cursor-pointer rounded-2xl overflow-hidden shadow-md"
+                        >
                           <img 
                             src={message.media_url} 
                             alt="Image" 
-                            className="rounded-lg max-w-full max-h-64 object-contain mb-1"
+                            className="max-w-[250px] max-h-[300px] object-cover"
                           />
-                        )}
-                        
-                        {message.message_type === 'video' && message.media_url && (
-                          <video 
-                            src={message.media_url} 
-                            controls 
-                            className="rounded-lg max-w-full max-h-64 mb-1"
-                          />
-                        )}
-                        
-                        {message.message_type === 'audio' && message.media_url && (
-                          <div className="mb-1">
-                            <AudioWaveform
-                              src={message.media_url}
-                              duration={message.duration}
-                              isSent={isOwn}
-                            />
+                          <div className={`absolute bottom-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-full ${isOwn ? 'bg-black/50' : 'bg-black/50'}`}>
+                            <span className="text-[10px] text-white">
+                              {format(new Date(message.created_at), 'HH:mm')}
+                            </span>
+                            {isOwn && (
+                              message.read ? (
+                                <CheckCheck className="h-3 w-3 text-blue-400" />
+                              ) : (
+                                <Check className="h-3 w-3 text-white" />
+                              )
+                            )}
                           </div>
-                        )}
-                        
-                        {message.content && (
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                        )}
-                        
-                        <div className={`flex items-center gap-1 justify-end mt-1 ${isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                          <span className="text-[10px]">
-                            {format(new Date(message.created_at), 'HH:mm')}
-                          </span>
-                          {isOwn && (
-                            message.read ? (
-                              <CheckCheck className="h-3 w-3 text-blue-400" />
-                            ) : (
-                              <Check className="h-3 w-3" />
-                            )
+                        </motion.div>
+                      ) : (
+                        <div
+                          className={`relative px-3 py-2 rounded-2xl shadow-sm cursor-pointer ${
+                            isOwn
+                              ? 'bg-primary text-primary-foreground rounded-br-md'
+                              : 'bg-card text-foreground rounded-bl-md'
+                          }`}
+                          onClick={() => {
+                            setSelectedMessage(message);
+                            setShowMessageActions(true);
+                          }}
+                        >
+                          {message.message_type === 'video' && message.media_url && (
+                            <video 
+                              src={message.media_url} 
+                              controls 
+                              className="rounded-lg max-w-full max-h-64 mb-1"
+                            />
                           )}
+                          
+                          {message.message_type === 'audio' && message.media_url && (
+                            <div className="mb-1">
+                              <AudioWaveform
+                                src={message.media_url}
+                                duration={message.duration}
+                                isSent={isOwn}
+                              />
+                            </div>
+                          )}
+                          
+                          {message.content && (
+                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                          )}
+                          
+                          <div className={`flex items-center gap-1 justify-end mt-1 ${isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                            {message.edited && (
+                              <span className="text-[9px]">editado</span>
+                            )}
+                            <span className="text-[10px]">
+                              {format(new Date(message.created_at), 'HH:mm')}
+                            </span>
+                            {isOwn && (
+                              message.read ? (
+                                <CheckCheck className="h-3 w-3 text-blue-400" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -751,9 +868,32 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* WhatsApp-style Input Area */}
+      {/* Edit Message Bar */}
+      <AnimatePresence>
+        {editingMessage && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-muted/50 border-t border-border px-4 py-2"
+          >
+            <div className="flex items-center gap-2">
+              <Edit3 className="h-4 w-4 text-primary" />
+              <div className="flex-1">
+                <p className="text-xs text-primary font-medium">A editar mensagem</p>
+                <p className="text-sm text-muted-foreground truncate">{editingMessage.content}</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingMessage(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input Area */}
       <div className="flex-shrink-0 bg-card border-t border-border px-2 py-2 safe-area-bottom">
-        <form onSubmit={sendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
+        <form onSubmit={editingMessage ? (e) => { e.preventDefault(); saveEditedMessage(); } : sendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
           <Button
             type="button"
             variant="ghost"
@@ -767,8 +907,8 @@ export default function Chat() {
           <div className="flex-1 relative">
             <Input
               type="text"
-              value={newMessage}
-              onChange={(e) => handleTyping(e.target.value)}
+              value={editingMessage ? editText : newMessage}
+              onChange={(e) => editingMessage ? setEditText(e.target.value) : handleTyping(e.target.value)}
               placeholder="Mensagem"
               className="h-10 rounded-full bg-muted/50 border-0 pr-12 focus-visible:ring-1 focus-visible:ring-primary/30"
             />
@@ -797,7 +937,7 @@ export default function Chat() {
             </Button>
           </div>
           
-          {newMessage.trim() ? (
+          {(editingMessage ? editText.trim() : newMessage.trim()) ? (
             <Button
               type="submit"
               size="icon"
@@ -813,7 +953,7 @@ export default function Chat() {
                 if (isRecording) stopVoiceRecording();
                 else startVoiceRecording();
               }}
-              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
+              className={`h-10 w-10 rounded-full ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'}`}
             >
               {isRecording ? (
                 <span className="text-xs font-semibold tabular-nums">{recordingTime}s</span>
@@ -829,7 +969,11 @@ export default function Chat() {
         open={showEmojiPicker}
         onOpenChange={setShowEmojiPicker}
         onSelect={(emoji) => {
-          handleTyping(`${newMessage}${emoji}`);
+          if (editingMessage) {
+            setEditText(prev => prev + emoji);
+          } else {
+            handleTyping(`${newMessage}${emoji}`);
+          }
           setShowEmojiPicker(false);
         }}
       />
@@ -842,6 +986,71 @@ export default function Chat() {
         currentWallpaper={wallpaper}
         onWallpaperChange={(url) => setWallpaper(url)}
       />
+
+      {/* Image Viewer */}
+      <ImageViewer
+        open={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+        imageUrl={selectedImageUrl}
+        senderName={friend.first_name}
+      />
+
+      {/* Message Actions Sheet */}
+      <Sheet open={showMessageActions} onOpenChange={setShowMessageActions}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle className="sr-only">Ações da mensagem</SheetTitle>
+          </SheetHeader>
+          
+          {selectedMessage && (
+            <div className="space-y-2 py-4">
+              {/* Quick Reactions */}
+              <div className="flex justify-center gap-4 pb-4 border-b border-border">
+                {['❤️', '😂', '😮', '😢', '😡', '👍'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    className="text-2xl hover:scale-125 transition-transform"
+                    onClick={() => handleReactToMessage(selectedMessage, emoji)}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-12"
+                onClick={() => handleCopyMessage(selectedMessage)}
+              >
+                <Copy className="h-5 w-5" />
+                Copiar mensagem
+              </Button>
+
+              {selectedMessage.sender_id === user?.id && selectedMessage.message_type === 'text' && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 h-12"
+                  onClick={() => handleEditMessage(selectedMessage)}
+                >
+                  <Edit3 className="h-5 w-5" />
+                  Editar mensagem
+                </Button>
+              )}
+
+              {selectedMessage.sender_id === user?.id && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 h-12 text-destructive hover:text-destructive"
+                  onClick={() => handleDeleteMessage(selectedMessage)}
+                >
+                  <Trash2 className="h-5 w-5" />
+                  Eliminar mensagem
+                </Button>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

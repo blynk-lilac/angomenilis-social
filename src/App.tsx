@@ -37,7 +37,7 @@ import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import Create from "./pages/Create";
 import Comments from "./pages/Comments";
-import CommentsVideo from "./pages/CommentsVideo";
+// CommentsVideo removed - using unified Comments page
 import Videos from "./pages/Videos";
 import RequestVerification from "./pages/RequestVerification";
 import Report from './pages/Report';
@@ -143,11 +143,12 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        {/* CommentsVideo route redirects to unified Comments page */}
         <Route
           path="/comments-video/:videoId"
           element={
             <ProtectedRoute>
-              <CommentsVideo />
+              <Comments />
             </ProtectedRoute>
           }
         />
