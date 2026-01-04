@@ -270,7 +270,8 @@ const CommentCard = ({
 };
 
 export default function Comments() {
-  const { postId } = useParams();
+  const { postId, videoId } = useParams();
+  const contentId = postId || videoId; // Support both post and video comments
   const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -298,10 +299,10 @@ export default function Comments() {
     loadCurrentUser();
 
     const channel = supabase
-      .channel(`comments-${postId}`)
+      .channel(`comments-${contentId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "comments", filter: `post_id=eq.${postId}` },
+        { event: "*", schema: "public", table: "comments", filter: `post_id=eq.${contentId}` },
         () => {
           loadComments();
         }
@@ -311,7 +312,7 @@ export default function Comments() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [postId]);
+  }, [contentId]);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -327,7 +328,7 @@ export default function Comments() {
         likes:post_likes(count),
         comments:comments(count)
       `)
-      .eq("id", postId)
+      .eq("id", contentId)
       .single();
 
     if (data) setPost(data);
@@ -341,7 +342,7 @@ export default function Comments() {
         profiles (username, first_name, avatar_url, verified, badge_type),
         likes:comment_likes(count)
       `)
-      .eq("post_id", postId)
+      .eq("post_id", contentId)
       .is("parent_comment_id", null)
       .order("created_at", { ascending: true });
 
@@ -481,7 +482,7 @@ export default function Comments() {
       else if (mediaUrl && !content) content = isVideo ? "🎬 Vídeo" : "📷 Imagem";
 
       const { data: newCommentData, error } = await supabase.from("comments").insert({
-        post_id: postId,
+        post_id: contentId,
         user_id: currentUserId,
         content,
         audio_url: mediaUrl,
@@ -495,7 +496,7 @@ export default function Comments() {
           newCommentData.id,
           newComment,
           currentUserId,
-          postId!
+          contentId!
         );
       }
 
