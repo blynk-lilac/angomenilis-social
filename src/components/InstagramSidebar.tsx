@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark, Shield, Users } from "lucide-react";
+import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark, Shield, Users, Sun, Moon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface Profile {
   username: string;
@@ -15,9 +16,18 @@ interface Profile {
 export default function InstagramSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings, updateSettings } = useSettings();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const isDarkMode = settings.theme === 'dark';
+
+  const toggleTheme = () => {
+    const newTheme = isDarkMode ? 'light' : 'dark';
+    updateSettings({ theme: newTheme });
+    toast.success(newTheme === 'dark' ? 'Modo escuro ativado' : 'Modo claro ativado');
+  };
 
   useEffect(() => {
     loadProfile();
@@ -181,6 +191,28 @@ export default function InstagramSidebar() {
 
         {/* Bottom Actions */}
         <div className="space-y-0.5 pt-4 border-t border-border/40 mt-4">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            onClick={toggleTheme}
+            className={cn(
+              "w-full justify-start gap-4 px-4 py-3.5 h-auto rounded-xl hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all",
+              collapsed && "justify-center"
+            )}
+          >
+            {isDarkMode ? (
+              <Sun className="h-[26px] w-[26px] text-yellow-500" />
+            ) : (
+              <Moon className="h-[26px] w-[26px] text-blue-500" />
+            )}
+            <span className={cn(
+              "text-[15px] transition-opacity font-medium",
+              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+            )}>
+              {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+            </span>
+          </Button>
+
           <Button
             variant="ghost"
             onClick={() => setCollapsed(!collapsed)}
