@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Check, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // Import all wallpapers
 import gradient1 from '@/assets/wallpapers/gradient-1.jpg';
@@ -86,9 +88,11 @@ export default function WallpaperPicker({
   onWallpaperChange 
 }: WallpaperPickerProps) {
   const [selectedWallpaper, setSelectedWallpaper] = useState(currentWallpaper || '');
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   const handleWallpaperSelect = async (wallpaperUrl: string) => {
+    setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -130,10 +134,13 @@ export default function WallpaperPicker({
         title: 'Erro ao aplicar papel de parede',
         variant: 'destructive',
       });
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleRemoveWallpaper = async () => {
+    setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -158,24 +165,30 @@ export default function WallpaperPicker({
         title: 'Erro ao remover papel de parede',
         variant: 'destructive',
       });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Escolher Papel de Parede</DialogTitle>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-2 border-b border-border">
+          <DialogTitle className="text-lg font-bold">Escolher Papel de Parede</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 h-[60vh] pr-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-4">
-            {wallpapers.map((wallpaper) => (
-              <div
+        <ScrollArea className="flex-1 px-3">
+          <div className="grid grid-cols-3 gap-2 py-3">
+            {wallpapers.map((wallpaper, index) => (
+              <motion.button
                 key={wallpaper.id}
-                className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.02 }}
+                disabled={saving}
+                className={`relative aspect-[9/16] rounded-xl overflow-hidden border-2 transition-all hover:scale-[1.02] active:scale-95 ${
                   selectedWallpaper === wallpaper.url
-                    ? 'border-primary shadow-lg'
+                    ? 'border-primary ring-2 ring-primary/30'
                     : 'border-transparent'
                 }`}
                 onClick={() => handleWallpaperSelect(wallpaper.url)}
@@ -183,25 +196,36 @@ export default function WallpaperPicker({
                 <img
                   src={wallpaper.url}
                   alt={wallpaper.name}
-                  className="w-full aspect-[9/16] object-cover"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                  <p className="text-white text-xs font-medium text-center">
-                    {wallpaper.name}
-                  </p>
-                </div>
-              </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <p className="absolute bottom-1 left-1 right-1 text-white text-[10px] font-medium text-center truncate">
+                  {wallpaper.name}
+                </p>
+                {selectedWallpaper === wallpaper.url && (
+                  <div className="absolute top-1 right-1 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </motion.button>
             ))}
           </div>
         </ScrollArea>
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose}>
+        <div className="p-3 border-t border-border flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
           {currentWallpaper && (
-            <Button variant="destructive" onClick={handleRemoveWallpaper}>
-              Remover Papel de Parede
+            <Button 
+              variant="destructive" 
+              onClick={handleRemoveWallpaper} 
+              disabled={saving}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Remover
             </Button>
           )}
         </div>

@@ -39,16 +39,80 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       loadData();
+      subscribeToRealTimeStats();
     }
   }, [user]);
 
+  const subscribeToRealTimeStats = () => {
+    if (!user) return;
+
+    // Subscribe to follows changes
+    const followsChannel = supabase
+      .channel('follows-changes-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'follows',
+          filter: `following_id=eq.${user.id}`,
+        },
+        () => {
+          loadFollowersCount();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to posts changes
+    const postsChannel = supabase
+      .channel('posts-changes-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          loadPostsCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(followsChannel);
+      supabase.removeChannel(postsChannel);
+    };
+  };
+
+  const loadFollowersCount = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', user.id);
+    setFollowersCount(count || 0);
+  };
+
+  const loadPostsCount = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    setPostsCount(count || 0);
+  };
+
   const loadData = async () => {
     const startTime = Date.now();
-    await Promise.all([loadProfile(), loadConversations()]);
+    await Promise.all([loadProfile(), loadConversations(), loadFollowersCount(), loadPostsCount()]);
     
     const elapsed = Date.now() - startTime;
     const remaining = Math.max(0, 1500 - elapsed);
@@ -238,8 +302,8 @@ export default function Messages() {
                 )}
               </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>458 seguidores</span>
-                <span>46 posts</span>
+                <span>{followersCount} seguidores</span>
+                <span>{postsCount} posts</span>
               </div>
             </div>
           </div>

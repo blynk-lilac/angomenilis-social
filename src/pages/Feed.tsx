@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThumbsUp, MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Globe, Heart, Send } from "lucide-react";
-import { MusicPlayer } from "@/components/MusicPlayer";
+import { MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Heart, Repeat2 } from "lucide-react";
+import { MusicPlayer, pauseAllAudio } from "@/components/MusicPlayer";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -16,7 +16,6 @@ import CreateStory from "@/components/CreateStory";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import VerificationBadge from "@/components/VerificationBadge";
-import ReactionPicker, { reactions } from "@/components/ReactionPicker";
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
@@ -24,7 +23,6 @@ import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 import { UserSuggestions } from "@/components/UserSuggestions";
 import { motion, AnimatePresence } from "framer-motion";
 import PostOptionsSheet from "@/components/PostOptionsSheet";
-import { LikesSheet } from "@/components/post/LikesSheet";
 
 
 interface Post {
@@ -56,7 +54,6 @@ export default function Feed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
-  const [showReactions, setShowReactions] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sponsoredAds, setSponsoredAds] = useState<any[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
@@ -65,7 +62,6 @@ export default function Feed() {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [optionsSheet, setOptionsSheet] = useState<{ open: boolean; post: Post | null }>({ open: false, post: null });
   const [mutedVideos, setMutedVideos] = useState<{ [key: string]: boolean }>({});
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
   const observedVideosRef = useRef<Set<HTMLVideoElement>>(new Set());
@@ -107,14 +103,18 @@ export default function Feed() {
           const video = entry.target as HTMLVideoElement;
 
           if (entry.isIntersecting) {
-            // Pause all other videos
+            // Pause all other videos and music
+            pauseAllAudio();
             observedVideosRef.current.forEach((v) => {
               if (v !== video && !v.paused) v.pause();
             });
 
-            video.play().catch((err) => {
-              // Autoplay can be blocked depending on device/audio state
-              console.log('[Feed] autoplay blocked:', err);
+            // Unmute and play the visible video
+            video.muted = false;
+            video.play().catch(() => {
+              // If autoplay with sound fails, try muted
+              video.muted = true;
+              video.play().catch(console.log);
             });
           } else {
             if (!video.paused) video.pause();
@@ -158,7 +158,7 @@ export default function Feed() {
     if (data) setSponsoredAds(data);
   };
 
-  const handleLike = async (postId: string, reaction?: string) => {
+  const handleLike = async (postId: string) => {
     if (!currentUserId) return;
 
     const { data: existingReaction } = await supabase
@@ -169,17 +169,12 @@ export default function Feed() {
       .maybeSingle();
 
     if (existingReaction) {
-      if (reaction && existingReaction.reaction_type !== reaction) {
-        await supabase.from("post_reactions").update({ reaction_type: reaction }).eq("id", existingReaction.id);
-      } else {
-        await supabase.from("post_reactions").delete().eq("id", existingReaction.id);
-      }
+      await supabase.from("post_reactions").delete().eq("id", existingReaction.id);
     } else {
-      await supabase.from("post_reactions").insert({ post_id: postId, user_id: currentUserId, reaction_type: reaction || "heart" });
+      await supabase.from("post_reactions").insert({ post_id: postId, user_id: currentUserId, reaction_type: "heart" });
     }
 
     loadPosts();
-    setShowReactions(null);
   };
 
   const handleSave = async (postId: string) => {
@@ -194,14 +189,6 @@ export default function Feed() {
       setSavedPosts([...savedPosts, postId]);
       toast.success('Guardado!');
     }
-  };
-
-  const handleLongPress = (postId: string) => {
-    longPressTimer.current = setTimeout(() => setShowReactions(postId), 500);
-  };
-
-  const handlePressEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
   const getUserReaction = (post: Post) => {
@@ -242,7 +229,7 @@ export default function Feed() {
   const VideoPlayer = ({ url, postId }: { url: string; postId: string }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [hasError, setHasError] = useState(false);
-    const isMuted = mutedVideos[postId] !== false;
+    const isMuted = mutedVideos[postId] ?? false;
 
     if (hasError) {
       return (
@@ -259,8 +246,12 @@ export default function Feed() {
       <div className="relative bg-black overflow-hidden" onClick={() => {
         const video = videoRefs.current[postId];
         if (video) {
-          if (video.paused) video.play();
-          else video.pause();
+          if (video.paused) {
+            pauseAllAudio();
+            video.play();
+          } else {
+            video.pause();
+          }
         }
       }}>
         <video
@@ -343,6 +334,7 @@ export default function Feed() {
                   preload="metadata"
                   onClick={(e) => {
                     e.stopPropagation();
+                    pauseAllAudio();
                     const vid = e.currentTarget;
                     if (vid.paused) vid.play();
                     else vid.pause();
@@ -422,11 +414,10 @@ export default function Feed() {
               <UserSuggestions />
             </div>
 
-            {/* Posts Feed */}
+            {/* Posts Feed - Threads Style */}
             <div className="space-y-0">
               {posts.map((post, index) => {
                 const userReaction = getUserReaction(post);
-                const reactionIcon = reactions.find(r => r.type === userReaction);
                 const totalReactions = post.post_reactions?.length || 0;
                 const isSaved = savedPosts.includes(post.id);
 
@@ -449,59 +440,58 @@ export default function Feed() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                     >
-                      <Card className="bg-card border-0 shadow-sm mb-3 rounded-lg overflow-hidden fb-card">
-                        {/* Post Header - Facebook Style */}
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <div 
-                            className="flex items-center gap-3 cursor-pointer"
+                      {/* Threads-style Card */}
+                      <div className="bg-card border-b border-border/50 py-3">
+                        {/* Header */}
+                        <div className="flex items-start gap-3 px-4">
+                          <Avatar 
+                            className="h-10 w-10 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all"
                             onClick={() => navigate(`/profile/${post.profiles.id}`)}
                           >
-                            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                              <AvatarImage src={post.profiles.avatar_url} />
-                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-[15px]">
-                                  {post.profiles.full_name || post.profiles.first_name || post.profiles.username}
+                            <AvatarImage src={post.profiles.avatar_url} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div 
+                                className="flex items-center gap-1.5 cursor-pointer"
+                                onClick={() => navigate(`/profile/${post.profiles.id}`)}
+                              >
+                                <span className="font-bold text-[15px] hover:underline">
+                                  {post.profiles.username || post.profiles.first_name}
                                 </span>
                                 {post.profiles.verified && (
                                   <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} className="w-4 h-4" />
                                 )}
+                                <span className="text-muted-foreground text-sm">
+                                  · {formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}</span>
-                                <span>•</span>
-                                <Globe className="h-3 w-3" />
-                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full -mr-2"
+                                onClick={() => setOptionsSheet({ open: true, post })}
+                              >
+                                <MoreHorizontal className="h-5 w-5" />
+                              </Button>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setOptionsSheet({ open: true, post })}
-                            >
-                              <MoreHorizontal className="h-5 w-5" />
-                            </Button>
+
+                            {/* Content */}
+                            {post.content && (
+                              <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed mt-1">
+                                {parseTextWithLinksAndMentions(post.content)}
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        {/* Content */}
-                        {post.content && (
-                          <div className="px-4 pb-3">
-                            <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed">
-                              {parseTextWithLinksAndMentions(post.content)}
-                            </p>
-                          </div>
-                        )}
-
                         {/* Media */}
                         {post.media_urls && post.media_urls.length > 0 && (
-                          <div className="relative">
+                          <div className="relative mt-3 mx-4 rounded-xl overflow-hidden">
                             {renderMediaGrid(post.media_urls, post.id)}
                             
                             {/* Music overlay on media */}
@@ -520,7 +510,7 @@ export default function Feed() {
 
                         {/* Music without media */}
                         {post.music_name && (!post.media_urls || post.media_urls.length === 0) && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 mt-3">
                             <MusicPlayer 
                               musicName={post.music_name}
                               musicArtist={post.music_artist}
@@ -529,67 +519,51 @@ export default function Feed() {
                           </div>
                         )}
 
-                        {/* Reactions & Comments Count - Facebook Style */}
-                        <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-b border-border/30">
-                          <button 
-                            className="flex items-center gap-1 hover:underline"
-                            onClick={() => navigate(`/post/${post.id}/likes`)}
+                        {/* Actions - Threads Style */}
+                        <div className="flex items-center gap-1 px-4 mt-3 ml-12">
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-full hover:bg-muted/50 transition-colors"
+                            onClick={() => handleLike(post.id)}
                           >
+                            <Heart 
+                              className={`h-5 w-5 transition-colors ${userReaction ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
+                            />
                             {totalReactions > 0 && (
-                              <>
-                                <div className="flex -space-x-1">
-                                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
-                                    <ThumbsUp className="h-3 w-3 text-white fill-white" />
-                                  </div>
-                                  <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
-                                    <Heart className="h-3 w-3 text-white fill-white" />
-                                  </div>
-                                </div>
-                                <span>{totalReactions}</span>
-                              </>
+                              <span className={`text-sm ${userReaction ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                {totalReactions}
+                              </span>
                             )}
-                          </button>
-                          <div className="flex items-center gap-3">
-                            {post.comments.length > 0 && (
-                              <button 
-                                className="hover:underline"
-                                onClick={() => navigate(`/comments/${post.id}`)}
-                              >
-                                {post.comments.length} comentário{post.comments.length !== 1 ? 's' : ''}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Actions - Facebook Style */}
-                        <div className="grid grid-cols-3 border-t border-border/30">
-                          <button
-                            className={`flex items-center justify-center gap-2 py-3 hover:bg-muted/50 transition-colors fb-action-btn ${userReaction ? 'text-blue-500' : 'text-muted-foreground'}`}
-                            onMouseDown={() => handleLongPress(post.id)}
-                            onMouseUp={handlePressEnd}
-                            onMouseLeave={handlePressEnd}
-                            onTouchStart={() => handleLongPress(post.id)}
-                            onTouchEnd={handlePressEnd}
-                            onClick={() => !showReactions && handleLike(post.id)}
-                          >
-                            {reactionIcon ? (
-                              <img src={reactionIcon.icon} alt={reactionIcon.type} className="w-5 h-5 animate-like" />
-                            ) : (
-                              <ThumbsUp className={`h-5 w-5 ${userReaction ? 'fill-blue-500' : ''}`} />
-                            )}
-                            <span className="font-semibold text-sm">Gosto</span>
-                          </button>
+                          </motion.button>
 
                           <button
-                            className="flex items-center justify-center gap-2 py-3 text-muted-foreground hover:bg-muted/50 transition-colors fb-action-btn"
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
                             onClick={() => navigate(`/comments/${post.id}`)}
                           >
                             <MessageCircle className="h-5 w-5" />
-                            <span className="font-semibold text-sm">Comentar</span>
+                            {post.comments.length > 0 && (
+                              <span className="text-sm">{post.comments.length}</span>
+                            )}
                           </button>
 
                           <button 
-                            className="flex items-center justify-center gap-2 py-3 text-muted-foreground hover:bg-muted/50 transition-colors fb-action-btn"
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
+                            onClick={() => {
+                              navigator.share?.({
+                                title: 'Publicação',
+                                text: post.content?.slice(0, 100),
+                                url: `${window.location.origin}/post/${post.id}`
+                              }).catch(() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                                toast.success("Link copiado!");
+                              });
+                            }}
+                          >
+                            <Repeat2 className="h-5 w-5" />
+                          </button>
+
+                          <button 
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
                             onClick={() => {
                               navigator.share?.({
                                 title: 'Publicação',
@@ -602,10 +576,28 @@ export default function Feed() {
                             }}
                           >
                             <Share2 className="h-5 w-5" />
-                            <span className="font-semibold text-sm">Partilhar</span>
+                          </button>
+
+                          <div className="flex-1" />
+
+                          <button 
+                            className={`p-2 rounded-full transition-colors ${isSaved ? 'text-primary' : 'text-muted-foreground hover:bg-muted/50'}`}
+                            onClick={() => handleSave(post.id)}
+                          >
+                            <Bookmark className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
                           </button>
                         </div>
-                      </Card>
+
+                        {/* Likes count */}
+                        {totalReactions > 0 && (
+                          <button 
+                            className="px-4 mt-2 ml-12 text-sm text-muted-foreground hover:underline"
+                            onClick={() => navigate(`/post/${post.id}/likes`)}
+                          >
+                            {totalReactions} gosto{totalReactions !== 1 ? 's' : ''}
+                          </button>
+                        )}
+                      </div>
                     </motion.div>
                   </div>
                 );
@@ -613,17 +605,6 @@ export default function Feed() {
             </div>
           </div>
         </div>
-
-        {/* Reaction Picker Modal */}
-        <ReactionPicker
-          show={showReactions !== null}
-          onSelect={(reaction) => {
-            if (showReactions) {
-              handleLike(showReactions, reaction);
-            }
-          }}
-          onClose={() => setShowReactions(null)}
-        />
 
         {/* Post Options Sheet */}
         {optionsSheet.post && (
