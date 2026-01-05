@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { showNotification } from '@/utils/pushNotifications';
+import { showMessageNotification, playNotificationSound } from '@/utils/pushNotifications';
 import VerificationBadge from '@/components/VerificationBadge';
 
 interface Notification {
@@ -80,16 +80,17 @@ export const MessageNotification = () => {
               [payload.new.sender_id]: count || 1
             }));
 
-            // Show native notification
-            showNotification(`${profile.first_name} enviou uma mensagem`, {
-              body: notifData.content,
-              icon: profile.avatar_url || '/logo-192.png',
-              tag: `message-${payload.new.id}`,
-              data: {
-                url: `/chat/${payload.new.sender_id}`,
-                avatar: profile.avatar_url,
-              },
-            });
+            // Play notification sound immediately
+            playNotificationSound();
+
+            // Show native push notification with WhatsApp-style actions
+            showMessageNotification(
+              profile.first_name,
+              notifData.content,
+              profile.avatar_url,
+              payload.new.sender_id,
+              payload.new.id
+            );
 
             // Auto-hide after 5 seconds
             setTimeout(() => setNotification(null), 5000);

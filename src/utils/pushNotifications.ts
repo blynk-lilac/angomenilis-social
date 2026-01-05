@@ -1,6 +1,27 @@
+// Notification sound management
+let notificationAudio: HTMLAudioElement | null = null;
+
+const getNotificationSound = () => {
+  if (!notificationAudio) {
+    notificationAudio = new Audio('/sounds/notification.mp3');
+    notificationAudio.volume = 0.5;
+  }
+  return notificationAudio;
+};
+
+export const playNotificationSound = () => {
+  try {
+    const audio = getNotificationSound();
+    audio.currentTime = 0;
+    audio.play().catch(console.error);
+  } catch (error) {
+    console.error('Failed to play notification sound:', error);
+  }
+};
+
 export const requestNotificationPermission = async () => {
   if (!('Notification' in window)) {
-    console.log('Notificações não suportadas');
+    console.log('Notifications not supported');
     return false;
   }
 
@@ -16,23 +37,58 @@ export const requestNotificationPermission = async () => {
   return false;
 };
 
-export const showNotification = (title: string, options?: NotificationOptions & { icon?: string }) => {
-  if (Notification.permission === 'granted') {
-    const notificationOptions = {
-      icon: options?.icon || '/logo-192.png',
-      badge: '/favicon.png',
-      tag: 'blynk-notification',
-      requireInteraction: false,
-      ...options,
-    };
+interface NotificationData {
+  url?: string;
+  avatar?: string;
+  senderId?: string;
+  messageId?: string;
+  type?: string;
+  storyId?: string;
+  [key: string]: unknown;
+}
 
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification(title, notificationOptions);
-      });
-    } else {
-      new Notification(title, notificationOptions);
-    }
+interface NotificationActionType {
+  action: string;
+  title: string;
+}
+
+interface ExtendedNotificationOptions extends NotificationOptions {
+  icon?: string;
+  data?: NotificationData;
+  actions?: NotificationActionType[];
+  requireInteraction?: boolean;
+  silent?: boolean;
+  vibrate?: number[];
+  tag?: string;
+}
+
+export const showNotification = (title: string, options?: ExtendedNotificationOptions) => {
+  if (Notification.permission !== 'granted') return;
+
+  // Play sound first
+  playNotificationSound();
+
+  const notificationOptions: ExtendedNotificationOptions = {
+    icon: options?.icon || '/logo-192.png',
+    badge: '/favicon.png',
+    tag: options?.tag || 'blynk-notification',
+    requireInteraction: false,
+    silent: true, // We handle sound ourselves
+    vibrate: [200, 100, 200, 100, 200],
+    // WhatsApp-style actions
+    actions: options?.actions || [
+      { action: 'reply', title: 'Responder' },
+      { action: 'view', title: 'Ver' },
+    ],
+    ...options,
+  };
+
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification(title, notificationOptions);
+    });
+  } else {
+    new Notification(title, notificationOptions);
   }
 };
 
@@ -40,7 +96,8 @@ export const showMessageNotification = async (
   senderName: string,
   messageContent: string,
   senderAvatar?: string,
-  senderId?: string
+  senderId?: string,
+  messageId?: string
 ) => {
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) return;
@@ -52,5 +109,27 @@ export const showMessageNotification = async (
   showNotification(senderName, {
     body: preview,
     icon: senderAvatar || '/logo-192.png',
+    tag: `message-${messageId || Date.now()}`,
+    data: {
+      url: senderId ? `/chat/${senderId}` : '/messages',
+      avatar: senderAvatar,
+      senderId,
+      messageId,
+    },
+    actions: [
+      { action: 'reply', title: '💬 Responder' },
+      { action: 'mark-read', title: '✓ Marcar como lido' },
+    ],
+  });
+};
+
+// Setup message listener for quick reply from notification
+export const setupNotificationReplyHandler = (callback: (senderId: string, message: string) => void) => {
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NOTIFICATION_REPLY') {
+      callback(event.data.senderId, event.data.reply);
+    }
   });
 };

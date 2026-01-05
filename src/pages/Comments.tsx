@@ -138,7 +138,7 @@ const AudioPlayer = ({ url }: { url: string }) => {
   );
 };
 
-// Comment Card Component
+// Comment Card Component with Threads-style heart likes
 const CommentCard = ({ 
   comment, 
   onLike, 
@@ -152,13 +152,33 @@ const CommentCard = ({
 }) => {
   const navigate = useNavigate();
   const [showReplies, setShowReplies] = useState(false);
+  const [imageExpanded, setImageExpanded] = useState(false);
+  
+  // Detect media type
   const isAudio = comment.audio_url && (
     comment.audio_url.includes('.webm') || 
     comment.audio_url.includes('.mp3') || 
     comment.audio_url.includes('.ogg') ||
     comment.audio_url.includes('.m4a')
   );
-  const isMedia = comment.audio_url && !isAudio;
+  
+  const isVideo = comment.audio_url && (
+    comment.audio_url.includes('.mp4') || 
+    comment.audio_url.includes('.mov') ||
+    comment.audio_url.includes('.avi')
+  );
+  
+  const isImage = comment.audio_url && !isAudio && !isVideo && (
+    comment.audio_url.includes('.jpg') || 
+    comment.audio_url.includes('.jpeg') || 
+    comment.audio_url.includes('.png') ||
+    comment.audio_url.includes('.gif') ||
+    comment.audio_url.includes('.webp') ||
+    comment.audio_url.includes('/post-images/') ||
+    comment.audio_url.includes('/chat-media/')
+  );
+
+  const likesCount = comment.likes[0]?.count || 0;
 
   return (
     <motion.div
@@ -167,7 +187,7 @@ const CommentCard = ({
       className="flex gap-2"
     >
       <Avatar 
-        className="h-9 w-9 shrink-0 cursor-pointer"
+        className="h-9 w-9 shrink-0 cursor-pointer ring-2 ring-border/30"
         onClick={() => navigate(`/profile/${comment.user_id}`)}
       >
         <AvatarImage src={comment.profiles.avatar_url} />
@@ -195,47 +215,75 @@ const CommentCard = ({
             )}
           </div>
 
-          {/* Content or Audio */}
-          {isAudio ? (
-            <AudioPlayer url={comment.audio_url!} />
-          ) : isMedia ? (
+          {/* Text Content */}
+          {comment.content && comment.content !== '🎤 Áudio' && comment.content !== '📷 Imagem' && comment.content !== '🎬 Vídeo' && (
+            <p className="text-sm whitespace-pre-wrap break-words mb-1">{comment.content}</p>
+          )}
+
+          {/* Media Content */}
+          {isAudio && (
             <div className="mt-1">
-              {comment.audio_url?.includes('.mp4') || comment.audio_url?.includes('.webm') ? (
-                <video src={comment.audio_url} controls className="max-w-[250px] rounded-lg" />
-              ) : (
-                <img src={comment.audio_url} alt="Media" className="max-w-[250px] rounded-lg" />
-              )}
+              <AudioPlayer url={comment.audio_url!} />
             </div>
-          ) : (
-            <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+          )}
+          
+          {isVideo && (
+            <div className="mt-2 relative rounded-xl overflow-hidden max-w-[280px]">
+              <video 
+                src={comment.audio_url} 
+                controls 
+                className="w-full rounded-xl"
+                preload="metadata"
+              />
+            </div>
+          )}
+          
+          {isImage && (
+            <div className="mt-2">
+              <motion.img 
+                src={comment.audio_url} 
+                alt="Imagem do comentário" 
+                className={`rounded-xl cursor-pointer transition-all ${
+                  imageExpanded ? 'max-w-full' : 'max-w-[280px] max-h-[200px] object-cover'
+                }`}
+                onClick={() => setImageExpanded(!imageExpanded)}
+                whileHover={{ scale: 1.02 }}
+              />
+            </div>
           )}
         </div>
 
-        {/* Actions */}
+        {/* Actions - Threads Style */}
         <div className="flex items-center gap-4 mt-1 px-1">
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(comment.created_at), { addSuffix: false, locale: ptBR })}
           </span>
+          
+          {/* Heart Like Button - Threads Style */}
           <button 
-            className={`text-xs font-semibold ${comment.user_liked ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            className="flex items-center gap-1 group"
             onClick={() => onLike(comment.id)}
           >
-            Gosto
+            <Heart 
+              className={`h-4 w-4 transition-all ${
+                comment.user_liked 
+                  ? 'text-red-500 fill-red-500 scale-110' 
+                  : 'text-muted-foreground group-hover:text-red-500 group-hover:scale-110'
+              }`}
+            />
+            {likesCount > 0 && (
+              <span className={`text-xs font-medium ${comment.user_liked ? 'text-red-500' : 'text-muted-foreground'}`}>
+                {likesCount}
+              </span>
+            )}
           </button>
+          
           <button 
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => onReply(comment.id)}
           >
             Responder
           </button>
-          {(comment.likes[0]?.count || 0) > 0 && (
-            <div className="flex items-center gap-1">
-              <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                <ThumbsUp className="h-2.5 w-2.5 text-primary-foreground fill-primary-foreground" />
-              </div>
-              <span className="text-xs text-muted-foreground">{comment.likes[0]?.count}</span>
-            </div>
-          )}
         </div>
 
         {/* Replies */}
@@ -243,14 +291,14 @@ const CommentCard = ({
           <div className="mt-2">
             {!showReplies ? (
               <button 
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-2"
+                className="text-xs font-semibold text-primary/80 hover:text-primary flex items-center gap-2 transition-colors"
                 onClick={() => setShowReplies(true)}
               >
-                <div className="w-8 h-px bg-muted-foreground/30" />
+                <div className="w-8 h-px bg-primary/30" />
                 Ver {comment.replies.length} {comment.replies.length === 1 ? 'resposta' : 'respostas'}
               </button>
             ) : (
-              <div className="space-y-3 mt-2">
+              <div className="space-y-3 mt-2 pl-2 border-l-2 border-muted">
                 {comment.replies.map(reply => (
                   <CommentCard 
                     key={reply.id} 
