@@ -2000,6 +2000,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_action_limits: {
+        Row: {
+          action_count: number | null
+          action_type: string
+          created_at: string | null
+          id: string
+          is_suspended: boolean | null
+          last_action_at: string | null
+          reset_at: string | null
+          suspended_until: string | null
+          user_id: string
+        }
+        Insert: {
+          action_count?: number | null
+          action_type: string
+          created_at?: string | null
+          id?: string
+          is_suspended?: boolean | null
+          last_action_at?: string | null
+          reset_at?: string | null
+          suspended_until?: string | null
+          user_id: string
+        }
+        Update: {
+          action_count?: number | null
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          is_suspended?: boolean | null
+          last_action_at?: string | null
+          reset_at?: string | null
+          suspended_until?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_devices: {
         Row: {
           browser: string | null
@@ -2163,6 +2199,72 @@ export type Database = {
           media_quality?: string | null
           theme?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          reason: string | null
+          suspended_at: string
+          suspended_by: string | null
+          suspension_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          suspended_at?: string
+          suspended_by?: string | null
+          suspension_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          suspended_at?: string
+          suspended_by?: string | null
+          suspension_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      username_attempts: {
+        Row: {
+          attempt_count: number | null
+          attempted_username: string
+          created_at: string | null
+          id: string
+          is_blocked: boolean | null
+          last_attempt_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          attempted_username: string
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_attempt_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          attempted_username?: string
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_attempt_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2362,11 +2464,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_action_limit: {
+        Args: { _action_type: string; _limit: number; _user_id: string }
+        Returns: Json
+      }
       delete_expired_phone_codes: { Args: never; Returns: undefined }
       delete_expired_posts: { Args: never; Returns: undefined }
       delete_expired_stories: { Args: never; Returns: undefined }
       delete_expired_two_factor_codes: { Args: never; Returns: undefined }
       generate_2fa_secret: { Args: never; Returns: string }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_channel_admin: {
         Args: { _channel_id: string; _user_id: string }
         Returns: boolean
@@ -2388,6 +2495,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_user_suspended: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
