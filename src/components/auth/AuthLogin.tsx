@@ -3,13 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Sparkles, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logo from '@/assets/blynk-logo.jpg';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { requestNotificationPermission, showNotification } from '@/utils/pushNotifications';
 import { motion } from 'framer-motion';
+import { loginRateLimiter, validatePassword } from '@/utils/securityValidation';
 
 interface AuthLoginProps {
   onBack: () => void;
@@ -100,6 +101,15 @@ export const AuthLogin = ({ onBack, onForgotPassword, onSwitchToSignup }: AuthLo
     
     if (password.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    
+    // Rate limiting check
+    if (!loginRateLimiter.check(credential.trim())) {
+      toast.error('Muitas tentativas de login. Aguarde um minuto.', {
+        icon: '🔒',
+        duration: 5000
+      });
       return;
     }
     

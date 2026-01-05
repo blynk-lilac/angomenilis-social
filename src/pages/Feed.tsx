@@ -23,8 +23,8 @@ import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
 import { UserSuggestions } from "@/components/UserSuggestions";
 import { motion, AnimatePresence } from "framer-motion";
 import PostOptionsSheet from "@/components/PostOptionsSheet";
-
-
+import { playLikeSound, playClickSound } from "@/utils/soundEffects";
+import { useRateLimiting } from "@/hooks/useRateLimiting";
 interface Post {
   id: string;
   content: string;
@@ -51,6 +51,7 @@ interface Post {
 export default function Feed() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { checkLikeLimit } = useRateLimiting();
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);
@@ -170,8 +171,14 @@ export default function Feed() {
 
     if (existingReaction) {
       await supabase.from("post_reactions").delete().eq("id", existingReaction.id);
+      playClickSound();
     } else {
+      // Check rate limit before liking
+      const allowed = await checkLikeLimit();
+      if (!allowed) return;
+      
       await supabase.from("post_reactions").insert({ post_id: postId, user_id: currentUserId, reaction_type: "heart" });
+      playLikeSound();
     }
 
     loadPosts();
