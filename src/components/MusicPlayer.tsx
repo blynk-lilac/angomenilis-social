@@ -1,6 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { Music, Play, Pause, Volume2 } from 'lucide-react';
+import { useState, useRef, useEffect, useId } from 'react';
+import { Music, Play, Pause } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Global audio manager - only one audio plays at a time
+let currentPlayingAudio: HTMLAudioElement | null = null;
+let currentPlayingId: string | null = null;
 
 interface MusicPlayerProps {
   musicName: string;
@@ -14,6 +18,7 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const instanceId = useId();
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -21,18 +26,30 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleEnded = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (currentPlayingId === instanceId) {
+        currentPlayingAudio = null;
+        currentPlayingId = null;
+      }
+    };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [instanceId]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -41,10 +58,22 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
 
     if (isPlaying) {
       audio.pause();
+      if (currentPlayingId === instanceId) {
+        currentPlayingAudio = null;
+        currentPlayingId = null;
+      }
     } else {
+      // Pause any other playing audio
+      if (currentPlayingAudio && currentPlayingId !== instanceId) {
+        currentPlayingAudio.pause();
+      }
+      
+      // Set this as the current playing audio
+      currentPlayingAudio = audio;
+      currentPlayingId = instanceId;
+      
       audio.play().catch(console.log);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -204,4 +233,13 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
       </div>
     </motion.div>
   );
+}
+
+// Export function to pause all audio globally
+export function pauseAllAudio() {
+  if (currentPlayingAudio) {
+    currentPlayingAudio.pause();
+    currentPlayingAudio = null;
+    currentPlayingId = null;
+  }
 }

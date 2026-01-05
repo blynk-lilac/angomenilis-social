@@ -5,15 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Phone, Video, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck, Image as ImageIcon, Palette, Copy, Trash2, Heart, Clock, Edit3, X } from 'lucide-react';
+import { ArrowLeft, Send, Phone, Video, MoreVertical, Mic, Smile, Paperclip, Check, CheckCheck, Palette, Copy, Trash2, Heart, Clock, Edit3, X } from 'lucide-react';
 import { format } from 'date-fns';
-import MediaPicker from '@/components/chat/MediaPicker';
 import CallInterface from '@/components/call/CallInterface';
 import ChatPinProtection from '@/components/chat/ChatPinProtection';
 import WallpaperPicker from '@/components/chat/WallpaperPicker';
 import AudioWaveform from '@/components/chat/AudioWaveform';
 import EmojiPicker from '@/components/chat/EmojiPicker';
 import { ImageViewer } from '@/components/chat/ImageViewer';
+import ChatPhotoEditor from '@/components/chat/ChatPhotoEditor';
 import { showNotification } from '@/utils/pushNotifications';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
@@ -76,6 +76,7 @@ export default function Chat() {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
@@ -84,6 +85,10 @@ export default function Chat() {
   const [editText, setEditText] = useState('');
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState('');
+
+  // Photo editor state
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -353,9 +358,23 @@ export default function Chat() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+
+    const isImage = file.type.startsWith('image/');
+    if (isImage) {
+      setSelectedPhotoFile(file);
+      setShowPhotoEditor(true);
+    } else {
+      handleFileUpload(file, 'video');
+    }
+    
+    e.target.value = '';
+  };
+
+  const handleFileUpload = async (file: File, type: 'image' | 'video') => {
+    if (!user) return;
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -376,8 +395,14 @@ export default function Chat() {
     } catch (error) {
       console.error('Upload error:', error);
     }
-    
-    e.target.value = '';
+  };
+
+  const handlePhotoSend = async (file: File, singleView: boolean) => {
+    // For now, just upload and send - singleView would need backend support
+    await handleFileUpload(file, 'image');
+    if (singleView) {
+      toast.info('Foto enviada em visualização única');
+    }
   };
 
   const uploadChatAudio = async (file: File) => {
@@ -486,6 +511,21 @@ export default function Chat() {
 
     if (!error && data) {
       setActiveCall({ id: data.id, type });
+    }
+  };
+
+  // Long press handlers for message actions
+  const handleMessageTouchStart = (message: Message) => {
+    longPressTimerRef.current = setTimeout(() => {
+      setSelectedMessage(message);
+      setShowMessageActions(true);
+    }, 2000); // 2 seconds
+  };
+
+  const handleMessageTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
   };
 
@@ -761,14 +801,20 @@ export default function Chat() {
                         <motion.div
                           whileTap={{ scale: 0.95 }}
                           onClick={() => openImageViewer(message.media_url!)}
-                          className="cursor-pointer rounded-2xl overflow-hidden shadow-md"
+                          onTouchStart={() => handleMessageTouchStart(message)}
+                          onTouchEnd={handleMessageTouchEnd}
+                          onMouseDown={() => handleMessageTouchStart(message)}
+                          onMouseUp={handleMessageTouchEnd}
+                          onMouseLeave={handleMessageTouchEnd}
+                          className="relative cursor-pointer rounded-2xl overflow-hidden shadow-md select-none"
                         >
                           <img 
                             src={message.media_url} 
                             alt="Image" 
                             className="max-w-[250px] max-h-[300px] object-cover"
+                            draggable={false}
                           />
-                          <div className={`absolute bottom-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-full ${isOwn ? 'bg-black/50' : 'bg-black/50'}`}>
+                          <div className={`absolute bottom-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50`}>
                             <span className="text-[10px] text-white">
                               {format(new Date(message.created_at), 'HH:mm')}
                             </span>
@@ -783,15 +829,16 @@ export default function Chat() {
                         </motion.div>
                       ) : (
                         <div
-                          className={`relative px-3 py-2 rounded-2xl shadow-sm cursor-pointer ${
+                          className={`relative px-3 py-2 rounded-2xl shadow-sm select-none ${
                             isOwn
                               ? 'bg-primary text-primary-foreground rounded-br-md'
                               : 'bg-card text-foreground rounded-bl-md'
                           }`}
-                          onClick={() => {
-                            setSelectedMessage(message);
-                            setShowMessageActions(true);
-                          }}
+                          onTouchStart={() => handleMessageTouchStart(message)}
+                          onTouchEnd={handleMessageTouchEnd}
+                          onMouseDown={() => handleMessageTouchStart(message)}
+                          onMouseUp={handleMessageTouchEnd}
+                          onMouseLeave={handleMessageTouchEnd}
                         >
                           {message.message_type === 'video' && message.media_url && (
                             <video 
@@ -915,16 +962,9 @@ export default function Chat() {
             <input
               ref={imageInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               className="hidden"
-              onChange={(e) => handleFileUpload(e, 'image')}
-            />
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => handleFileUpload(e, 'video')}
+              onChange={handleFileSelect}
             />
             <Button
               type="button"
@@ -993,6 +1033,17 @@ export default function Chat() {
         onClose={() => setImageViewerOpen(false)}
         imageUrl={selectedImageUrl}
         senderName={friend.first_name}
+      />
+
+      {/* Photo Editor */}
+      <ChatPhotoEditor
+        open={showPhotoEditor}
+        onClose={() => {
+          setShowPhotoEditor(false);
+          setSelectedPhotoFile(null);
+        }}
+        imageFile={selectedPhotoFile}
+        onSend={handlePhotoSend}
       />
 
       {/* Message Actions Sheet */}
