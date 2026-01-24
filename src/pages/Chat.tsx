@@ -654,49 +654,65 @@ export default function Chat() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 z-50 bg-card border-b border-border px-3 py-2 safe-area-top">
+      {/* Modern Header with gradient */}
+      <header className="flex-shrink-0 z-50 bg-gradient-to-r from-card via-card to-primary/5 border-b border-border/50 px-3 py-3 safe-area-top backdrop-blur-xl">
         <div className="flex items-center gap-3 w-full">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/messages')}
-            className="h-9 w-9 rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <motion.div whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/messages')}
+              className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </motion.div>
           
-          <div 
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
             className="relative flex-shrink-0 cursor-pointer"
             onClick={() => navigate(`/profile/${friend.id}`)}
           >
-            <Avatar className="h-10 w-10 border-2 border-primary/20">
-              <AvatarImage src={friend.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                {friend.first_name[0]}
-              </AvatarFallback>
-            </Avatar>
-            {isOnline && (
-              <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
-            )}
-          </div>
+            <div className="relative">
+              <Avatar className="h-11 w-11 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                <AvatarImage src={friend.avatar_url || undefined} className="object-cover" />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/50 text-primary-foreground text-base font-semibold">
+                  {friend.first_name[0]}
+                </AvatarFallback>
+              </Avatar>
+              {isOnline && (
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-green-500 border-[3px] border-card shadow-lg" 
+                />
+              )}
+            </div>
+          </motion.div>
           
           <div 
             className="flex-1 min-w-0 cursor-pointer"
             onClick={() => navigate(`/profile/${friend.id}`)}
           >
-            <p className="font-semibold text-sm truncate">{friend.first_name}</p>
+            <p className="font-bold text-base truncate">{friend.first_name}</p>
             <AnimatePresence mode="wait">
               {isTyping ? (
-                <motion.p 
+                <motion.div 
                   key="typing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-xs text-primary"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="flex items-center gap-1"
                 >
-                  digitando...
-                </motion.p>
+                  <span className="text-xs font-medium text-primary">digitando</span>
+                  <motion.span 
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="text-primary"
+                  >
+                    ...
+                  </motion.span>
+                </motion.div>
               ) : (
                 <motion.p 
                   key="status"
@@ -711,41 +727,47 @@ export default function Chat() {
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => startCall('video')}
-            >
-              <Video className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => startCall('voice')}
-            >
-              <Phone className="h-5 w-5" />
-            </Button>
+          <div className="flex items-center gap-1.5">
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors"
+                onClick={() => startCall('video')}
+              >
+                <Video className="h-5 w-5" />
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors"
+                onClick={() => startCall('voice')}
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+            </motion.div>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
+                <motion.div whileTap={{ scale: 0.9 }}>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </motion.div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setShowWallpaperPicker(true)}>
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+                <DropdownMenuItem onClick={() => setShowWallpaperPicker(true)} className="rounded-xl">
                   <Palette className="h-4 w-4 mr-2" />
                   Mudar papel de parede
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/chat/${friendId}/settings`)}>
+                <DropdownMenuItem onClick={() => navigate(`/chat/${friendId}/settings`)} className="rounded-xl">
                   <Clock className="h-4 w-4 mr-2" />
                   Mensagens temporárias
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/profile/${friend.id}`)}>
+                <DropdownMenuItem onClick={() => navigate(`/profile/${friend.id}`)} className="rounded-xl">
                   Ver perfil
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -754,24 +776,28 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Messages Area */}
+      {/* Messages Area with improved styling */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
+        className="flex-1 overflow-y-auto overflow-x-hidden"
         style={{
           backgroundImage: wallpaper ? `url(${wallpaper})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundColor: wallpaper ? undefined : 'hsl(var(--muted) / 0.3)',
+          backgroundColor: wallpaper ? undefined : 'hsl(var(--muted) / 0.2)',
         }}
       >
-        <div className="max-w-3xl mx-auto space-y-1">
+        <div className="max-w-3xl mx-auto px-3 py-4 space-y-1">
           {Object.entries(groupedMessages).map(([date, msgs]) => (
             <div key={date}>
-              {/* Date Label */}
-              <div className="flex justify-center my-3">
-                <span className="px-3 py-1 text-xs bg-card/90 backdrop-blur-sm text-muted-foreground rounded-lg shadow-sm">
+              {/* Date Label - more modern style */}
+              <div className="flex justify-center my-4">
+                <motion.span 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="px-4 py-1.5 text-xs font-medium bg-card/95 backdrop-blur-xl text-muted-foreground rounded-full shadow-sm border border-border/50"
+                >
                   {formatDateLabel(date)}
-                </span>
+                </motion.span>
               </div>
 
               {/* Messages */}
@@ -782,57 +808,60 @@ export default function Chat() {
                 return (
                   <motion.div
                     key={message.id}
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 15, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}
+                    transition={{ duration: 0.25, type: "spring", stiffness: 300, damping: 25 }}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1.5`}
                   >
-                    <div className={`flex items-end gap-1 max-w-[80%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`flex items-end gap-2 max-w-[85%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                       {!isOwn && showAvatar && (
-                        <Avatar className="h-6 w-6 flex-shrink-0">
-                          <AvatarImage src={friend.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">{friend.first_name[0]}</AvatarFallback>
+                        <Avatar className="h-7 w-7 flex-shrink-0 ring-2 ring-background shadow-md">
+                          <AvatarImage src={friend.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback className="text-xs bg-gradient-to-br from-secondary to-secondary/50">{friend.first_name[0]}</AvatarFallback>
                         </Avatar>
                       )}
-                      {!isOwn && !showAvatar && <div className="w-6" />}
+                      {!isOwn && !showAvatar && <div className="w-7" />}
                       
-                      {/* Image messages - no bubble */}
+                      {/* Image messages - modern card style */}
                       {message.message_type === 'image' && message.media_url ? (
                         <motion.div
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.02 }}
                           onClick={() => openImageViewer(message.media_url!)}
                           onTouchStart={() => handleMessageTouchStart(message)}
                           onTouchEnd={handleMessageTouchEnd}
                           onMouseDown={() => handleMessageTouchStart(message)}
                           onMouseUp={handleMessageTouchEnd}
                           onMouseLeave={handleMessageTouchEnd}
-                          className="relative cursor-pointer rounded-2xl overflow-hidden shadow-md select-none"
+                          className="relative cursor-pointer rounded-3xl overflow-hidden shadow-lg select-none ring-1 ring-border/20"
                         >
                           <img 
                             src={message.media_url} 
                             alt="Image" 
-                            className="max-w-[250px] max-h-[300px] object-cover"
+                            className="max-w-[280px] max-h-[320px] object-cover"
                             draggable={false}
                           />
-                          <div className={`absolute bottom-1 right-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50`}>
-                            <span className="text-[10px] text-white">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                          <div className={`absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm`}>
+                            <span className="text-[11px] text-white font-medium">
                               {format(new Date(message.created_at), 'HH:mm')}
                             </span>
                             {isOwn && (
                               message.read ? (
-                                <CheckCheck className="h-3 w-3 text-blue-400" />
+                                <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
                               ) : (
-                                <Check className="h-3 w-3 text-white" />
+                                <Check className="h-3.5 w-3.5 text-white" />
                               )
                             )}
                           </div>
                         </motion.div>
                       ) : (
-                        <div
-                          className={`relative px-3 py-2 rounded-2xl shadow-sm select-none ${
+                        <motion.div
+                          whileTap={{ scale: 0.98 }}
+                          className={`relative px-4 py-2.5 shadow-sm select-none ${
                             isOwn
-                              ? 'bg-primary text-primary-foreground rounded-br-md'
-                              : 'bg-card text-foreground rounded-bl-md'
+                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-3xl rounded-br-lg'
+                              : 'bg-card/95 backdrop-blur-sm text-foreground rounded-3xl rounded-bl-lg border border-border/50'
                           }`}
                           onTouchStart={() => handleMessageTouchStart(message)}
                           onTouchEnd={handleMessageTouchEnd}
@@ -844,12 +873,12 @@ export default function Chat() {
                             <video 
                               src={message.media_url} 
                               controls 
-                              className="rounded-lg max-w-full max-h-64 mb-1"
+                              className="rounded-2xl max-w-full max-h-64 mb-2"
                             />
                           )}
                           
                           {message.message_type === 'audio' && message.media_url && (
-                            <div className="mb-1">
+                            <div className="mb-1.5">
                               <AudioWaveform
                                 src={message.media_url}
                                 duration={message.duration}
@@ -859,25 +888,25 @@ export default function Chat() {
                           )}
                           
                           {message.content && (
-                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                           )}
                           
-                          <div className={`flex items-center gap-1 justify-end mt-1 ${isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                          <div className={`flex items-center gap-1.5 justify-end mt-1.5 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                             {message.edited && (
-                              <span className="text-[9px]">editado</span>
+                              <span className="text-[10px] italic">editado</span>
                             )}
-                            <span className="text-[10px]">
+                            <span className="text-[11px] font-medium">
                               {format(new Date(message.created_at), 'HH:mm')}
                             </span>
                             {isOwn && (
                               message.read ? (
-                                <CheckCheck className="h-3 w-3 text-blue-400" />
+                                <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
                               ) : (
-                                <Check className="h-3 w-3" />
+                                <Check className="h-3.5 w-3.5" />
                               )
                             )}
                           </div>
-                        </div>
+                        </motion.div>
                       )}
                     </div>
                   </motion.div>
@@ -886,23 +915,31 @@ export default function Chat() {
             </div>
           ))}
           
-          {/* Typing Indicator */}
+          {/* Typing Indicator - Modern bubble style */}
           <AnimatePresence>
             {isTyping && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex justify-start mb-2"
+                initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                className="flex justify-start mb-3"
               >
-                <div className="flex items-center gap-1 px-4 py-2 bg-card rounded-2xl shadow-sm">
-                  <div className="flex gap-1">
+                <div className="flex items-center gap-2 px-5 py-3 bg-card/95 backdrop-blur-sm rounded-3xl rounded-bl-lg shadow-md border border-border/50">
+                  <div className="flex gap-1.5">
                     {[0, 1, 2].map((i) => (
                       <motion.div
                         key={i}
-                        className="w-2 h-2 bg-muted-foreground rounded-full"
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                        className="w-2.5 h-2.5 bg-primary/60 rounded-full"
+                        animate={{ 
+                          y: [0, -6, 0],
+                          scale: [1, 1.1, 1],
+                        }}
+                        transition={{ 
+                          duration: 0.7, 
+                          repeat: Infinity, 
+                          delay: i * 0.15,
+                          ease: "easeInOut"
+                        }}
                       />
                     ))}
                   </div>
@@ -938,26 +975,28 @@ export default function Chat() {
         )}
       </AnimatePresence>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 bg-card border-t border-border px-2 py-2 safe-area-bottom">
-        <form onSubmit={editingMessage ? (e) => { e.preventDefault(); saveEditedMessage(); } : sendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
-            onClick={() => setShowEmojiPicker(true)}
-          >
-            <Smile className="h-5 w-5" />
-          </Button>
+      {/* Modern Input Area */}
+      <div className="flex-shrink-0 bg-gradient-to-t from-card via-card to-card/95 border-t border-border/50 px-3 py-3 safe-area-bottom backdrop-blur-xl">
+        <form onSubmit={editingMessage ? (e) => { e.preventDefault(); saveEditedMessage(); } : sendMessage} className="flex items-center gap-2.5 max-w-3xl mx-auto">
+          <motion.div whileTap={{ scale: 0.9 }}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-full bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+              onClick={() => setShowEmojiPicker(true)}
+            >
+              <Smile className="h-5 w-5" />
+            </Button>
+          </motion.div>
           
           <div className="flex-1 relative">
             <Input
               type="text"
               value={editingMessage ? editText : newMessage}
               onChange={(e) => editingMessage ? setEditText(e.target.value) : handleTyping(e.target.value)}
-              placeholder="Mensagem"
-              className="h-10 rounded-full bg-muted/50 border-0 pr-12 focus-visible:ring-1 focus-visible:ring-primary/30"
+              placeholder="Escreva uma mensagem..."
+              className="h-12 rounded-full bg-muted/50 border-0 px-5 pr-14 text-base focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60"
             />
             <input
               ref={imageInputRef}
@@ -966,42 +1005,50 @@ export default function Chat() {
               className="hidden"
               onChange={handleFileSelect}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-              onClick={() => imageInputRef.current?.click()}
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                <Paperclip className="h-5 w-5" />
+              </Button>
+            </motion.div>
           </div>
           
-          {(editingMessage ? editText.trim() : newMessage.trim()) ? (
-            <Button
-              type="submit"
-              size="icon"
-              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              size="icon"
-              onClick={() => {
-                if (isRecording) stopVoiceRecording();
-                else startVoiceRecording();
-              }}
-              className={`h-10 w-10 rounded-full ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'}`}
-            >
-              {isRecording ? (
-                <span className="text-xs font-semibold tabular-nums">{recordingTime}s</span>
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-          )}
+          <motion.div whileTap={{ scale: 0.85 }} whileHover={{ scale: 1.05 }}>
+            {(editingMessage ? editText.trim() : newMessage.trim()) ? (
+              <Button
+                type="submit"
+                size="icon"
+                className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                onClick={() => {
+                  if (isRecording) stopVoiceRecording();
+                  else startVoiceRecording();
+                }}
+                className={`h-12 w-12 rounded-full shadow-lg ${
+                  isRecording 
+                    ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/30 animate-pulse' 
+                    : 'bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-primary/30'
+                }`}
+              >
+                {isRecording ? (
+                  <span className="text-sm font-bold tabular-nums">{recordingTime}s</span>
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </Button>
+            )}
+          </motion.div>
         </form>
       </div>
 
