@@ -591,6 +591,133 @@ export type Database = {
           },
         ]
       }
+      ctf_challenges: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          difficulty: string
+          flag: string
+          hint: string | null
+          id: string
+          is_active: boolean | null
+          order_index: number
+          points: number
+          solution_explanation: string | null
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          difficulty?: string
+          flag: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number
+          points?: number
+          solution_explanation?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          flag?: string
+          hint?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number
+          points?: number
+          solution_explanation?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      ctf_participants: {
+        Row: {
+          affiliate_code: string | null
+          challenges_completed: number | null
+          current_rank: number | null
+          enrolled_at: string
+          id: string
+          referred_by: string | null
+          total_points: number | null
+          user_id: string
+        }
+        Insert: {
+          affiliate_code?: string | null
+          challenges_completed?: number | null
+          current_rank?: number | null
+          enrolled_at?: string
+          id?: string
+          referred_by?: string | null
+          total_points?: number | null
+          user_id: string
+        }
+        Update: {
+          affiliate_code?: string | null
+          challenges_completed?: number | null
+          current_rank?: number | null
+          enrolled_at?: string
+          id?: string
+          referred_by?: string | null
+          total_points?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctf_participants_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "ctf_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctf_submissions: {
+        Row: {
+          attempts: number | null
+          challenge_id: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          solved_at: string | null
+          submitted_flag: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          challenge_id: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          solved_at?: string | null
+          submitted_flag: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          solved_at?: string | null
+          submitted_flag?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctf_submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "ctf_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null

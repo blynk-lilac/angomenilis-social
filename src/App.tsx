@@ -58,6 +58,7 @@ import Admin from "./pages/Admin";
 import PostLikes from "./pages/PostLikes";
 import OnlineFriends from "./pages/OnlineFriends";
 import VideoEditor from "./pages/VideoEditor";
+import CTF from "./pages/CTF";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -500,6 +501,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <VideoEditor />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* CTF Hacking Route */}
+        <Route
+          path="/ctf"
+          element={
+            <ProtectedRoute>
+              <CTF />
             </ProtectedRoute>
           }
         />

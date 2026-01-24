@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark, Shield, Users, Sun, Moon } from "lucide-react";
+import { Home, Search, Film, MessageCircle, Heart, PlusSquare, Menu, User, LogOut, Settings, Bookmark, Shield, Users, Sun, Moon, Target } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -74,6 +74,7 @@ export default function InstagramSidebar() {
     { icon: MessageCircle, label: "Mensagens", path: "/messages" },
     { icon: Heart, label: "Notificações", path: "/notifications" },
     { icon: PlusSquare, label: "Criar", path: "/create" },
+    { icon: Target, label: "CTF Hacking", path: "/ctf" },
     { icon: Users, label: "Amigos", path: "/friends" },
     { icon: Bookmark, label: "Guardados", path: "/saved" },
     { icon: Settings, label: "Configurações", path: "/app-settings" },
