@@ -16,13 +16,11 @@ import {
   ArrowLeft, 
   ArrowRight,
   Sparkles,
-  Check,
   Loader2,
   AtSign,
-  MessageCircle,
-  Heart,
-  Camera,
-  Users
+  Zap,
+  Shield,
+  Globe
 } from 'lucide-react';
 import { Logo2026 } from '@/components/Logo2026';
 
@@ -53,7 +51,7 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -156,60 +154,22 @@ export default function Auth() {
     }
   };
 
-  const floatingIcons = [
-    { Icon: Heart, delay: 0 },
-    { Icon: MessageCircle, delay: 0.5 },
-    { Icon: Camera, delay: 1 },
-    { Icon: Users, delay: 1.5 },
-    { Icon: Sparkles, delay: 2 },
+  const features = [
+    { icon: Zap, text: 'Conexões instantâneas' },
+    { icon: Shield, text: 'Segurança avançada' },
+    { icon: Globe, text: 'Comunidade global' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex flex-col overflow-hidden relative">
-      {/* Floating Background Icons */}
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden relative">
+      {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {floatingIcons.map(({ Icon, delay }, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ 
-              opacity: [0.1, 0.2, 0.1], 
-              y: [-20, 20, -20],
-              x: [0, 10, 0]
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              delay,
-              ease: "easeInOut"
-            }}
-            className="absolute"
-            style={{
-              left: `${15 + i * 18}%`,
-              top: `${10 + (i % 3) * 30}%`,
-            }}
-          >
-            <Icon className="h-12 w-12 text-primary/10" />
-          </motion.div>
-        ))}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-gradient-to-b from-primary/20 via-primary/5 to-transparent blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-accent/20 to-transparent blur-3xl" />
+        <div className="absolute top-1/3 right-0 w-[300px] h-[300px] rounded-full bg-gradient-to-bl from-primary/10 to-transparent blur-3xl" />
         
-        {/* Gradient Orbs */}
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1]
-          }}
-          transition={{ duration: 5, repeat: Infinity }}
-          className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl"
-        />
-        <motion.div
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.15, 0.1]
-          }}
-          transition={{ duration: 6, repeat: Infinity, delay: 1 }}
-          className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-accent/20 to-transparent blur-3xl"
-        />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--muted)/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--muted)/0.3)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -222,42 +182,48 @@ export default function Auth() {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
           >
-            {/* Animated Logo 2026 */}
+            {/* Logo */}
             <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", duration: 1, bounce: 0.5 }}
-              className="mb-6"
+              initial={{ scale: 0, y: -50 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ type: "spring", duration: 0.8, bounce: 0.4 }}
+              className="mb-8"
             >
               <Logo2026 size="xl" />
             </motion.div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-muted-foreground text-center text-lg mb-10 max-w-xs"
-            >
-              Conecte-se com amigos e compartilhe momentos
-            </motion.p>
-
-            {/* Feature Pills */}
+            {/* Tagline */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="flex flex-wrap justify-center gap-2 mb-12"
+              transition={{ delay: 0.3 }}
+              className="text-center mb-10"
             >
-              {['Stories', 'Reels', 'Chat', 'Grupos'].map((feature, i) => (
+              <h1 className="text-3xl font-black mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                Conecte. Compartilhe. Inspire.
+              </h1>
+              <p className="text-muted-foreground text-lg max-w-sm">
+                A rede social que valoriza conexões autênticas
+              </p>
+            </motion.div>
+
+            {/* Features */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap justify-center gap-4 mb-12"
+            >
+              {features.map((feature, i) => (
                 <motion.div
-                  key={feature}
+                  key={feature.text}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 + i * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  className="px-4 py-2 rounded-full bg-muted/80 backdrop-blur-sm text-sm font-medium"
+                  transition={{ delay: 0.5 + i * 0.1 }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/60 backdrop-blur-sm border border-border/50"
                 >
-                  {feature}
+                  <feature.icon className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{feature.text}</span>
                 </motion.div>
               ))}
             </motion.div>
@@ -266,31 +232,35 @@ export default function Auth() {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="w-full max-w-xs space-y-3"
+              transition={{ delay: 0.6 }}
+              className="w-full max-w-sm space-y-3"
             >
               <Button
                 onClick={() => setMode('signup')}
-                className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
+                className="w-full h-14 rounded-2xl text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
               >
-                Criar Conta
+                Criar Conta Grátis
+                <Sparkles className="ml-2 h-5 w-5" />
               </Button>
               <Button
                 onClick={() => setMode('login')}
                 variant="outline"
-                className="w-full h-14 rounded-2xl text-lg font-bold border-2 hover:bg-muted/50"
+                className="w-full h-14 rounded-2xl text-lg font-bold border-2 border-border hover:bg-muted/50 transition-all hover:scale-[1.02]"
               >
-                Entrar
+                Já tenho conta
               </Button>
             </motion.div>
 
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
-              className="text-xs text-muted-foreground text-center mt-8 max-w-xs"
+              transition={{ delay: 0.8 }}
+              className="text-xs text-muted-foreground text-center mt-10 max-w-xs"
             >
-              Ao continuar, concordas com os nossos Termos de Serviço e Política de Privacidade
+              Ao continuar, concordas com os nossos{' '}
+              <span className="text-primary cursor-pointer hover:underline">Termos de Serviço</span>
+              {' '}e{' '}
+              <span className="text-primary cursor-pointer hover:underline">Política de Privacidade</span>
             </motion.p>
           </motion.div>
         )}
@@ -313,44 +283,38 @@ export default function Auth() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setMode('welcome')}
-                className="h-10 w-10 rounded-full"
+                className="h-10 w-10 rounded-full hover:bg-muted"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </motion.div>
 
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
+              {/* Icon */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.1 }}
-                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto shadow-xl"
+                className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center mb-8 mx-auto shadow-2xl shadow-primary/30"
               >
                 <User className="h-10 w-10 text-primary-foreground" />
               </motion.div>
 
-              <motion.h1
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-3xl font-black text-center mb-1"
+                className="text-center mb-8"
               >
-                Bem-vindo de volta
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="text-muted-foreground text-center mb-8"
-              >
-                Entre na sua conta Blynk
-              </motion.p>
+                <h1 className="text-3xl font-black mb-2">Bem-vindo de volta</h1>
+                <p className="text-muted-foreground">Entre na sua conta Blynk</p>
+              </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="space-y-4"
+                transition={{ delay: 0.3 }}
+                className="space-y-5"
               >
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Email</Label>
@@ -361,7 +325,7 @@ export default function Auth() {
                       placeholder="seu@email.com"
                       value={formData.email}
                       onChange={(e) => updateFormData('email', e.target.value)}
-                      className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                      className="h-14 pl-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                     />
                   </div>
                 </div>
@@ -375,7 +339,7 @@ export default function Auth() {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => updateFormData('password', e.target.value)}
-                      className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
+                      className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                     />
                     <Button
                       type="button"
@@ -389,18 +353,20 @@ export default function Auth() {
                   </div>
                 </div>
 
-                <Button
-                  variant="link"
-                  onClick={() => setMode('forgotPassword')}
-                  className="px-0 text-sm text-primary font-semibold"
-                >
-                  Esqueceste a senha?
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    variant="link"
+                    onClick={() => setMode('forgotPassword')}
+                    className="px-0 text-sm text-primary font-semibold h-auto"
+                  >
+                    Esqueceste a senha?
+                  </Button>
+                </div>
 
                 <Button
                   onClick={handleLogin}
                   disabled={isLoading}
-                  className="w-full h-14 rounded-2xl text-lg font-bold mt-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                  className="w-full h-14 rounded-2xl text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg transition-all hover:scale-[1.02]"
                 >
                   {isLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
@@ -413,14 +379,14 @@ export default function Auth() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.4 }}
                 className="text-center text-muted-foreground mt-8"
               >
                 Não tens conta?{' '}
                 <Button
                   variant="link"
                   onClick={() => setMode('signup')}
-                  className="px-0 font-bold text-primary"
+                  className="px-0 font-bold text-primary h-auto"
                 >
                   Criar agora
                 </Button>
@@ -461,9 +427,8 @@ export default function Auth() {
                   initial={{ scale: 0.8 }}
                   animate={{ 
                     scale: signupStep >= step ? 1 : 0.8,
-                    backgroundColor: signupStep >= step ? 'hsl(var(--primary))' : 'hsl(var(--muted))'
                   }}
-                  className="h-2 w-10 rounded-full transition-colors"
+                  className={`h-2 w-12 rounded-full transition-colors ${signupStep >= step ? 'bg-primary' : 'bg-muted'}`}
                 />
               ))}
             </div>
@@ -484,7 +449,7 @@ export default function Auth() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring" }}
-                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
+                        className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto shadow-2xl shadow-primary/30"
                       >
                         <User className="h-10 w-10 text-primary-foreground" />
                       </motion.div>
@@ -492,23 +457,19 @@ export default function Auth() {
                       <p className="text-muted-foreground mt-2">Este será o teu nome de exibição</p>
                     </div>
 
-                    <Input
-                      placeholder="O teu nome"
-                      value={formData.firstName}
-                      onChange={(e) => updateFormData('firstName', e.target.value)}
-                      className="h-14 rounded-2xl bg-muted/50 border-0 text-lg text-center focus:ring-2 focus:ring-primary"
-                      autoFocus
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="O teu nome"
+                        value={formData.firstName}
+                        onChange={(e) => updateFormData('firstName', e.target.value)}
+                        className="h-14 rounded-2xl bg-muted/50 border-border/50 text-center text-lg font-medium focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
 
                     <Button
-                      onClick={() => {
-                        if (!formData.firstName.trim()) {
-                          toast.error('Digite o teu nome');
-                          return;
-                        }
-                        setSignupStep(2);
-                      }}
-                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => setSignupStep(2)}
+                      disabled={!formData.firstName.trim()}
+                      className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all hover:scale-[1.02]"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
@@ -529,46 +490,47 @@ export default function Auth() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring" }}
-                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
+                        className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-6 mx-auto shadow-2xl"
                       >
-                        <AtSign className="h-10 w-10 text-primary-foreground" />
+                        <AtSign className="h-10 w-10 text-white" />
                       </motion.div>
-                      <h1 className="text-3xl font-black">Os teus dados</h1>
-                      <p className="text-muted-foreground mt-2">Email e username</p>
+                      <h1 className="text-3xl font-black">Dados da conta</h1>
+                      <p className="text-muted-foreground mt-2">Email e nome de usuário</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          value={formData.email}
-                          onChange={(e) => updateFormData('email', e.target.value)}
-                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
-                        />
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="seu@email.com"
+                            value={formData.email}
+                            onChange={(e) => updateFormData('email', e.target.value)}
+                            className="h-14 pl-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
                       </div>
 
-                      <div className="relative">
-                        <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          placeholder="Username"
-                          value={formData.username}
-                          onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
-                        />
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Nome de usuário</Label>
+                        <div className="relative">
+                          <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input
+                            placeholder="seu_username"
+                            value={formData.username}
+                            onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                            className="h-14 pl-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <Button
-                      onClick={() => {
-                        if (!formData.email || !formData.username) {
-                          toast.error('Preenche todos os campos');
-                          return;
-                        }
-                        setSignupStep(3);
-                      }}
-                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => setSignupStep(3)}
+                      disabled={!formData.email || !formData.username}
+                      className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all hover:scale-[1.02]"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
@@ -589,67 +551,64 @@ export default function Auth() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring" }}
-                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 mx-auto shadow-xl"
+                        className="w-20 h-20 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-6 mx-auto shadow-2xl"
                       >
-                        <Lock className="h-10 w-10 text-primary-foreground" />
+                        <Lock className="h-10 w-10 text-white" />
                       </motion.div>
                       <h1 className="text-3xl font-black">Cria uma senha</h1>
-                      <p className="text-muted-foreground mt-2">Mínimo 6 caracteres</p>
+                      <p className="text-muted-foreground mt-2">Usa pelo menos 8 caracteres</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Senha"
-                          value={formData.password}
-                          onChange={(e) => updateFormData('password', e.target.value)}
-                          className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
-                        >
-                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </Button>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Senha</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={formData.password}
+                            onChange={(e) => updateFormData('password', e.target.value)}
+                            className="h-14 pl-12 pr-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
+                          >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Confirmar senha"
-                          value={formData.confirmPassword}
-                          onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                          className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
-                        />
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Confirmar senha</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={formData.confirmPassword}
+                            onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                            className="h-14 pl-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <Button
-                      onClick={() => {
-                        if (formData.password.length < 6) {
-                          toast.error('A senha deve ter no mínimo 6 caracteres');
-                          return;
-                        }
-                        if (formData.password !== formData.confirmPassword) {
-                          toast.error('As senhas não coincidem');
-                          return;
-                        }
-                        setSignupStep(4);
-                      }}
-                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => setSignupStep(4)}
+                      disabled={formData.password.length < 8 || formData.password !== formData.confirmPassword}
+                      className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all hover:scale-[1.02]"
                     >
                       Continuar <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
 
-                {/* Step 4: Confirmation */}
+                {/* Step 4: Confirm */}
                 {signupStep === 4 && (
                   <motion.div
                     key="step4"
@@ -663,25 +622,26 @@ export default function Auth() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring" }}
-                        className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-4 mx-auto shadow-xl"
+                        className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 mx-auto shadow-2xl"
                       >
-                        <Check className="h-10 w-10 text-white" />
+                        <Sparkles className="h-10 w-10 text-white" />
                       </motion.div>
                       <h1 className="text-3xl font-black">Tudo pronto!</h1>
                       <p className="text-muted-foreground mt-2">Confirma os teus dados</p>
                     </div>
 
-                    <div className="space-y-3 bg-muted/30 rounded-2xl p-4">
-                      <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Nome</span>
+                    {/* Summary */}
+                    <div className="bg-muted/50 rounded-2xl p-5 space-y-4 border border-border/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-sm">Nome</span>
                         <span className="font-semibold">{formData.firstName}</span>
                       </div>
-                      <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Email</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-sm">Email</span>
                         <span className="font-semibold text-sm">{formData.email}</span>
                       </div>
-                      <div className="flex justify-between py-2">
-                        <span className="text-muted-foreground">Username</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-sm">Username</span>
                         <span className="font-semibold">@{formData.username}</span>
                       </div>
                     </div>
@@ -689,17 +649,38 @@ export default function Auth() {
                     <Button
                       onClick={handleSignup}
                       disabled={isLoading}
-                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg"
+                      className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-accent shadow-lg transition-all hover:scale-[1.02]"
                     >
                       {isLoading ? (
                         <Loader2 className="h-6 w-6 animate-spin" />
                       ) : (
-                        <>Criar Conta <Sparkles className="ml-2 h-5 w-5" /></>
+                        <>
+                          Criar minha conta
+                          <Sparkles className="ml-2 h-5 w-5" />
+                        </>
                       )}
                     </Button>
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {signupStep === 1 && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-center text-muted-foreground mt-8"
+                >
+                  Já tens conta?{' '}
+                  <Button
+                    variant="link"
+                    onClick={() => setMode('login')}
+                    className="px-0 font-bold text-primary h-auto"
+                  >
+                    Entrar
+                  </Button>
+                </motion.p>
+              )}
             </div>
           </motion.div>
         )}
@@ -732,41 +713,70 @@ export default function Auth() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring" }}
-                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto shadow-xl"
+                transition={{ type: "spring", delay: 0.1 }}
+                className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-8 mx-auto shadow-2xl"
               >
-                <Mail className="h-10 w-10 text-primary-foreground" />
+                <Mail className="h-10 w-10 text-white" />
               </motion.div>
 
-              <h1 className="text-3xl font-black text-center mb-2">Recuperar senha</h1>
-              <p className="text-muted-foreground text-center mb-8">
-                Vamos enviar um link para redefinires a tua senha
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-center mb-8"
+              >
+                <h1 className="text-3xl font-black mb-2">Recuperar senha</h1>
+                <p className="text-muted-foreground">Enviaremos um link para o teu email</p>
+              </motion.div>
 
-              <div className="space-y-4">
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="O teu email"
-                    value={formData.email}
-                    onChange={(e) => updateFormData('email', e.target.value)}
-                    className="h-14 pl-12 rounded-2xl bg-muted/50 border-0 text-base focus:ring-2 focus:ring-primary"
-                  />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-5"
+              >
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={formData.email}
+                      onChange={(e) => updateFormData('email', e.target.value)}
+                      className="h-14 pl-12 rounded-2xl bg-muted/50 border-border/50 text-base focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
                 </div>
 
                 <Button
                   onClick={handleForgotPassword}
-                  disabled={isLoading}
-                  className="w-full h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-primary/80"
+                  disabled={isLoading || !formData.email}
+                  className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg transition-all hover:scale-[1.02]"
                 >
                   {isLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    'Enviar email'
+                    'Enviar link de recuperação'
                   )}
                 </Button>
-              </div>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-center text-muted-foreground mt-8"
+              >
+                Lembrou a senha?{' '}
+                <Button
+                  variant="link"
+                  onClick={() => setMode('login')}
+                  className="px-0 font-bold text-primary h-auto"
+                >
+                  Voltar ao login
+                </Button>
+              </motion.p>
             </div>
           </motion.div>
         )}

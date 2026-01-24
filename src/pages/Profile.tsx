@@ -53,7 +53,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TopBar } from "@/components/TopBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import VerificationBadge from "@/components/VerificationBadge";
+import VerificationBadge, { hasSpecialBadgeEmoji } from "@/components/VerificationBadge";
 import { ProfileSkeleton } from "@/components/loading/ProfileSkeleton";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import AssociatedAccounts from "@/components/AssociatedAccounts";
@@ -440,7 +440,7 @@ export default function Profile() {
               </Button>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-base font-bold">{profile.first_name}</h1>
-                {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-4 h-4" />}
+                {(profile.verified || hasSpecialBadgeEmoji(profile.username) || hasSpecialBadgeEmoji(profile.full_name)) && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} username={profile.username} fullName={profile.full_name} className="w-4 h-4" />}
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -522,7 +522,7 @@ export default function Profile() {
               <div className="flex-1 pt-20">
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-2xl font-bold">{profile.full_name || profile.first_name}</h1>
-                  {profile.verified && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} className="w-5 h-5" />}
+                  {(profile.verified || hasSpecialBadgeEmoji(profile.username) || hasSpecialBadgeEmoji(profile.full_name)) && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} username={profile.username} fullName={profile.full_name} className="w-5 h-5" />}
                 </div>
                 {profile.username && (
                   <p className="text-muted-foreground text-sm">@{profile.username}</p>

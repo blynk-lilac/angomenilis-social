@@ -9,7 +9,7 @@ import { Heart, MessageCircle, Share2, Send, ArrowLeft, MoreHorizontal, Smile, I
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import VerificationBadge from "@/components/VerificationBadge";
+import VerificationBadge, { hasSpecialBadgeEmoji } from "@/components/VerificationBadge";
 import MentionTextarea from "@/components/MentionTextarea";
 import { useHashtagsAndMentions } from "@/hooks/useHashtagsAndMentions";
 import { ImageGalleryViewer } from "@/components/ImageGalleryViewer";
@@ -206,10 +206,11 @@ const CommentCard = ({
             >
               {comment.profiles.first_name || comment.profiles.username}
             </span>
-            {comment.profiles.verified && (
+            {(comment.profiles.verified || hasSpecialBadgeEmoji(comment.profiles.username)) && (
               <VerificationBadge 
                 verified={comment.profiles.verified} 
-                badgeType={comment.profiles.badge_type} 
+                badgeType={comment.profiles.badge_type}
+                username={comment.profiles.username}
                 className="w-3.5 h-3.5"
               />
             )}

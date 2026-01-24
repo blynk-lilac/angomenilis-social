@@ -9,6 +9,7 @@ interface VerificationBadgeProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   username?: string; // To check for special emoji
+  fullName?: string; // Also check full name for special emoji
 }
 
 const sizeClasses = {
@@ -31,16 +32,16 @@ export default function VerificationBadge({
   type,
   size = "md",
   className,
-  username
+  username,
+  fullName
 }: VerificationBadgeProps) {
-  // Check if username has special emoji for effect badge
-  const hasEffectBadge = hasSpecialBadgeEmoji(username);
+  // Check if username or fullName has special emoji for effect badge
+  const hasEffectBadge = hasSpecialBadgeEmoji(username) || hasSpecialBadgeEmoji(fullName);
   
-  // Só mostra o badge se o usuário estiver verificado OU tiver um badge_type/type definido
   const effectiveType = type || badgeType;
   
-  // Show effect badge if user has special emoji (even if not verified)
-  if (hasEffectBadge && !verified) {
+  // Always show effect badge if user has special emoji (even if not verified)
+  if (hasEffectBadge) {
     return (
       <img 
         src={badgeEffectBlack} 
@@ -51,6 +52,7 @@ export default function VerificationBadge({
     );
   }
   
+  // Show verified badge only if actually verified
   if (!verified && !effectiveType) return null;
 
   return (

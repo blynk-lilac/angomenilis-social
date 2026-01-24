@@ -15,7 +15,7 @@ import StoriesBar from "@/components/StoriesBar";
 import CreateStory from "@/components/CreateStory";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import VerificationBadge from "@/components/VerificationBadge";
+import VerificationBadge, { hasSpecialBadgeEmoji } from "@/components/VerificationBadge";
 import { FeedSkeleton } from "@/components/loading/FeedSkeleton";
 import { parseTextWithLinksAndMentions } from "@/utils/textUtils";
 import { SponsoredAd } from "@/components/SponsoredAd";
@@ -470,8 +470,14 @@ export default function Feed() {
                                 <span className="font-bold text-[15px] hover:underline">
                                   {post.profiles.username || post.profiles.first_name}
                                 </span>
-                                {post.profiles.verified && (
-                                  <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} className="w-4 h-4" />
+                                {(post.profiles.verified || hasSpecialBadgeEmoji(post.profiles.username) || hasSpecialBadgeEmoji(post.profiles.full_name)) && (
+                                  <VerificationBadge 
+                                    verified={post.profiles.verified} 
+                                    badgeType={post.profiles.badge_type} 
+                                    username={post.profiles.username}
+                                    fullName={post.profiles.full_name}
+                                    className="w-4 h-4" 
+                                  />
                                 )}
                                 <span className="text-muted-foreground text-sm">
                                   · {formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}
