@@ -72,16 +72,20 @@ export default function Feed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (profile) setMyProfile(profile);
+        // Load profile and saved posts in parallel
+        const [profileResult, savedResult] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('saved_posts').select('post_id').eq('user_id', user.id)
+        ]);
         
-        // Load saved posts
-        const { data: saved } = await supabase.from('saved_posts').select('post_id').eq('user_id', user.id);
-        if (saved) setSavedPosts(saved.map(s => s.post_id));
+        if (profileResult.data) setMyProfile(profileResult.data);
+        if (savedResult.data) setSavedPosts(savedResult.data.map(s => s.post_id));
       }
       
+      // Load posts and ads in parallel for speed
       await Promise.all([loadPosts(), loadSponsoredAds()]);
-      setTimeout(() => setLoading(false), 1500);
+      // Show content immediately - no artificial delay
+      setLoading(false);
     };
     loadData();
 
@@ -149,7 +153,7 @@ export default function Feed() {
       .from("posts")
       .select(`*, profiles(id, username, full_name, first_name, avatar_url, verified, badge_type), post_likes(user_id), post_reactions(user_id, reaction_type), comments(id)`)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(30); // Limit for faster initial load
 
     if (data) setPosts(data);
   };

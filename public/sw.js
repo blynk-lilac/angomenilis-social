@@ -1,6 +1,10 @@
-// Service Worker for PWA with Push Notifications - WhatsApp Style
-const CACHE_NAME = 'blynk-v2';
-const ASSETS_TO_CACHE = [
+// Enhanced Service Worker for PWA with Aggressive Caching and Offline Support
+const CACHE_NAME = 'blynk-v3';
+const STATIC_CACHE = 'blynk-static-v3';
+const DYNAMIC_CACHE = 'blynk-dynamic-v3';
+const MEDIA_CACHE = 'blynk-media-v3';
+
+const STATIC_ASSETS = [
   '/',
   '/favicon.png',
   '/logo-192.png',
@@ -9,52 +13,191 @@ const ASSETS_TO_CACHE = [
   '/sounds/calling.mp3',
   '/sounds/connect.mp3',
   '/sounds/hangup.mp3',
-  '/sounds/ringing.mp3'
+  '/sounds/ringing.mp3',
+  '/sounds/like.mp3'
 ];
 
-self.addEventListener('install', function(event) {
+// Cache limits
+const DYNAMIC_CACHE_LIMIT = 100;
+const MEDIA_CACHE_LIMIT = 50;
+
+// Install - cache static assets
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE)
+      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', function(event) {
+// Activate - clean old caches
+self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.filter(key => 
+          key !== STATIC_CACHE && 
+          key !== DYNAMIC_CACHE && 
+          key !== MEDIA_CACHE
+        ).map(key => caches.delete(key))
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Handle push notifications with WhatsApp-style features
-self.addEventListener('push', function(event) {
+// Limit cache size
+const limitCacheSize = (cacheName, maxItems) => {
+  caches.open(cacheName).then(cache => {
+    cache.keys().then(keys => {
+      if (keys.length > maxItems) {
+        cache.delete(keys[0]).then(() => limitCacheSize(cacheName, maxItems));
+      }
+    });
+  });
+};
+
+// Fetch handler with advanced caching strategies
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+
+  // Handle different resource types
+  if (isMediaRequest(request)) {
+    event.respondWith(cacheFirstWithNetwork(request, MEDIA_CACHE));
+  } else if (isApiRequest(request)) {
+    event.respondWith(networkFirstWithCache(request, DYNAMIC_CACHE));
+  } else if (isStaticAsset(request)) {
+    event.respondWith(cacheFirstWithNetwork(request, STATIC_CACHE));
+  } else {
+    event.respondWith(staleWhileRevalidate(request, DYNAMIC_CACHE));
+  }
+});
+
+// Check if request is for media (images/videos)
+function isMediaRequest(request) {
+  const url = request.url;
+  return url.includes('supabase.co/storage') || 
+         url.match(/\.(jpg|jpeg|png|gif|webp|mp4|webm|mp3)(\?|$)/i);
+}
+
+// Check if request is for API
+function isApiRequest(request) {
+  return request.url.includes('supabase.co') && 
+         !request.url.includes('/storage/');
+}
+
+// Check if request is for static asset
+function isStaticAsset(request) {
+  const url = request.url;
+  return url.match(/\.(js|css|woff2?|ttf|eot)(\?|$)/i) ||
+         STATIC_ASSETS.some(asset => url.endsWith(asset));
+}
+
+// Cache-first strategy with network fallback
+async function cacheFirstWithNetwork(request, cacheName) {
+  const cachedResponse = await caches.match(request);
+  
+  if (cachedResponse) {
+    // Refresh cache in background
+    refreshCache(request, cacheName);
+    return cachedResponse;
+  }
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+      limitCacheSize(cacheName, cacheName === MEDIA_CACHE ? MEDIA_CACHE_LIMIT : DYNAMIC_CACHE_LIMIT);
+    }
+    return networkResponse;
+  } catch (error) {
+    // Return offline placeholder for images
+    if (request.url.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i)) {
+      return new Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#eee" width="100%" height="100%"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#999" font-size="10">Offline</text></svg>',
+        { headers: { 'Content-Type': 'image/svg+xml' } }
+      );
+    }
+    throw error;
+  }
+}
+
+// Network-first strategy with cache fallback
+async function networkFirstWithCache(request, cacheName) {
+  try {
+    const networkResponse = await fetch(request, { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    
+    if (networkResponse.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+      limitCacheSize(cacheName, DYNAMIC_CACHE_LIMIT);
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+    throw error;
+  }
+}
+
+// Stale-while-revalidate strategy
+async function staleWhileRevalidate(request, cacheName) {
+  const cachedResponse = await caches.match(request);
+  
+  const fetchPromise = fetch(request).then(networkResponse => {
+    if (networkResponse.ok) {
+      caches.open(cacheName).then(cache => {
+        cache.put(request, networkResponse.clone());
+        limitCacheSize(cacheName, DYNAMIC_CACHE_LIMIT);
+      });
+    }
+    return networkResponse;
+  }).catch(() => cachedResponse);
+
+  return cachedResponse || fetchPromise;
+}
+
+// Refresh cache in background
+async function refreshCache(request, cacheName) {
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse);
+    }
+  } catch (error) {
+    // Silent fail - we have cached version
+  }
+}
+
+// Push notification handling
+self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'Blynk';
   
   const options = {
-    body: data.body || 'Nova mensagem',
-    icon: data.icon || data.avatar || '/logo-192.png',
+    body: data.body || 'Nova notificação',
+    icon: data.icon || '/logo-192.png',
     badge: '/favicon.png',
-    vibrate: [200, 100, 200, 100, 200],
+    vibrate: [200, 100, 200],
     tag: data.tag || `notification-${Date.now()}`,
-    image: data.image || null,
     data: {
       url: data.url || '/',
-      avatar: data.avatar || null,
-      senderId: data.senderId || null,
-      messageId: data.messageId || null,
       ...data
     },
-    requireInteraction: true,
+    requireInteraction: false,
     actions: [
-      { action: 'reply', title: '💬 Responder', type: 'text', placeholder: 'Digite sua resposta...' },
-      { action: 'mark-read', title: '✓ Lido' }
-    ],
-    silent: false
+      { action: 'open', title: 'Abrir' },
+      { action: 'dismiss', title: 'Fechar' }
+    ]
   };
 
   event.waitUntil(
@@ -62,103 +205,64 @@ self.addEventListener('push', function(event) {
   );
 });
 
-// Handle notification clicks with quick actions
-self.addEventListener('notificationclick', function(event) {
-  const notification = event.notification;
-  const action = event.action;
-  const data = notification.data || {};
+// Notification click handling
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
   
-  notification.close();
-
-  if (action === 'reply') {
-    // Handle inline reply (for browsers that support it)
-    event.waitUntil(
-      handleReplyAction(event, data)
-    );
-    return;
-  }
-  
-  if (action === 'mark-read') {
-    // Mark message as read
-    event.waitUntil(
-      sendMessageToClient({ type: 'MARK_READ', senderId: data.senderId, messageId: data.messageId })
-    );
-    return;
-  }
-  
-  // Default: open the chat
-  const urlToOpen = data.url || '/messages';
+  const urlToOpen = event.notification.data?.url || '/';
   
   event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then(function(clientList) {
-      // Focus existing window if open
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if ('focus' in client) {
-          return client.focus().then(() => {
-            client.postMessage({ type: 'NAVIGATE', url: urlToOpen });
-            return client;
-          });
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        for (const client of clientList) {
+          if ('focus' in client) {
+            return client.focus().then(() => {
+              client.postMessage({ type: 'NAVIGATE', url: urlToOpen });
+            });
+          }
         }
-      }
-      // Open new window
-      if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
-      }
-    })
+      })
   );
 });
 
-// Handle notification reply action
-async function handleReplyAction(event, data) {
-  // For browsers supporting inline replies
-  if (event.reply) {
-    const reply = event.reply;
-    await sendMessageToClient({
-      type: 'NOTIFICATION_REPLY',
-      senderId: data.senderId,
-      reply: reply
-    });
-    return;
-  }
-  
-  // Fallback: open chat
-  const urlToOpen = data.url || '/messages';
-  return clients.openWindow(urlToOpen);
-}
-
-// Send message to all clients
-async function sendMessageToClient(message) {
-  const allClients = await clients.matchAll({ includeUncontrolled: true });
-  for (const client of allClients) {
-    client.postMessage(message);
-  }
-}
-
-// Handle background sync for offline messages
-self.addEventListener('sync', function(event) {
+// Background sync
+self.addEventListener('sync', event => {
   if (event.tag === 'sync-messages') {
-    event.waitUntil(syncMessages());
+    event.waitUntil(syncPendingData());
   }
 });
 
-async function syncMessages() {
-  // Sync pending messages when online
+async function syncPendingData() {
   const allClients = await clients.matchAll({ includeUncontrolled: true });
   for (const client of allClients) {
-    client.postMessage({ type: 'SYNC_MESSAGES' });
+    client.postMessage({ type: 'SYNC_DATA' });
   }
-  return Promise.resolve();
 }
 
-// Fetch handler for offline support
-self.addEventListener('fetch', function(event) {
-  event.respondWith(
-    caches.match(event.request).then(function(response) {
-      return response || fetch(event.request);
-    })
-  );
+// Periodic background sync (if supported)
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'content-sync') {
+    event.waitUntil(prefetchContent());
+  }
 });
+
+async function prefetchContent() {
+  // Prefetch common API endpoints
+  const prefetchUrls = [
+    '/api/feed',
+    '/api/notifications'
+  ];
+  
+  for (const url of prefetchUrls) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        const cache = await caches.open(DYNAMIC_CACHE);
+        cache.put(url, response);
+      }
+    } catch (error) {
+      // Silent fail
+    }
+  }
+}

@@ -142,7 +142,6 @@ export default function Videos() {
   };
 
   const loadVideos = async () => {
-    const startTime = Date.now();
     try {
       let query = supabase
         .from("verification_videos")
@@ -153,7 +152,8 @@ export default function Videos() {
           verification_video_comments (id),
           video_views (user_id)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(20); // Limit for faster initial load
 
       if (shareCode) query = query.eq("share_code", shareCode);
 
@@ -170,8 +170,8 @@ export default function Videos() {
       (data || []).forEach(v => { counts[v.id] = v.video_views?.length || 0; });
       setViewCounts(counts);
     } finally {
-      const elapsed = Date.now() - startTime;
-      setTimeout(() => setLoading(false), Math.max(0, 2000 - elapsed));
+      // Fast loading - show content immediately
+      setLoading(false);
     }
   };
 
@@ -309,10 +309,13 @@ export default function Videos() {
                       muted={isMuted}
                       playsInline
                       autoPlay={index === currentVideoIndex}
-                      preload="auto"
+                      preload={index <= 2 ? "auto" : "metadata"} // Preload first 3 videos
                       className="w-full h-full object-contain"
                       onPlay={() => setPlayingStates(prev => ({ ...prev, [video.id]: true }))}
                       onPause={() => setPlayingStates(prev => ({ ...prev, [video.id]: false }))}
+                      // Fast loading attributes
+                      disablePictureInPicture
+                      disableRemotePlayback
                     />
                     
                     <AnimatePresence>

@@ -9,6 +9,7 @@ import { ActiveProfileProvider } from "@/contexts/ActiveProfileContext";
 import { useStoryReactions } from "@/hooks/useStoryReactions";
 import { useGlobalUserPresence } from "@/hooks/useGlobalUserPresence";
 import { MessageNotification } from "@/components/MessageNotification";
+import { FreeDataBanner } from "@/components/FreeDataBanner";
 import Auth from "./pages/Auth";
 import SavedAccounts from "./pages/SavedAccounts";
 import Signup from "./pages/Signup";
@@ -94,6 +95,7 @@ const AppContent = () => {
   useGlobalUserPresence();
   return (
     <>
+      <FreeDataBanner />
       <MessageNotification />
       <Routes>
         <Route path="/" element={<SavedAccounts />} />
