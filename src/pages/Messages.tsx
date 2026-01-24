@@ -12,7 +12,7 @@ import { Search, ArrowLeft, Edit, Check, CheckCheck, Camera } from 'lucide-react
 import { MessagesSkeleton } from '@/components/loading/MessagesSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import VerificationBadge from '@/components/VerificationBadge';
+import VerificationBadge, { hasSpecialBadgeEmoji } from '@/components/VerificationBadge';
 
 interface Conversation {
   id: string;
@@ -297,8 +297,8 @@ export default function Messages() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-lg">{myProfile?.first_name}</p>
-                {myProfile?.verified && (
-                  <VerificationBadge verified={myProfile.verified} badgeType={myProfile.badge_type} className="w-5 h-5" />
+                {(myProfile?.verified || hasSpecialBadgeEmoji(myProfile?.username) || hasSpecialBadgeEmoji(myProfile?.full_name)) && (
+                  <VerificationBadge verified={myProfile.verified} badgeType={myProfile.badge_type} username={myProfile?.username} fullName={myProfile?.full_name} className="w-5 h-5" />
                 )}
               </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -358,8 +358,8 @@ export default function Messages() {
                           <p className={`font-semibold truncate ${isUnread ? 'text-foreground' : 'text-foreground'}`}>
                             {conv.first_name}
                           </p>
-                          {conv.verified && (
-                            <VerificationBadge verified={conv.verified} badgeType={conv.badge_type} className="w-4 h-4" />
+                          {(conv.verified || hasSpecialBadgeEmoji(conv.username)) && (
+                            <VerificationBadge verified={conv.verified} badgeType={conv.badge_type} username={conv.username} className="w-4 h-4" />
                           )}
                         </div>
                         {conv.lastMessage && (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useId } from 'react';
-import { Music, Play, Pause } from 'lucide-react';
+import { Music, Play, Pause, Disc3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Global audio manager - only one audio plays at a time
@@ -10,24 +10,54 @@ interface MusicPlayerProps {
   musicName: string;
   musicArtist?: string | null;
   musicUrl?: string | null;
+  coverUrl?: string | null;
   overlay?: boolean;
 }
 
-export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false }: MusicPlayerProps) {
+// Generate album art color based on music name
+function generateCoverGradient(name: string): string {
+  const colors = [
+    'from-pink-500 to-purple-600',
+    'from-blue-500 to-cyan-500',
+    'from-orange-500 to-red-500',
+    'from-green-500 to-emerald-500',
+    'from-violet-500 to-purple-600',
+    'from-rose-500 to-pink-600',
+    'from-amber-500 to-orange-500',
+    'from-teal-500 to-green-500',
+  ];
+  const index = name.length % colors.length;
+  return colors[index];
+}
+
+export function MusicPlayer({ musicName, musicArtist, musicUrl, coverUrl, overlay = false }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const instanceId = useId();
+
+  const gradientClass = generateCoverGradient(musicName);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setIsLoaded(true);
+      setHasError(false);
+    };
+    const handleCanPlay = () => {
+      setIsLoaded(true);
+      setHasError(false);
+    };
     const handleEnded = () => {
       setIsPlaying(false);
+      setCurrentTime(0);
       if (currentPlayingId === instanceId) {
         currentPlayingAudio = null;
         currentPlayingId = null;
@@ -35,26 +65,37 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
     };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    const handleError = () => {
+      setHasError(true);
+      setIsLoaded(false);
+    };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+
+    // Preload the audio
+    audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
     };
-  }, [instanceId]);
+  }, [instanceId, musicUrl]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     const audio = audioRef.current;
-    if (!audio || !musicUrl) return;
+    if (!audio || !musicUrl || hasError) return;
 
     if (isPlaying) {
       audio.pause();
@@ -72,11 +113,47 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
       currentPlayingAudio = audio;
       currentPlayingId = instanceId;
       
-      audio.play().catch(console.log);
+      audio.play().catch(() => {
+        // Retry on error
+        setTimeout(() => {
+          audio.play().catch(console.log);
+        }, 100);
+      });
     }
   };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  // Album Art Component
+  const AlbumArt = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+    const sizeClasses = {
+      sm: 'h-9 w-9',
+      md: 'h-12 w-12',
+      lg: 'h-16 w-16'
+    };
+
+    return (
+      <motion.div
+        animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+        transition={isPlaying ? { duration: 3, repeat: Infinity, ease: 'linear' } : { duration: 0.3 }}
+        className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden relative`}
+      >
+        {coverUrl ? (
+          <img src={coverUrl} alt={musicName} className="w-full h-full object-cover" />
+        ) : (
+          <>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-3 w-3 rounded-full bg-white/30" />
+            </div>
+            <Disc3 className={`${size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'} text-white/80`} />
+          </>
+        )}
+        {/* Vinyl record effect */}
+        <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+        <div className="absolute inset-[20%] rounded-full border border-white/20" />
+      </motion.div>
+    );
+  };
 
   if (overlay) {
     return (
@@ -86,9 +163,17 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
         className="flex items-center gap-2 bg-black/70 backdrop-blur-md rounded-full px-3 py-2 max-w-fit cursor-pointer"
         onClick={togglePlay}
       >
-        {musicUrl && <audio ref={audioRef} src={musicUrl} preload="metadata" />}
+        {musicUrl && (
+          <audio 
+            ref={audioRef} 
+            src={musicUrl} 
+            preload="auto"
+            crossOrigin="anonymous"
+          />
+        )}
         
-        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+        <div className="relative">
+          <AlbumArt size="sm" />
           <AnimatePresence mode="wait">
             {isPlaying ? (
               <motion.div
@@ -96,23 +181,21 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full"
               >
                 <Pause className="h-4 w-4 text-white fill-white" />
               </motion.div>
-            ) : (
+            ) : !hasError && musicUrl ? (
               <motion.div
                 key="play"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full"
               >
-                {musicUrl ? (
-                  <Play className="h-4 w-4 text-white fill-white ml-0.5" />
-                ) : (
-                  <Music className="h-4 w-4 text-white" />
-                )}
+                <Play className="h-4 w-4 text-white fill-white ml-0.5" />
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
         
@@ -163,12 +246,20 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-xl p-3 cursor-pointer border border-pink-500/20"
+      className="flex items-center gap-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-xl p-3 cursor-pointer border border-pink-500/20 hover:border-pink-500/40 transition-colors"
       onClick={togglePlay}
     >
-      {musicUrl && <audio ref={audioRef} src={musicUrl} preload="metadata" />}
+      {musicUrl && (
+        <audio 
+          ref={audioRef} 
+          src={musicUrl} 
+          preload="auto"
+          crossOrigin="anonymous"
+        />
+      )}
       
-      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+      <div className="relative">
+        <AlbumArt size="md" />
         <AnimatePresence mode="wait">
           {isPlaying ? (
             <motion.div
@@ -176,23 +267,21 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full"
             >
-              <Pause className="h-6 w-6 text-white fill-white" />
+              <Pause className="h-5 w-5 text-white fill-white" />
             </motion.div>
-          ) : (
+          ) : !hasError && musicUrl ? (
             <motion.div
               key="play"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full"
             >
-              {musicUrl ? (
-                <Play className="h-6 w-6 text-white fill-white ml-0.5" />
-              ) : (
-                <Music className="h-6 w-6 text-white" />
-              )}
+              <Play className="h-5 w-5 text-white fill-white ml-0.5" />
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
       
@@ -229,6 +318,10 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, overlay = false 
               style={{ width: `${progress}%` }}
             />
           </div>
+        )}
+        
+        {hasError && (
+          <p className="text-xs text-red-500 mt-1">Erro ao carregar áudio</p>
         )}
       </div>
     </motion.div>
