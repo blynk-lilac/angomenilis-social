@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import InstagramSidebar from '@/components/InstagramSidebar';
+import YouTubeSidebar from '@/components/layout/YouTubeSidebar';
+import { useContentProtection } from '@/hooks/useContentProtection';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -13,35 +14,38 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children, title, showBackButton = false, action }: MainLayoutProps) => {
   const navigate = useNavigate();
+  
+  // Enable content protection (no download/copy except in chat)
+  useContentProtection();
 
   return (
     <div className="flex h-screen bg-background">
-      <InstagramSidebar />
+      <YouTubeSidebar />
       
-      <div className="flex flex-col flex-1 md:ml-64 h-screen">
+      <div className="flex flex-col flex-1 md:ml-[240px] h-screen transition-all duration-300">
         {title && (
-          <header className="sticky top-0 z-10 glass-effect border-b border-border/50 safe-area-top shadow-sm backdrop-blur-xl">
-            <div className="flex items-center justify-between h-16 px-4">
+          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">
+            <div className="flex items-center justify-between h-14 px-4">
               <div className="flex items-center gap-3">
                 {showBackButton && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => navigate(-1)}
-                    className="h-10 w-10 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover-lift"
+                    className="h-9 w-9 rounded-full hover:bg-accent"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                 )}
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in font-display">
+                <h1 className="text-lg font-semibold">
                   {title}
                 </h1>
               </div>
-              {action && <div className="flex items-center gap-2 animate-fade-in">{action}</div>}
+              {action && <div className="flex items-center gap-2">{action}</div>}
             </div>
           </header>
         )}
-        <main className="flex-1 overflow-hidden md:pb-0 animate-fade-in">
+        <main className="flex-1 overflow-hidden md:pb-0">
           {children}
         </main>
       </div>

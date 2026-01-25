@@ -594,43 +594,52 @@ export type Database = {
       ctf_challenges: {
         Row: {
           category: string
+          challenge_url: string | null
           created_at: string
           description: string
           difficulty: string
+          file_url: string | null
           flag: string
           hint: string | null
           id: string
           is_active: boolean | null
           order_index: number
           points: number
+          reward_points: number | null
           solution_explanation: string | null
           title: string
         }
         Insert: {
           category: string
+          challenge_url?: string | null
           created_at?: string
           description: string
           difficulty?: string
+          file_url?: string | null
           flag: string
           hint?: string | null
           id?: string
           is_active?: boolean | null
           order_index?: number
           points?: number
+          reward_points?: number | null
           solution_explanation?: string | null
           title: string
         }
         Update: {
           category?: string
+          challenge_url?: string | null
           created_at?: string
           description?: string
           difficulty?: string
+          file_url?: string | null
           flag?: string
           hint?: string | null
           id?: string
           is_active?: boolean | null
           order_index?: number
           points?: number
+          reward_points?: number | null
           solution_explanation?: string | null
           title?: string
         }
@@ -677,6 +686,42 @@ export type Database = {
           },
         ]
       }
+      ctf_rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          points_required: number
+          reward_type: string
+          reward_value: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          points_required: number
+          reward_type?: string
+          reward_value?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          points_required?: number
+          reward_type?: string
+          reward_value?: Json | null
+        }
+        Relationships: []
+      }
       ctf_submissions: {
         Row: {
           attempts: number | null
@@ -714,6 +759,103 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "ctf_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctf_team_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          role: string | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctf_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "ctf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctf_teams: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          invite_code: string | null
+          is_public: boolean | null
+          leader_id: string
+          name: string
+          total_points: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invite_code?: string | null
+          is_public?: boolean | null
+          leader_id: string
+          name: string
+          total_points?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          invite_code?: string | null
+          is_public?: boolean | null
+          leader_id?: string
+          name?: string
+          total_points?: number | null
+        }
+        Relationships: []
+      }
+      ctf_user_rewards: {
+        Row: {
+          claimed_at: string | null
+          id: string
+          reward_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          id?: string
+          reward_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          id?: string
+          reward_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctf_user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "ctf_rewards"
             referencedColumns: ["id"]
           },
         ]
@@ -1121,6 +1263,27 @@ export type Database = {
           },
         ]
       }
+      message_views: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -1132,6 +1295,7 @@ export type Database = {
           read: boolean | null
           receiver_id: string
           sender_id: string
+          view_once: boolean | null
         }
         Insert: {
           content: string
@@ -1143,6 +1307,7 @@ export type Database = {
           read?: boolean | null
           receiver_id: string
           sender_id: string
+          view_once?: boolean | null
         }
         Update: {
           content?: string
@@ -1154,6 +1319,7 @@ export type Database = {
           read?: boolean | null
           receiver_id?: string
           sender_id?: string
+          view_once?: boolean | null
         }
         Relationships: [
           {
