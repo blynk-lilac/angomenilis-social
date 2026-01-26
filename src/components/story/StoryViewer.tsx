@@ -475,14 +475,17 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-background z-[9999]">
+    <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center">
+      {/* WhatsApp iPhone Style Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-neutral-950 to-black" />
+      
       {/* Navigation - Left Arrow */}
       {currentIndex > 0 && (
         <button
           onClick={handlePrevious}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-all shadow-lg"
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-30 h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
         >
-          <ChevronLeft className="h-6 w-6 text-foreground" />
+          <ChevronLeft className="h-5 w-5 md:h-6 md:w-6 text-white" />
         </button>
       )}
 
@@ -490,20 +493,20 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
       {currentIndex < stories.length - 1 && (
         <button
           onClick={handleNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-all shadow-lg"
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-30 h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
         >
-          <ChevronRight className="h-6 w-6 text-foreground" />
+          <ChevronRight className="h-5 w-5 md:h-6 md:w-6 text-white" />
         </button>
       )}
       
-      {/* Story Card Container */}
-      <div className="relative w-full h-full bg-card overflow-hidden">
-        {/* Progress bars */}
-        <div className="absolute top-0 left-0 right-0 flex gap-1 p-3 z-10">
+      {/* WhatsApp iPhone Style Story Card - Glass Morphism */}
+      <div className="relative w-full h-full md:w-[420px] md:h-[90vh] md:max-h-[800px] bg-neutral-900/90 backdrop-blur-2xl md:rounded-3xl overflow-hidden md:shadow-2xl md:border md:border-white/10">
+        {/* Progress bars - WhatsApp Style */}
+        <div className="absolute top-0 left-0 right-0 flex gap-1.5 px-3 pt-3 pb-2 z-20 bg-gradient-to-b from-black/60 via-black/30 to-transparent">
           {stories.map((_, idx) => (
-            <div key={idx} className="flex-1 h-1 bg-muted/40 rounded-full overflow-hidden">
+            <div key={idx} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-foreground transition-all duration-100"
+                className="h-full bg-white transition-all duration-100 ease-linear"
                 style={{ 
                   width: idx === currentIndex ? `${progress}%` : idx < currentIndex ? '100%' : '0%' 
                 }}
@@ -512,25 +515,25 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           ))}
         </div>
 
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 pb-2 z-10 bg-gradient-to-b from-black/60 to-transparent">
+        {/* Header - WhatsApp iPhone Style */}
+        <div className="absolute top-6 left-0 right-0 flex items-center justify-between px-4 z-20">
           <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
-            <Avatar className="h-10 w-10 border-2 border-background flex-shrink-0">
+            <Avatar className="h-11 w-11 ring-2 ring-white/30 shadow-lg flex-shrink-0">
               <AvatarImage src={currentStory.profile.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-white font-bold">
                 {currentStory.profile.first_name[0]}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-background font-bold text-sm truncate">
+              <p className="text-white font-bold text-sm truncate drop-shadow-lg">
                 {currentStory.profile.first_name}
               </p>
               <div className="flex items-center gap-2">
-                <p className="text-background/90 text-xs">
+                <p className="text-white/80 text-xs drop-shadow">
                   {formatTime(currentStory.created_at)}
                 </p>
                 {currentStory.music_name && (
-                  <div className="flex items-center gap-1 text-background text-xs font-medium max-w-[45%]">
+                  <div className="flex items-center gap-1.5 text-white text-xs font-medium max-w-[50%] bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
                     {musicCover && (
                       <img
                         src={musicCover}
@@ -555,7 +558,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
                 variant="ghost"
                 size="icon"
                 onClick={playMusic}
-                className="h-9 w-9 text-background hover:bg-background/20 animate-pulse"
+                className="h-9 w-9 text-white hover:bg-white/20 animate-pulse rounded-full"
               >
                 <Music className="h-5 w-5" />
               </Button>
@@ -567,16 +570,16 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewersSheetOpen(true)}
-                  className="h-9 px-3 text-background hover:bg-background/20 flex items-center gap-1"
+                  className="h-9 px-3 text-white hover:bg-white/20 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm"
                 >
                   <Eye className="h-4 w-4" />
-                  <span className="text-sm font-medium">{views}</span>
+                  <span className="text-sm font-semibold">{views}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleDelete}
-                  className="h-9 w-9 text-background hover:bg-background/20"
+                  className="h-9 w-9 text-white hover:bg-white/20 rounded-full"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -586,7 +589,7 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="h-9 w-9 text-background hover:bg-background/20"
+              className="h-9 w-9 text-white hover:bg-white/20 rounded-full bg-black/30 backdrop-blur-sm"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -594,10 +597,9 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
         </div>
 
         {/* Navigation areas - Click to play audio if blocked */}
-        <div className="absolute inset-0 flex">
+        <div className="absolute inset-0 flex z-10">
           <button 
             onClick={(e) => {
-              // Tentar reproduzir áudio se foi bloqueado
               if (audio && audio.paused) {
                 audio.play().catch(err => console.log('Failed to resume audio:', err));
               }
@@ -608,7 +610,6 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           />
           <button 
             onClick={(e) => {
-              // Tentar reproduzir áudio se foi bloqueado
               if (audio && audio.paused) {
                 audio.play().catch(err => console.log('Failed to resume audio:', err));
               }
@@ -618,131 +619,90 @@ export const StoryViewer = ({ stories, initialIndex, onClose, onDelete }: StoryV
           />
         </div>
 
-        {/* Media content */}
-        <div className="relative w-full h-full flex items-center justify-center bg-muted/40">
-          <div className="relative max-w-[420px] w-full aspect-[9/16] rounded-2xl overflow-hidden bg-background shadow-2xl flex items-center justify-center">
-            {currentStory.media_type === 'image' ? (
-              <img
-                src={currentStory.media_url}
-                alt="Story"
-                className="w-full h-full object-contain"
-              />
-            ) : currentStory.media_type === 'video' ? (
-              <video
-                key={currentStory.id}
-                src={currentStory.media_url}
-                className="w-full h-full object-contain"
-                autoPlay
-                muted={false}
-                playsInline
-                controls={false}
-              />
-            ) : null}
-          </div>
-          
-          {/* Botão grande de ativar som no centro */}
-          {currentStory.music_name && !audioEnabled && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-              <Button
-                size="lg"
-                onClick={playMusic}
-                className="pointer-events-auto h-20 w-20 rounded-full bg-background/90 hover:bg-background shadow-2xl animate-pulse"
-              >
-                <Music className="h-10 w-10 text-foreground" />
-              </Button>
-            </div>
-          )}
+        {/* Media content - Full screen with blur edge effect */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {currentStory.media_type === 'image' ? (
+            <img
+              src={currentStory.media_url}
+              alt="Story"
+              className="w-full h-full object-cover"
+            />
+          ) : currentStory.media_type === 'video' ? (
+            <video
+              key={currentStory.id}
+              src={currentStory.media_url}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted={false}
+              playsInline
+              controls={false}
+            />
+          ) : null}
         </div>
 
-        {/* Reply and reactions (bottom) */}
+        {/* Reply and reactions (bottom) - WhatsApp iPhone Style */}
         {!isOwnStory && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-black/60 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
             <div className="flex flex-col gap-3">
-              {/* Reaction buttons with horizontal scroll */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                <button
-                  onClick={() => handleReaction('heart')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'heart' ? 'bg-red-500 ring-2 ring-red-400' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={heartIcon} alt="Heart" className="h-6 w-6" />
-                </button>
-                
-                <button
-                  onClick={() => handleReaction('thumbs-up')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'thumbs-up' ? 'bg-blue-500 ring-2 ring-blue-400' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={thumbsUpIcon} alt="Like" className="h-6 w-6" />
-                </button>
-                
-                <button
-                  onClick={() => handleReaction('laughing')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'laughing' ? 'bg-yellow-500 ring-2 ring-yellow-400' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={laughingIcon} alt="Laughing" className="h-6 w-6" />
-                </button>
-
-                <button
-                  onClick={() => handleReaction('sad')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'sad' ? 'bg-blue-400 ring-2 ring-blue-300' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={sadIcon} alt="Sad" className="h-6 w-6" />
-                </button>
-
-                <button
-                  onClick={() => handleReaction('angry')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'angry' ? 'bg-orange-500 ring-2 ring-orange-400' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <img src={angryIcon} alt="Angry" className="h-6 w-6" />
-                </button>
-
-                <button
-                  onClick={() => handleReaction('fire')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'fire' ? 'bg-orange-600 ring-2 ring-orange-500' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <span className="text-2xl">🔥</span>
-                </button>
-
-                <button
-                  onClick={() => handleReaction('clap')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'clap' ? 'bg-yellow-400 ring-2 ring-yellow-300' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <span className="text-2xl">👏</span>
-                </button>
-
-                <button
-                  onClick={() => handleReaction('love')}
-                  className={`flex-shrink-0 h-11 w-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 shadow-md ${
-                    userReaction === 'love' ? 'bg-pink-500 ring-2 ring-pink-400' : 'bg-background/90 border border-border/50'
-                  }`}
-                >
-                  <span className="text-2xl">😍</span>
-                </button>
+              {/* Reaction buttons - Glass morphism style */}
+              <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {[
+                  { type: 'heart', icon: heartIcon, bg: 'bg-red-500', ring: 'ring-red-400' },
+                  { type: 'thumbs-up', icon: thumbsUpIcon, bg: 'bg-blue-500', ring: 'ring-blue-400' },
+                  { type: 'laughing', icon: laughingIcon, bg: 'bg-yellow-500', ring: 'ring-yellow-400' },
+                  { type: 'sad', icon: sadIcon, bg: 'bg-blue-400', ring: 'ring-blue-300' },
+                  { type: 'angry', icon: angryIcon, bg: 'bg-orange-500', ring: 'ring-orange-400' },
+                ].map(({ type, icon, bg, ring }) => (
+                  <button
+                    key={type}
+                    onClick={() => handleReaction(type)}
+                    className={`flex-shrink-0 h-12 w-12 rounded-2xl backdrop-blur-xl flex items-center justify-center transition-all hover:scale-110 shadow-xl border ${
+                      userReaction === type 
+                        ? `${bg} ring-2 ${ring} border-transparent` 
+                        : 'bg-white/10 border-white/20 hover:bg-white/20'
+                    }`}
+                  >
+                    <img src={icon} alt={type} className="h-7 w-7" />
+                  </button>
+                ))}
+                {/* Emoji reactions */}
+                {[
+                  { type: 'fire', emoji: '🔥', bg: 'bg-orange-600', ring: 'ring-orange-500' },
+                  { type: 'clap', emoji: '👏', bg: 'bg-yellow-400', ring: 'ring-yellow-300' },
+                  { type: 'love', emoji: '😍', bg: 'bg-pink-500', ring: 'ring-pink-400' },
+                ].map(({ type, emoji, bg, ring }) => (
+                  <button
+                    key={type}
+                    onClick={() => handleReaction(type)}
+                    className={`flex-shrink-0 h-12 w-12 rounded-2xl backdrop-blur-xl flex items-center justify-center transition-all hover:scale-110 shadow-xl border ${
+                      userReaction === type 
+                        ? `${bg} ring-2 ${ring} border-transparent` 
+                        : 'bg-white/10 border-white/20 hover:bg-white/20'
+                    }`}
+                  >
+                    <span className="text-2xl">{emoji}</span>
+                  </button>
+                ))}
               </div>
 
-              {/* Reply input */}
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md rounded-full px-4 py-2.5 border border-border/50 shadow-lg">
+              {/* Reply input - Glass morphism */}
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/20 shadow-xl">
                 <input
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Enviar mensagem..."
-                  className="flex-1 bg-transparent text-foreground placeholder-muted-foreground outline-none text-sm"
+                  className="flex-1 bg-transparent text-white placeholder-white/60 outline-none text-sm"
                 />
+                {replyText.trim() && (
+                  <button
+                    onClick={handleSendMessage}
+                    className="h-8 w-8 rounded-full bg-primary flex items-center justify-center transition-transform hover:scale-105"
+                  >
+                    <ChevronRight className="h-5 w-5 text-primary-foreground" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
