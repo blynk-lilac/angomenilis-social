@@ -33,6 +33,8 @@ interface Challenge {
   solution_explanation: string | null;
   order_index: number;
   is_active: boolean;
+  file_url?: string | null;
+  challenge_url?: string | null;
 }
 
 interface Enrollment {
@@ -75,38 +77,38 @@ const DIFFICULTIES: Record<string, { label: string; color: string; points: strin
   insane: { label: 'Insano', color: 'bg-purple-500', points: '800-1000' },
 };
 
-// 300+ Sample CTF Challenges for display
+// 300+ Sample CTF Challenges for display - with file downloads and interactive URLs
 const SAMPLE_CHALLENGES: Challenge[] = [
-  // Web Security (50+ challenges)
-  { id: 's1', title: 'SQL Injection Básico', description: 'Encontre a vulnerabilidade SQL e extraia a flag do banco de dados.', category: 'web', difficulty: 'beginner', points: 50, flag: 'BLYNK{sql_injection_basic}', hint: 'Tente usar aspas simples', solution_explanation: 'Use UNION SELECT', order_index: 1, is_active: true },
-  { id: 's2', title: 'XSS Reflected', description: 'Explore uma vulnerabilidade XSS para roubar cookies.', category: 'web', difficulty: 'easy', points: 100, flag: 'BLYNK{xss_reflected}', hint: 'Parâmetro de busca é vulnerável', solution_explanation: null, order_index: 2, is_active: true },
-  { id: 's3', title: 'CSRF Attack', description: 'Execute um ataque CSRF para alterar a senha do admin.', category: 'web', difficulty: 'medium', points: 250, flag: 'BLYNK{csrf_attack}', hint: 'Falta token CSRF', solution_explanation: null, order_index: 3, is_active: true },
-  { id: 's4', title: 'JWT Bypass', description: 'Explore uma falha na implementação JWT para ganhar acesso admin.', category: 'web', difficulty: 'hard', points: 450, flag: 'BLYNK{jwt_bypass}', hint: 'Algoritmo pode ser alterado', solution_explanation: null, order_index: 4, is_active: true },
-  { id: 's5', title: 'SSRF Interno', description: 'Use SSRF para acessar serviços internos e obter a flag.', category: 'web', difficulty: 'expert', points: 650, flag: 'BLYNK{ssrf_interno}', hint: 'URL parameter é vulnerável', solution_explanation: null, order_index: 5, is_active: true },
-  { id: 's6', title: 'Prototype Pollution', description: 'Explore prototype pollution em aplicação Node.js.', category: 'web', difficulty: 'insane', points: 900, flag: 'BLYNK{prototype_pollution}', hint: 'Objeto JSON merge vulnerável', solution_explanation: null, order_index: 6, is_active: true },
-  { id: 's7', title: 'Local File Inclusion', description: 'Leia arquivos do servidor usando LFI.', category: 'web', difficulty: 'easy', points: 100, flag: 'BLYNK{lfi_attack}', hint: 'Parâmetro page é vulnerável', solution_explanation: null, order_index: 7, is_active: true },
-  { id: 's8', title: 'Command Injection', description: 'Execute comandos no servidor através de input não sanitizado.', category: 'web', difficulty: 'medium', points: 300, flag: 'BLYNK{cmd_injection}', hint: 'Campo ping é vulnerável', solution_explanation: null, order_index: 8, is_active: true },
-  { id: 's9', title: 'NoSQL Injection', description: 'Bypass de autenticação usando NoSQL injection em MongoDB.', category: 'web', difficulty: 'medium', points: 350, flag: 'BLYNK{nosql_injection}', hint: 'Operadores MongoDB', solution_explanation: null, order_index: 9, is_active: true },
-  { id: 's10', title: 'XXE Attack', description: 'Explore XML External Entity para ler arquivos do sistema.', category: 'web', difficulty: 'hard', points: 500, flag: 'BLYNK{xxe_attack}', hint: 'Parser XML permite entities', solution_explanation: null, order_index: 10, is_active: true },
-  { id: 's11', title: 'IDOR Vulnerability', description: 'Acesse dados de outros usuários através de referência direta.', category: 'web', difficulty: 'easy', points: 150, flag: 'BLYNK{idor_vuln}', hint: 'Mude o ID na URL', solution_explanation: null, order_index: 11, is_active: true },
-  { id: 's12', title: 'Path Traversal', description: 'Navegue pelos diretórios do servidor para encontrar a flag.', category: 'web', difficulty: 'easy', points: 120, flag: 'BLYNK{path_traversal}', hint: 'Use ../..', solution_explanation: null, order_index: 12, is_active: true },
-  { id: 's13', title: 'Session Fixation', description: 'Fixe a sessão de um usuário para sequestrar sua conta.', category: 'web', difficulty: 'medium', points: 280, flag: 'BLYNK{session_fixation}', hint: 'Session ID não regenera', solution_explanation: null, order_index: 13, is_active: true },
-  { id: 's14', title: 'DOM XSS', description: 'Explore XSS no lado do cliente através do DOM.', category: 'web', difficulty: 'medium', points: 320, flag: 'BLYNK{dom_xss}', hint: 'JavaScript eval vulnerável', solution_explanation: null, order_index: 14, is_active: true },
-  { id: 's15', title: 'HTTP Parameter Pollution', description: 'Use HPP para bypass de validação.', category: 'web', difficulty: 'hard', points: 420, flag: 'BLYNK{hpp_attack}', hint: 'Parâmetros duplicados', solution_explanation: null, order_index: 15, is_active: true },
+  // Web Security (50+ challenges) - with interactive URLs
+  { id: 's1', title: 'SQL Injection Básico', description: 'Encontre a vulnerabilidade SQL e extraia a flag do banco de dados. Use técnicas de SQL injection para bypass de login.', category: 'web', difficulty: 'beginner', points: 50, flag: 'BLYNK{sql_injection_basic}', hint: 'Tente usar aspas simples no campo de login', solution_explanation: 'Use UNION SELECT', order_index: 1, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/sql-basic' },
+  { id: 's2', title: 'XSS Reflected Attack', description: 'Explore uma vulnerabilidade XSS para roubar cookies do administrador. O alvo é o parâmetro de busca.', category: 'web', difficulty: 'easy', points: 100, flag: 'BLYNK{xss_reflected}', hint: 'Parâmetro de busca é vulnerável a scripts', solution_explanation: null, order_index: 2, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/xss-reflected' },
+  { id: 's3', title: 'CSRF Attack Vector', description: 'Execute um ataque CSRF para alterar a senha do admin. Construa um formulário malicioso.', category: 'web', difficulty: 'medium', points: 250, flag: 'BLYNK{csrf_attack}', hint: 'Falta token CSRF na verificação', solution_explanation: null, order_index: 3, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/csrf' },
+  { id: 's4', title: 'JWT Token Bypass', description: 'Explore uma falha na implementação JWT para ganhar acesso admin. O algoritmo pode ser manipulado.', category: 'web', difficulty: 'hard', points: 450, flag: 'BLYNK{jwt_bypass}', hint: 'Tente alterar o algoritmo para "none"', solution_explanation: null, order_index: 4, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/jwt-bypass' },
+  { id: 's5', title: 'SSRF Interno', description: 'Use SSRF para acessar serviços internos da rede e obter a flag do servidor de metadados.', category: 'web', difficulty: 'expert', points: 650, flag: 'BLYNK{ssrf_interno}', hint: 'URL parameter redireciona para serviços internos', solution_explanation: null, order_index: 5, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/ssrf' },
+  { id: 's6', title: 'Prototype Pollution Attack', description: 'Explore prototype pollution em aplicação Node.js para escalar privilégios.', category: 'web', difficulty: 'insane', points: 900, flag: 'BLYNK{prototype_pollution}', hint: 'Objeto JSON merge vulnerável em /api/settings', solution_explanation: null, order_index: 6, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/prototype-pollution' },
+  { id: 's7', title: 'Local File Inclusion', description: 'Leia arquivos do servidor usando LFI. O objetivo é ler /etc/passwd.', category: 'web', difficulty: 'easy', points: 100, flag: 'BLYNK{lfi_attack}', hint: 'Parâmetro page é vulnerável', solution_explanation: null, order_index: 7, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/lfi' },
+  { id: 's8', title: 'Command Injection', description: 'Execute comandos no servidor através de input não sanitizado no campo de ping.', category: 'web', difficulty: 'medium', points: 300, flag: 'BLYNK{cmd_injection}', hint: 'Use ; ou | para concatenar comandos', solution_explanation: null, order_index: 8, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/cmd-injection' },
+  { id: 's9', title: 'NoSQL Injection MongoDB', description: 'Bypass de autenticação usando NoSQL injection em MongoDB. O login usa JSON.', category: 'web', difficulty: 'medium', points: 350, flag: 'BLYNK{nosql_injection}', hint: 'Use operadores MongoDB como $ne', solution_explanation: null, order_index: 9, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/nosql' },
+  { id: 's10', title: 'XXE External Entity', description: 'Explore XML External Entity para ler arquivos do sistema através do parser XML.', category: 'web', difficulty: 'hard', points: 500, flag: 'BLYNK{xxe_attack}', hint: 'Parser XML permite entities externas', solution_explanation: null, order_index: 10, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/xxe' },
+  { id: 's11', title: 'IDOR Vulnerability', description: 'Acesse dados de outros usuários através de referência direta de objeto.', category: 'web', difficulty: 'easy', points: 150, flag: 'BLYNK{idor_vuln}', hint: 'Mude o ID na URL de /user/1 para outros números', solution_explanation: null, order_index: 11, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/idor' },
+  { id: 's12', title: 'Path Traversal', description: 'Navegue pelos diretórios do servidor para encontrar a flag no diretório root.', category: 'web', difficulty: 'easy', points: 120, flag: 'BLYNK{path_traversal}', hint: 'Use ../../ para navegar diretórios', solution_explanation: null, order_index: 12, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/path-traversal' },
+  { id: 's13', title: 'Session Fixation', description: 'Fixe a sessão de um usuário para sequestrar sua conta após o login.', category: 'web', difficulty: 'medium', points: 280, flag: 'BLYNK{session_fixation}', hint: 'Session ID não regenera após login', solution_explanation: null, order_index: 13, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/session-fix' },
+  { id: 's14', title: 'DOM-based XSS', description: 'Explore XSS no lado do cliente através de manipulação do DOM via location.hash.', category: 'web', difficulty: 'medium', points: 320, flag: 'BLYNK{dom_xss}', hint: 'JavaScript eval vulnerável no hash da URL', solution_explanation: null, order_index: 14, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/dom-xss' },
+  { id: 's15', title: 'HTTP Parameter Pollution', description: 'Use HPP para bypass de validação de parâmetros duplicados.', category: 'web', difficulty: 'hard', points: 420, flag: 'BLYNK{hpp_attack}', hint: 'Envie o mesmo parâmetro múltiplas vezes', solution_explanation: null, order_index: 15, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/hpp' },
   
-  // Criptografia (50+ challenges)
-  { id: 's16', title: 'Caesar Cipher', description: 'Decodifique a mensagem cifrada com César.', category: 'crypto', difficulty: 'beginner', points: 50, flag: 'BLYNK{caesar_cipher}', hint: 'Shift de 13', solution_explanation: 'ROT13', order_index: 16, is_active: true },
-  { id: 's17', title: 'Base64 Decode', description: 'Decodifique a string Base64 para encontrar a flag.', category: 'crypto', difficulty: 'beginner', points: 50, flag: 'BLYNK{base64_decode}', hint: 'Encoding, não criptografia', solution_explanation: null, order_index: 17, is_active: true },
-  { id: 's18', title: 'Vigenère Cipher', description: 'Quebre a cifra de Vigenère e encontre a flag.', category: 'crypto', difficulty: 'easy', points: 150, flag: 'BLYNK{vigenere_cipher}', hint: 'Chave tem 5 letras', solution_explanation: null, order_index: 18, is_active: true },
-  { id: 's19', title: 'RSA Weak Key', description: 'Fatore N e recupere a mensagem cifrada.', category: 'crypto', difficulty: 'medium', points: 300, flag: 'BLYNK{rsa_weak_key}', hint: 'N é pequeno demais', solution_explanation: null, order_index: 19, is_active: true },
-  { id: 's20', title: 'AES ECB Mode', description: 'Explore a fraqueza do modo ECB para decifrar imagem.', category: 'crypto', difficulty: 'medium', points: 350, flag: 'BLYNK{aes_ecb_mode}', hint: 'ECB encripta blocos idênticos igualmente', solution_explanation: null, order_index: 20, is_active: true },
-  { id: 's21', title: 'Hash Length Extension', description: 'Explore hash length extension para forjar assinatura.', category: 'crypto', difficulty: 'hard', points: 500, flag: 'BLYNK{hash_length_ext}', hint: 'MD5 é vulnerável', solution_explanation: null, order_index: 21, is_active: true },
-  { id: 's22', title: 'Padding Oracle', description: 'Use padding oracle para decifrar AES-CBC.', category: 'crypto', difficulty: 'expert', points: 700, flag: 'BLYNK{padding_oracle}', hint: 'Erro de padding diferente', solution_explanation: null, order_index: 22, is_active: true },
-  { id: 's23', title: 'XOR Cipher', description: 'Quebre a cifra XOR com chave repetida.', category: 'crypto', difficulty: 'easy', points: 100, flag: 'BLYNK{xor_cipher}', hint: 'Chave de 4 bytes', solution_explanation: null, order_index: 23, is_active: true },
-  { id: 's24', title: 'Substitution Cipher', description: 'Quebre a cifra de substituição monoalfabética.', category: 'crypto', difficulty: 'easy', points: 130, flag: 'BLYNK{substitution}', hint: 'Análise de frequência', solution_explanation: null, order_index: 24, is_active: true },
-  { id: 's25', title: 'Diffie-Hellman Weak', description: 'Explore parâmetros fracos no DH.', category: 'crypto', difficulty: 'hard', points: 480, flag: 'BLYNK{dh_weak}', hint: 'Grupo pequeno', solution_explanation: null, order_index: 25, is_active: true },
-  { id: 's26', title: 'ECDSA Nonce Reuse', description: 'Recupere chave privada de assinaturas com nonce repetido.', category: 'crypto', difficulty: 'insane', points: 950, flag: 'BLYNK{ecdsa_nonce}', hint: 'Duas assinaturas, mesmo k', solution_explanation: null, order_index: 26, is_active: true },
-  { id: 's27', title: 'MD5 Collision', description: 'Crie dois arquivos com mesmo hash MD5.', category: 'crypto', difficulty: 'expert', points: 650, flag: 'BLYNK{md5_collision}', hint: 'FastColl tool', solution_explanation: null, order_index: 27, is_active: true },
+  // Criptografia (50+ challenges) - with downloadable files
+  { id: 's16', title: 'Caesar Cipher Classic', description: 'Decodifique a mensagem cifrada com César. A cifra é um dos métodos mais antigos de criptografia.', category: 'crypto', difficulty: 'beginner', points: 50, flag: 'BLYNK{caesar_cipher}', hint: 'Shift de 13 (ROT13)', solution_explanation: 'ROT13', order_index: 16, is_active: true, file_url: 'https://files.ctf.blynk.app/caesar_message.txt' },
+  { id: 's17', title: 'Base64 Decode', description: 'Decodifique a string Base64 para encontrar a flag. Lembre-se: encoding não é criptografia!', category: 'crypto', difficulty: 'beginner', points: 50, flag: 'BLYNK{base64_decode}', hint: 'Use CyberChef ou comando base64 -d', solution_explanation: null, order_index: 17, is_active: true, file_url: 'https://files.ctf.blynk.app/base64_encoded.txt' },
+  { id: 's18', title: 'Vigenère Cipher', description: 'Quebre a cifra de Vigenère usando análise de frequência ou força bruta.', category: 'crypto', difficulty: 'easy', points: 150, flag: 'BLYNK{vigenere_cipher}', hint: 'Chave tem 5 letras, comece com "BLYNK"', solution_explanation: null, order_index: 18, is_active: true, file_url: 'https://files.ctf.blynk.app/vigenere_cipher.txt' },
+  { id: 's19', title: 'RSA Weak Key Attack', description: 'Fatore N (módulo RSA) e recupere a mensagem cifrada. N é pequeno demais para ser seguro.', category: 'crypto', difficulty: 'medium', points: 300, flag: 'BLYNK{rsa_weak_key}', hint: 'N = p*q, use factordb.com', solution_explanation: null, order_index: 19, is_active: true, file_url: 'https://files.ctf.blynk.app/rsa_challenge.json' },
+  { id: 's20', title: 'AES ECB Penguin', description: 'Explore a fraqueza do modo ECB para decifrar imagem. Blocos idênticos produzem outputs idênticos.', category: 'crypto', difficulty: 'medium', points: 350, flag: 'BLYNK{aes_ecb_mode}', hint: 'Observe os padrões na imagem cifrada', solution_explanation: null, order_index: 20, is_active: true, file_url: 'https://files.ctf.blynk.app/ecb_penguin.png' },
+  { id: 's21', title: 'Hash Length Extension', description: 'Explore hash length extension para forjar assinatura MAC. MD5 é vulnerável a este ataque.', category: 'crypto', difficulty: 'hard', points: 500, flag: 'BLYNK{hash_length_ext}', hint: 'Use hash_extender tool', solution_explanation: null, order_index: 21, is_active: true, file_url: 'https://files.ctf.blynk.app/hash_extension.py' },
+  { id: 's22', title: 'Padding Oracle Attack', description: 'Use padding oracle para decifrar AES-CBC byte por byte através de erros de padding.', category: 'crypto', difficulty: 'expert', points: 700, flag: 'BLYNK{padding_oracle}', hint: 'Erro diferente para padding inválido', solution_explanation: null, order_index: 22, is_active: true, challenge_url: 'https://ctf-challenges.blynk.app/padding-oracle' },
+  { id: 's23', title: 'XOR Cipher Break', description: 'Quebre a cifra XOR com chave repetida usando análise de frequência.', category: 'crypto', difficulty: 'easy', points: 100, flag: 'BLYNK{xor_cipher}', hint: 'Chave de 4 bytes, texto é em inglês', solution_explanation: null, order_index: 23, is_active: true, file_url: 'https://files.ctf.blynk.app/xor_encrypted.bin' },
+  { id: 's24', title: 'Substitution Cipher', description: 'Quebre a cifra de substituição monoalfabética usando análise de frequência de letras.', category: 'crypto', difficulty: 'easy', points: 130, flag: 'BLYNK{substitution}', hint: 'Letra mais comum é E', solution_explanation: null, order_index: 24, is_active: true, file_url: 'https://files.ctf.blynk.app/substitution.txt' },
+  { id: 's25', title: 'Diffie-Hellman Weak', description: 'Explore parâmetros fracos no protocolo Diffie-Hellman para calcular a chave secreta.', category: 'crypto', difficulty: 'hard', points: 480, flag: 'BLYNK{dh_weak}', hint: 'Grupo primo é pequeno, calcule log discreto', solution_explanation: null, order_index: 25, is_active: true, file_url: 'https://files.ctf.blynk.app/dh_params.json' },
+  { id: 's26', title: 'ECDSA Nonce Reuse', description: 'Recupere chave privada ECDSA de duas assinaturas que usaram o mesmo nonce k.', category: 'crypto', difficulty: 'insane', points: 950, flag: 'BLYNK{ecdsa_nonce}', hint: 'k = (z1 - z2) / (s1 - s2) mod n', solution_explanation: null, order_index: 26, is_active: true, file_url: 'https://files.ctf.blynk.app/ecdsa_signatures.json' },
+  { id: 's27', title: 'MD5 Collision', description: 'Crie dois arquivos diferentes com mesmo hash MD5 usando técnicas de colisão.', category: 'crypto', difficulty: 'expert', points: 650, flag: 'BLYNK{md5_collision}', hint: 'Use FastColl ou HashClash', solution_explanation: null, order_index: 27, is_active: true, file_url: 'https://files.ctf.blynk.app/md5_template.bin' },
   
   // Forense (40+ challenges)
   { id: 's28', title: 'EXIF Data', description: 'Extraia metadados da imagem para encontrar a flag.', category: 'forensics', difficulty: 'beginner', points: 50, flag: 'BLYNK{exif_data}', hint: 'Use exiftool', solution_explanation: null, order_index: 28, is_active: true },
@@ -656,6 +658,32 @@ export default function CTF() {
                             <div className="space-y-4">
                               <p className="text-sm">{challenge.description}</p>
                               
+                              {/* Challenge Resources */}
+                              <div className="flex flex-wrap gap-2">
+                                {challenge.challenge_url && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="gap-2"
+                                    onClick={() => window.open(challenge.challenge_url!, '_blank')}
+                                  >
+                                    <Globe className="h-4 w-4" />
+                                    Abrir Desafio
+                                  </Button>
+                                )}
+                                {challenge.file_url && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="gap-2"
+                                    onClick={() => window.open(challenge.file_url!, '_blank')}
+                                  >
+                                    <FileSearch className="h-4 w-4" />
+                                    Download Arquivo
+                                  </Button>
+                                )}
+                              </div>
+
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Flag className="h-4 w-4" />
                                 <span>Formato: BLYNK{'{...}'}</span>

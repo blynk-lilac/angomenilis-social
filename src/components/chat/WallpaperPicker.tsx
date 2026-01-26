@@ -230,13 +230,13 @@ export default function WallpaperPicker({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-4 pb-2 border-b border-border bg-gradient-to-r from-primary/10 to-secondary/10">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-2 border-b border-border bg-gradient-to-r from-primary/10 to-secondary/10 flex-shrink-0">
           <DialogTitle className="text-lg font-bold">🎨 Escolher Papel de Parede</DialogTitle>
           <p className="text-xs text-muted-foreground">{wallpapers.length} wallpapers disponíveis</p>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 h-[60vh]">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="p-3 space-y-6">
             {wallpaperCategories.map((category, catIndex) => (
               <div key={category.name}>
@@ -285,7 +285,7 @@ export default function WallpaperPicker({
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="p-3 border-t border-border flex gap-2 bg-background/95 backdrop-blur">
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={saving}>
