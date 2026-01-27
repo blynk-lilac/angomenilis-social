@@ -377,8 +377,8 @@ export default function Friends() {
   return (
     <MainLayout title="Explorar">
       <div className="max-w-2xl mx-auto pb-20">
-        {/* Header with Search */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b">
+        {/* Header with Search - Instagram Style */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/50">
           <div className="px-4 py-3">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
@@ -387,13 +387,13 @@ export default function Friends() {
                 placeholder="Pesquisar pessoas, vídeos, hashtags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 bg-muted/40 border-0 rounded-xl h-11 text-[15px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="pl-12 bg-muted/50 border-0 rounded-2xl h-12 text-[15px] focus-visible:ring-2 focus-visible:ring-primary/40 placeholder:text-muted-foreground/70"
               />
               {searchQuery && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-muted"
                   onClick={() => setSearchQuery('')}
                 >
                   <X className="h-4 w-4" />
@@ -402,47 +402,54 @@ export default function Friends() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-3 px-4 py-2 border-t border-border/50">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 rounded-full">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm font-medium text-green-600">{onlineFriendsCount} online</span>
+          {/* Stats - Instagram Style Pills */}
+          <div className="flex items-center gap-2 px-4 py-3 border-t border-border/30">
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full border border-green-500/20">
+              <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm font-semibold text-green-600">{onlineFriendsCount} online</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{friends.length} amigos</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted/60 rounded-full">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">{friends.length} amigos</span>
             </div>
           </div>
         </div>
 
-        {/* Search Results */}
+        {/* Search Results - Instagram Style */}
         {searchQuery && (searchResults.users.length > 0 || searchResults.videos.length > 0 || searchResults.posts.length > 0) && (
           <div className="p-4 space-y-6">
             {/* Users Results */}
             {searchResults.users.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Users className="h-4 w-4" /> Pessoas
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {searchResults.users.map(profile => (
-                    <div
+                    <motion.div
                       key={profile.id}
-                      className="flex items-center gap-3 p-3 bg-card rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-4 p-3 bg-card rounded-2xl cursor-pointer hover:bg-muted/60 transition-all duration-200 border border-transparent hover:border-border/50"
                       onClick={() => navigateToProfile(profile.id)}
                     >
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={profile.avatar_url || undefined} />
-                        <AvatarFallback>{profile.first_name?.[0]}</AvatarFallback>
+                      <Avatar className="h-14 w-14 ring-2 ring-border/50">
+                        <AvatarImage src={profile.avatar_url || undefined} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-bold text-lg">
+                          {profile.first_name?.[0]}
+                        </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold">{profile.first_name}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[15px]">{profile.first_name}</span>
                           {profile.verified && <VerificationBadge verified badgeType={profile.badge_type} size="sm" />}
                         </div>
                         <span className="text-sm text-muted-foreground">@{profile.username}</span>
                       </div>
-                    </div>
+                      <Button variant="outline" size="sm" className="rounded-xl">
+                        Ver
+                      </Button>
+                    </motion.div>
                   ))}
                 </div>
               </div>
