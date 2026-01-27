@@ -484,10 +484,10 @@ export default function Profile() {
           </div>
         </motion.div>
 
-        {/* Banner Section - Facebook Style */}
+        {/* Banner Section - Premium Modern Design */}
         <div className="relative">
           {/* Cover Photo */}
-          <div className="relative h-44 bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/20 overflow-hidden">
+          <div className="relative h-52 bg-gradient-to-br from-primary/30 via-accent/20 to-secondary/30 overflow-hidden">
             {profile.banner_url ? (
               <img 
                 src={profile.banner_url} 
@@ -495,15 +495,16 @@ export default function Profile() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-500/20 via-purple-500/10 to-pink-500/20" />
+              <div className="w-full h-full bg-gradient-to-br from-blue-600/30 via-purple-500/20 to-pink-500/30" />
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
             {isOwnProfile && (
               <>
                 <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="absolute bottom-3 right-3 gap-2 rounded-lg shadow-lg"
+                  className="absolute bottom-4 right-4 gap-2 rounded-xl shadow-lg backdrop-blur-sm bg-background/80 hover:bg-background"
                   onClick={() => bannerInputRef.current?.click()}
                   disabled={uploadingBanner}
                 >
@@ -514,40 +515,43 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Profile Info Container */}
-          <div className="px-4 pb-4">
-            {/* Avatar Row - Facebook style with avatar on right */}
-            <div className="flex items-end justify-between -mt-16 mb-4">
+          {/* Profile Info Container - Modern Instagram/Facebook Hybrid */}
+          <div className="px-4 pb-5">
+            {/* Avatar Row */}
+            <div className="flex items-end justify-between -mt-20 mb-5">
               {/* Name and info on left */}
-              <div className="flex-1 pt-20">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold">{profile.full_name || profile.first_name}</h1>
+              <div className="flex-1 pt-24">
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <h1 className="text-2xl font-bold tracking-tight">{profile.full_name || profile.first_name}</h1>
                   {(profile.verified || hasSpecialBadgeEmoji(profile.username) || hasSpecialBadgeEmoji(profile.full_name)) && <VerificationBadge verified={profile.verified} badgeType={profile.badge_type} username={profile.username} fullName={profile.full_name} className="w-5 h-5" />}
                 </div>
                 {profile.username && (
-                  <p className="text-muted-foreground text-sm">@{profile.username}</p>
+                  <p className="text-muted-foreground font-medium">@{profile.username}</p>
                 )}
                 {profile.category && (
-                  <p className="text-sm text-primary font-medium mt-1">{profile.category}</p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full mt-2">
+                    <Briefcase className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-sm font-semibold text-primary">{profile.category}</span>
+                  </div>
                 )}
               </div>
 
-              {/* Avatar on right */}
+              {/* Avatar on right - Premium Ring */}
               <div className="relative">
-                <div className={`p-1 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500' : 'bg-background'}`}>
-                  <Avatar className={`h-32 w-32 border-4 border-background shadow-xl ${stories.length > 0 ? '' : ''}`}>
-                    <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
+                <div className={`p-1 rounded-full ${stories.length > 0 ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[3px]' : 'bg-background shadow-xl'}`}>
+                  <Avatar className="h-36 w-36 border-4 border-background shadow-2xl">
+                    <AvatarImage src={profile.avatar_url} className="object-cover" />
+                    <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary/30 to-accent/30">
                       {profile.first_name?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 
-                {/* Online/Offline indicator */}
+                {/* Online/Offline indicator - Enhanced */}
                 {!isOwnProfile && (
                   <div 
-                    className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-3 border-background shadow-sm ${
-                      onlineUsers.has(profile.id) ? 'bg-green-500' : 'bg-red-500'
+                    className={`absolute bottom-3 right-3 h-6 w-6 rounded-full border-[3px] border-background shadow-lg ${
+                      onlineUsers.has(profile.id) ? 'bg-green-500' : 'bg-gray-400'
                     }`}
                   />
                 )}
@@ -557,62 +561,65 @@ export default function Profile() {
                     <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                     <button
                       onClick={() => avatarInputRef.current?.click()}
-                      className="absolute bottom-2 right-2 h-9 w-9 bg-muted hover:bg-muted/80 text-foreground rounded-full flex items-center justify-center border-2 border-background shadow-lg transition-colors"
+                      className="absolute bottom-3 right-3 h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full flex items-center justify-center border-3 border-background shadow-xl transition-all duration-200"
                     >
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-5 w-5" />
                     </button>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Bio */}
+            {/* Bio - Enhanced */}
             {profile.bio && (
-              <p className="text-sm mb-4 whitespace-pre-wrap">{profile.bio}</p>
+              <p className="text-[15px] mb-5 whitespace-pre-wrap leading-relaxed text-foreground/90">{profile.bio}</p>
             )}
 
-            {/* Location and Website */}
-            <div className="flex flex-wrap gap-4 mb-4 text-sm text-muted-foreground">
+            {/* Location and Website - Pills Style */}
+            <div className="flex flex-wrap gap-2 mb-5">
               {profile.location && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{profile.location}</span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/60 rounded-full text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{profile.location}</span>
                 </div>
               )}
               {profile.website && (
-                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                  <LinkIcon className="h-4 w-4" />
-                  <span>{profile.website.replace('https://', '').replace('http://', '')}</span>
+                <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-sm hover:bg-primary/20 transition-colors">
+                  <LinkIcon className="h-4 w-4 text-primary" />
+                  <span className="text-primary font-medium">{profile.website.replace('https://', '').replace('http://', '')}</span>
                 </a>
               )}
             </div>
 
-            {/* Stats Row - Facebook style with "Filhar" */}
-            <div className="flex items-center gap-6 mb-4 py-3 border-y border-border">
-              <button className="flex flex-col items-center" onClick={() => {}}>
-                <span className="text-xl font-bold">{formatNumber(postsCount)}</span>
-                <span className="text-xs text-muted-foreground">Publicações</span>
+            {/* Stats Row - Premium Glass Design */}
+            <div className="flex items-center justify-around mb-5 py-4 bg-muted/30 rounded-2xl border border-border/50">
+              <button className="flex flex-col items-center group" onClick={() => {}}>
+                <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{formatNumber(postsCount)}</span>
+                <span className="text-xs text-muted-foreground font-medium">Publicações</span>
               </button>
-              <button className="flex flex-col items-center" onClick={() => handleOpenModal("followers")}>
-                <span className="text-xl font-bold">{formatNumber(followersCount)}</span>
-                <span className="text-xs text-muted-foreground">Filharam</span>
+              <div className="h-8 w-px bg-border/50" />
+              <button className="flex flex-col items-center group" onClick={() => handleOpenModal("followers")}>
+                <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{formatNumber(followersCount)}</span>
+                <span className="text-xs text-muted-foreground font-medium">Filharam</span>
               </button>
-              <button className="flex flex-col items-center" onClick={() => handleOpenModal("following")}>
-                <span className="text-xl font-bold">{formatNumber(followingCount)}</span>
-                <span className="text-xs text-muted-foreground">A filhar</span>
+              <div className="h-8 w-px bg-border/50" />
+              <button className="flex flex-col items-center group" onClick={() => handleOpenModal("following")}>
+                <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{formatNumber(followingCount)}</span>
+                <span className="text-xs text-muted-foreground font-medium">A filhar</span>
               </button>
-              <button className="flex flex-col items-center" onClick={() => handleOpenModal("friends")}>
-                <span className="text-xl font-bold">{formatNumber(friendsCount)}</span>
-                <span className="text-xs text-muted-foreground">Amigos</span>
+              <div className="h-8 w-px bg-border/50" />
+              <button className="flex flex-col items-center group" onClick={() => handleOpenModal("friends")}>
+                <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{formatNumber(friendsCount)}</span>
+                <span className="text-xs text-muted-foreground font-medium">Amigos</span>
               </button>
             </div>
 
-            {/* Action Buttons - Facebook style */}
-            <div className="flex gap-2">
+            {/* Action Buttons - Modern Rounded */}
+            <div className="flex gap-2.5">
               {isOwnProfile ? (
                 <>
                   <Button 
-                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    className="flex-1 h-11 rounded-xl font-semibold gap-2 shadow-sm"
                     onClick={() => navigate('/create')}
                   >
                     <Plus className="h-4 w-4" />
@@ -620,7 +627,7 @@ export default function Profile() {
                   </Button>
                   <Button 
                     variant="secondary" 
-                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    className="flex-1 h-11 rounded-xl font-semibold gap-2"
                     onClick={() => navigate('/settings/edit-profile')}
                   >
                     Editar perfil
@@ -628,7 +635,7 @@ export default function Profile() {
                   <Button 
                     variant="secondary" 
                     size="icon"
-                    className="h-10 w-10 rounded-lg"
+                    className="h-11 w-11 rounded-xl"
                   >
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>
@@ -637,7 +644,7 @@ export default function Profile() {
                 <>
                   <Button 
                     variant={isFollowing ? "secondary" : "default"}
-                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    className="flex-1 h-11 rounded-xl font-semibold gap-2 shadow-sm"
                     onClick={handleFollow}
                   >
                     {isFollowing ? (
@@ -654,7 +661,7 @@ export default function Profile() {
                   </Button>
                   <Button 
                     variant="secondary" 
-                    className="flex-1 h-10 rounded-lg font-semibold gap-2"
+                    className="flex-1 h-11 rounded-xl font-semibold gap-2"
                     onClick={() => navigate(`/chat/${profile.id}`)}
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -663,7 +670,7 @@ export default function Profile() {
                   <Button 
                     variant="secondary" 
                     size="icon"
-                    className="h-10 w-10 rounded-lg"
+                    className="h-11 w-11 rounded-xl"
                   >
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>

@@ -389,39 +389,42 @@ export default function Feed() {
 
         <div className="pt-16 pb-20">
           <div className="max-w-xl mx-auto">
-            {/* Stories Bar */}
-            <div className="px-4 py-3">
+            {/* Stories Bar - Premium Design */}
+            <div className="px-3 py-4 bg-gradient-to-b from-card to-transparent">
               <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
             </div>
 
-            {/* Create Post Card */}
+            {/* Create Post Card - Modern Instagram Style */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mx-4 mb-4"
+              className="mx-3 mb-4"
             >
-              <Card className="bg-card border shadow-sm rounded-xl overflow-hidden">
+              <div className="bg-card border border-border/60 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
                 <div className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 ring-2 ring-primary/10">
-                      <AvatarImage src={myProfile?.avatar_url} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold">
-                        {myProfile?.first_name?.[0] || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                        <AvatarImage src={myProfile?.avatar_url} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 font-bold text-lg">
+                          {myProfile?.first_name?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-green-500 rounded-full border-2 border-card" />
+                    </div>
                     <button
                       onClick={() => navigate("/create")}
-                      className="flex-1 h-11 px-4 bg-muted/50 hover:bg-muted/70 rounded-full text-left text-muted-foreground transition-colors"
+                      className="flex-1 h-12 px-5 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-all duration-200 font-medium"
                     >
                       Em que estás a pensar?
                     </button>
                   </div>
                 </div>
-              </Card>
+              </div>
             </motion.div>
 
-            {/* User Suggestions */}
-            <div className="px-4 mb-4">
+            {/* User Suggestions - Enhanced */}
+            <div className="px-3 mb-5">
               <UserSuggestions />
             </div>
 
@@ -449,18 +452,18 @@ export default function Feed() {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
+                      transition={{ delay: index * 0.02, duration: 0.4 }}
                     >
-                      {/* Threads-style Card */}
-                      <div className="bg-card border-b border-border/50 py-3">
+                      {/* Enhanced Post Card */}
+                      <div className="bg-card border-b border-border/40 py-4 hover:bg-muted/5 transition-colors duration-200">
                         {/* Header */}
                         <div className="flex items-start gap-3 px-4">
                           <Avatar 
-                            className="h-10 w-10 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all"
+                            className="h-11 w-11 cursor-pointer ring-2 ring-border/50 hover:ring-primary/40 transition-all duration-200"
                             onClick={() => navigate(`/profile/${post.profiles.id}`)}
                           >
-                            <AvatarImage src={post.profiles.avatar_url} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            <AvatarImage src={post.profiles.avatar_url} className="object-cover" />
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
                               {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
                             </AvatarFallback>
                           </Avatar>
@@ -468,10 +471,10 @@ export default function Feed() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <div 
-                                className="flex items-center gap-1.5 cursor-pointer"
+                                className="flex items-center gap-1.5 cursor-pointer group"
                                 onClick={() => navigate(`/profile/${post.profiles.id}`)}
                               >
-                                <span className="font-bold text-[15px] hover:underline">
+                                <span className="font-bold text-[15px] group-hover:text-primary transition-colors">
                                   {post.profiles.username || post.profiles.first_name}
                                 </span>
                                 {(post.profiles.verified || hasSpecialBadgeEmoji(post.profiles.username) || hasSpecialBadgeEmoji(post.profiles.full_name)) && (
@@ -483,32 +486,32 @@ export default function Feed() {
                                     className="w-4 h-4" 
                                   />
                                 )}
-                                <span className="text-muted-foreground text-sm">
+                                <span className="text-muted-foreground/80 text-sm font-normal">
                                   · {formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}
                                 </span>
                               </div>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 rounded-full -mr-2"
+                                className="h-8 w-8 rounded-full -mr-2 hover:bg-muted/60"
                                 onClick={() => setOptionsSheet({ open: true, post })}
                               >
-                                <MoreHorizontal className="h-5 w-5" />
+                                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
                               </Button>
                             </div>
 
                             {/* Content */}
                             {post.content && (
-                              <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed mt-1">
+                              <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.6] mt-2 text-foreground/90">
                                 {parseTextWithLinksAndMentions(post.content)}
                               </p>
                             )}
                           </div>
                         </div>
 
-                        {/* Media */}
+                        {/* Media - Enhanced */}
                         {post.media_urls && post.media_urls.length > 0 && (
-                          <div className="relative mt-3 mx-4 rounded-xl overflow-hidden">
+                          <div className="relative mt-4 mx-3 rounded-2xl overflow-hidden shadow-sm border border-border/30">
                             {renderMediaGrid(post.media_urls, post.id)}
                             
                             {/* Music overlay on media */}
@@ -536,35 +539,37 @@ export default function Feed() {
                           </div>
                         )}
 
-                        {/* Actions - Threads Style */}
-                        <div className="flex items-center gap-1 px-4 mt-3 ml-12">
+                        {/* Actions - Enhanced Instagram Style */}
+                        <div className="flex items-center gap-0.5 px-3 mt-4 ml-14">
                           <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            className="flex items-center gap-1.5 py-2 px-3 rounded-full hover:bg-muted/50 transition-colors"
+                            whileTap={{ scale: 0.85 }}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-all duration-200"
                             onClick={() => handleLike(post.id)}
                           >
                             <Heart 
-                              className={`h-5 w-5 transition-colors ${userReaction ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
+                              className={`h-[22px] w-[22px] transition-all duration-200 ${userReaction ? 'text-red-500 fill-red-500 scale-110' : 'text-muted-foreground'}`} 
                             />
                             {totalReactions > 0 && (
-                              <span className={`text-sm ${userReaction ? 'text-red-500' : 'text-muted-foreground'}`}>
+                              <span className={`text-sm font-semibold ${userReaction ? 'text-red-500' : 'text-muted-foreground'}`}>
                                 {totalReactions}
                               </span>
                             )}
                           </motion.button>
 
-                          <button
-                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-muted-foreground hover:bg-muted/60 transition-all duration-200"
                             onClick={() => navigate(`/comments/${post.id}`)}
                           >
-                            <MessageCircle className="h-5 w-5" />
+                            <MessageCircle className="h-[22px] w-[22px]" />
                             {post.comments.length > 0 && (
-                              <span className="text-sm">{post.comments.length}</span>
+                              <span className="text-sm font-semibold">{post.comments.length}</span>
                             )}
-                          </button>
+                          </motion.button>
 
-                          <button 
-                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
+                          <motion.button 
+                            whileTap={{ scale: 0.9 }}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-muted-foreground hover:bg-muted/60 transition-all duration-200"
                             onClick={() => {
                               navigator.share?.({
                                 title: 'Publicação',
@@ -576,33 +581,18 @@ export default function Feed() {
                               });
                             }}
                           >
-                            <Repeat2 className="h-5 w-5" />
-                          </button>
-
-                          <button 
-                            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-muted-foreground hover:bg-muted/50 transition-colors"
-                            onClick={() => {
-                              navigator.share?.({
-                                title: 'Publicação',
-                                text: post.content?.slice(0, 100),
-                                url: `${window.location.origin}/post/${post.id}`
-                              }).catch(() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                                toast.success("Link copiado!");
-                              });
-                            }}
-                          >
-                            <Share2 className="h-5 w-5" />
-                          </button>
+                            <Share2 className="h-[22px] w-[22px]" />
+                          </motion.button>
 
                           <div className="flex-1" />
 
-                          <button 
-                            className={`p-2 rounded-full transition-colors ${isSaved ? 'text-primary' : 'text-muted-foreground hover:bg-muted/50'}`}
+                          <motion.button 
+                            whileTap={{ scale: 0.9 }}
+                            className={`p-2.5 rounded-xl transition-all duration-200 ${isSaved ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted/60'}`}
                             onClick={() => handleSave(post.id)}
                           >
-                            <Bookmark className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
-                          </button>
+                            <Bookmark className={`h-[22px] w-[22px] ${isSaved ? 'fill-current' : ''}`} />
+                          </motion.button>
                         </div>
 
                         {/* Likes count */}

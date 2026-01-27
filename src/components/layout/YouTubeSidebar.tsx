@@ -337,6 +337,15 @@ export default function YouTubeSidebar() {
               <span className="text-sm">Sair</span>
             </Button>
           )}
+
+          {/* Copyright */}
+          {!collapsed && (
+            <div className="pt-3 text-center">
+              <p className="text-[10px] text-muted-foreground/60">
+                © 2026/2027 Blynk
+              </p>
+            </div>
+          )}
         </div>
       </aside>
     </TooltipProvider>
