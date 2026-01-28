@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
-  Home, Search, Film, MessageCircle, Heart, PlusSquare, 
+  Home, Search, Film, MessageCircle, Bell, PlusSquare, 
   User, LogOut, Settings, Bookmark, Shield, Users, 
-  Sun, Moon, Target, Trophy, Play, Bell, Compass,
-  Video, Image, TrendingUp, Zap, Award, Lock
+  Sun, Moon, Target, Trophy, Play, Compass, UserPlus,
+  Video, TrendingUp, Award, Lock, Store, Calendar, Gamepad2,
+  Heart, Image, Flag, HelpCircle, FileText
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 interface Profile {
   username: string;
   avatar_url: string;
+  first_name?: string;
   verified?: boolean;
   badge_type?: string;
 }
@@ -29,7 +31,6 @@ export default function SidebarPage() {
   const { settings, updateSettings } = useSettings();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [onlineFriends, setOnlineFriends] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
@@ -44,7 +45,6 @@ export default function SidebarPage() {
   useEffect(() => {
     loadProfile();
     checkAdminStatus();
-    loadOnlineFriends();
     loadUnreadCounts();
   }, []);
 
@@ -54,7 +54,7 @@ export default function SidebarPage() {
 
     const { data } = await supabase
       .from("profiles")
-      .select("username, avatar_url, verified, badge_type")
+      .select("username, avatar_url, first_name, verified, badge_type")
       .eq("id", user.id)
       .single();
 
@@ -75,24 +75,10 @@ export default function SidebarPage() {
     setIsAdmin(!!data);
   };
 
-  const loadOnlineFriends = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { count } = await supabase
-      .from("user_presence")
-      .select("*", { count: 'exact', head: true })
-      .gt("last_seen", fiveMinutesAgo);
-
-    setOnlineFriends(count || 0);
-  };
-
   const loadUnreadCounts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Unread notifications
     const { count: notifCount } = await supabase
       .from("notifications")
       .select("*", { count: 'exact', head: true })
@@ -101,7 +87,6 @@ export default function SidebarPage() {
 
     setUnreadNotifications(notifCount || 0);
 
-    // Unread messages
     const { count: msgCount } = await supabase
       .from("messages")
       .select("*", { count: 'exact', head: true })
@@ -117,48 +102,38 @@ export default function SidebarPage() {
     navigate("/auth");
   };
 
-  const navSections = [
-    {
-      title: "Principal",
-      items: [
-        { icon: Home, label: "Início", path: "/feed" },
-        { icon: Compass, label: "Explorar", path: "/friends" },
-        { icon: Film, label: "Vídeos", path: "/videos" },
-        { icon: Image, label: "Stories", path: "/stories" },
-      ]
-    },
-    {
-      title: "Social",
-      items: [
-        { icon: MessageCircle, label: "Mensagens", path: "/messages", badge: unreadMessages },
-        { icon: Bell, label: "Notificações", path: "/notifications", badge: unreadNotifications },
-        { icon: Users, label: "Amigos Online", path: "/online-friends", badge: onlineFriends },
-      ]
-    },
-    {
-      title: "CTF Hacking",
-      items: [
-        { icon: Target, label: "Desafios CTF", path: "/ctf-hacking", highlight: true },
-        { icon: Trophy, label: "Ranking", path: "/ctf-hacking?tab=leaderboard" },
-        { icon: Award, label: "Recompensas", path: "/ctf-hacking?tab=rewards" },
-      ]
-    },
-    {
-      title: "Criar",
-      items: [
-        { icon: PlusSquare, label: "Nova Publicação", path: "/create" },
-        { icon: TrendingUp, label: "Criar Anúncio", path: "/create-ad" },
-        { icon: Video, label: "Editor de Vídeo", path: "/video-editor" },
-      ]
-    },
-    {
-      title: "Configurações",
-      items: [
-        { icon: Bookmark, label: "Guardados", path: "/saved" },
-        { icon: Settings, label: "Configurações", path: "/app-settings" },
-        { icon: Lock, label: "Segurança", path: "/settings/security" },
-      ]
-    },
+  // Facebook-style navigation sections
+  const mainNav = [
+    { icon: Home, label: "Início", path: "/feed", color: "text-blue-500" },
+    { icon: Users, label: "Amigos", path: "/friends", color: "text-blue-500" },
+    { icon: Film, label: "Watch", path: "/videos", color: "text-blue-500" },
+    { icon: Store, label: "Marketplace", path: "/create-ad", color: "text-blue-500" },
+  ];
+
+  const shortcuts = [
+    { icon: MessageCircle, label: "Mensagens", path: "/messages", badge: unreadMessages, color: "text-purple-500" },
+    { icon: Bell, label: "Notificações", path: "/notifications", badge: unreadNotifications, color: "text-red-500" },
+    { icon: Bookmark, label: "Guardados", path: "/saved", color: "text-purple-600" },
+    { icon: Calendar, label: "Stories", path: "/stories", color: "text-pink-500" },
+  ];
+
+  const ctfSection = [
+    { icon: Target, label: "CTF Hacking", path: "/ctf-hacking", color: "text-green-500" },
+    { icon: Trophy, label: "Ranking", path: "/ctf-hacking?tab=leaderboard", color: "text-yellow-500" },
+    { icon: Award, label: "Recompensas", path: "/ctf-hacking?tab=rewards", color: "text-orange-500" },
+  ];
+
+  const createSection = [
+    { icon: PlusSquare, label: "Criar Publicação", path: "/create", color: "text-blue-500" },
+    { icon: TrendingUp, label: "Criar Anúncio", path: "/create-ad", color: "text-green-500" },
+    { icon: Video, label: "Editor de Vídeo", path: "/video-editor", color: "text-red-500" },
+  ];
+
+  const settingsSection = [
+    { icon: Settings, label: "Configurações", path: "/app-settings" },
+    { icon: Lock, label: "Privacidade", path: "/settings/security" },
+    { icon: HelpCircle, label: "Ajuda", path: "/help" },
+    { icon: FileText, label: "Termos", path: "/terms" },
   ];
 
   const isActive = (path: string) => {
@@ -168,167 +143,184 @@ export default function SidebarPage() {
     return location.pathname === path;
   };
 
+  const NavItem = ({ icon: Icon, label, path, badge, color }: any) => {
+    const active = isActive(path);
+    
+    return (
+      <Link
+        to={path}
+        className={cn(
+          "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200",
+          active
+            ? "bg-primary/10 text-primary font-semibold"
+            : "hover:bg-muted"
+        )}
+      >
+        <div className={cn(
+          "h-9 w-9 rounded-full flex items-center justify-center",
+          active ? "bg-primary/20" : "bg-muted"
+        )}>
+          <Icon className={cn("h-5 w-5", active ? "text-primary" : color || "text-foreground")} />
+        </div>
+        <span className="flex-1 font-medium">{label}</span>
+        {badge && badge > 0 && (
+          <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  const SectionHeader = ({ title }: { title: string }) => (
+    <div className="px-4 py-2 mt-4 first:mt-0">
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        {title}
+      </h3>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="flex items-center justify-between h-16 px-6">
-          <Link to="/feed" className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-primary to-primary/60 rounded-xl flex items-center justify-center shadow-lg">
-              <Play className="h-5 w-5 text-white fill-white" />
+      {/* Facebook-style Header */}
+      <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+        <div className="flex items-center justify-between h-14 px-4">
+          <Link to="/feed" className="flex items-center gap-2">
+            <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-xl font-bold text-primary-foreground">B</span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Blynk
-            </span>
           </Link>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-xl"
+              className="h-10 w-10 rounded-full bg-muted"
             >
-              {isDarkMode ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-blue-500" />}
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/friends')}
+              className="h-10 w-10 rounded-full bg-muted"
+            >
+              <Search className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </header>
 
-      <ScrollArea className="h-[calc(100vh-4rem)]">
-        <div className="max-w-lg mx-auto p-4 space-y-6">
-          {/* Profile Card */}
+      <ScrollArea className="h-[calc(100vh-3.5rem)]">
+        <div className="py-2">
+          {/* Profile Card - Facebook Style */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border rounded-2xl p-6 shadow-sm"
+            className="mx-3 mb-4"
           >
-            <Link to="/profile" className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 ring-4 ring-primary/20">
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors"
+            >
+              <Avatar className="h-12 w-12 ring-2 ring-primary/20">
                 <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="text-xl bg-primary/10 text-primary">
-                  {profile?.username?.[0]?.toUpperCase()}
+                <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
+                  {profile?.first_name?.[0] || profile?.username?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold truncate">
-                    {profile?.username || 'Utilizador'}
-                  </h2>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold truncate">
+                    {profile?.first_name || profile?.username || 'Utilizador'}
+                  </span>
                   {profile?.verified && (
                     <VerificationBadge badgeType={profile.badge_type} />
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">Ver perfil</p>
+                <p className="text-sm text-muted-foreground">Ver o teu perfil</p>
               </div>
-              <User className="h-5 w-5 text-muted-foreground" />
             </Link>
           </motion.div>
 
-          {/* Navigation Sections */}
-          {navSections.map((section, sectionIndex) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: sectionIndex * 0.1 }}
-              className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm"
-            >
-              <div className="px-4 py-3 bg-muted/30 border-b border-border">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {section.title}
-                </h3>
-              </div>
-              <div className="divide-y divide-border">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.path);
-                  
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={cn(
-                        "flex items-center gap-4 px-4 py-4 transition-all",
-                        active
-                          ? "bg-primary/10 text-primary"
-                          : "hover:bg-muted/50",
-                        item.highlight && !active && "text-primary"
-                      )}
-                    >
-                      <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : item.highlight
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted/50"
-                      )}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className={cn(
-                        "flex-1 font-medium",
-                        active && "font-semibold"
-                      )}>
-                        {item.label}
-                      </span>
-                      {item.badge && item.badge > 0 && (
-                        <span className="px-2.5 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full">
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ))}
+          {/* Divider */}
+          <div className="h-px bg-border mx-4 mb-2" />
+
+          {/* Main Navigation */}
+          <nav className="px-2">
+            {mainNav.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
+          <div className="h-px bg-border mx-4 my-2" />
+
+          {/* Shortcuts */}
+          <SectionHeader title="Atalhos" />
+          <nav className="px-2">
+            {shortcuts.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
+          <div className="h-px bg-border mx-4 my-2" />
+
+          {/* CTF Hacking */}
+          <SectionHeader title="CTF Hacking" />
+          <nav className="px-2">
+            {ctfSection.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
+          <div className="h-px bg-border mx-4 my-2" />
+
+          {/* Create */}
+          <SectionHeader title="Criar" />
+          <nav className="px-2">
+            {createSection.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
+          <div className="h-px bg-border mx-4 my-2" />
 
           {/* Admin Panel */}
           {isAdmin && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm"
-            >
-              <div className="px-4 py-3 bg-red-500/10 border-b border-border">
-                <h3 className="text-xs font-semibold text-red-500 uppercase tracking-wider">
-                  Administração
-                </h3>
-              </div>
-              <Link
-                to="/admin"
-                className="flex items-center gap-4 px-4 py-4 hover:bg-muted/50 transition-colors"
-              >
-                <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-red-500" />
-                </div>
-                <span className="font-medium text-red-500">Painel Admin</span>
-              </Link>
-            </motion.div>
+            <>
+              <SectionHeader title="Administração" />
+              <nav className="px-2">
+                <NavItem icon={Shield} label="Painel Admin" path="/admin" color="text-red-500" />
+              </nav>
+              <div className="h-px bg-border mx-4 my-2" />
+            </>
           )}
 
+          {/* Settings */}
+          <SectionHeader title="Definições e Ajuda" />
+          <nav className="px-2">
+            {settingsSection.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
           {/* Logout Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
+          <div className="px-4 py-4">
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="w-full h-14 rounded-2xl border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="w-full h-12 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10"
             >
-              <LogOut className="h-5 w-5 mr-3" />
+              <LogOut className="h-5 w-5 mr-2" />
               Terminar Sessão
             </Button>
-          </motion.div>
+          </div>
 
           {/* Copyright */}
-          <div className="text-center py-6">
+          <div className="text-center pb-6">
             <p className="text-xs text-muted-foreground/60">
-              © 2026/2027 Blynk • Todos os direitos reservados
+              © 2026/2027 Blynk • Privacidade • Termos
             </p>
           </div>
         </div>
