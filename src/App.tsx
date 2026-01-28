@@ -59,6 +59,7 @@ import PostLikes from "./pages/PostLikes";
 import OnlineFriends from "./pages/OnlineFriends";
 import VideoEditor from "./pages/VideoEditor";
 import CTF from "./pages/CTF";
+import SidebarPage from "./pages/SidebarPage";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -511,6 +512,16 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <CTF />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Sidebar Page Route */}
+        <Route
+          path="/sidebar"
+          element={
+            <ProtectedRoute>
+              <SidebarPage />
             </ProtectedRoute>
           }
         />
