@@ -394,31 +394,48 @@ export default function Feed() {
               <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />
             </div>
 
-            {/* Create Post Card - Modern Instagram Style */}
+            {/* Create Post Card - Facebook Style */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mx-3 mb-4"
             >
-              <div className="bg-card border border-border/60 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
-                <div className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <Avatar className="h-12 w-12 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-                        <AvatarImage src={myProfile?.avatar_url} className="object-cover" />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 font-bold text-lg">
-                          {myProfile?.first_name?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-green-500 rounded-full border-2 border-card" />
-                    </div>
+              <div className="bg-card border border-border shadow-sm rounded-lg overflow-hidden">
+                <div className="p-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={myProfile?.avatar_url} className="object-cover" />
+                      <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
+                        {myProfile?.first_name?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                     <button
                       onClick={() => navigate("/create")}
-                      className="flex-1 h-12 px-5 bg-muted/40 hover:bg-muted/60 rounded-full text-left text-muted-foreground transition-all duration-200 font-medium"
+                      className="flex-1 h-10 px-4 bg-muted hover:bg-muted/80 rounded-full text-left text-muted-foreground transition-colors text-sm"
                     >
-                      Em que estás a pensar?
+                      No que estás a pensar, {myProfile?.first_name || 'amigo'}?
                     </button>
                   </div>
+                </div>
+                <div className="border-t border-border flex">
+                  <button 
+                    onClick={() => navigate("/create")}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="text-red-500">🎥</span> Vídeo em direto
+                  </button>
+                  <button 
+                    onClick={() => navigate("/create")}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors border-l border-border"
+                  >
+                    <span className="text-green-500">📷</span> Foto/vídeo
+                  </button>
+                  <button 
+                    onClick={() => navigate("/create")}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors border-l border-border"
+                  >
+                    <span className="text-yellow-500">😊</span> Sentimento
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -454,67 +471,65 @@ export default function Feed() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.02, duration: 0.4 }}
                     >
-                      {/* Enhanced Post Card */}
-                      <div className="bg-card border-b border-border/40 py-4 hover:bg-muted/5 transition-colors duration-200">
+                      {/* Facebook Style Post Card */}
+                      <div className="bg-card border border-border shadow-sm rounded-lg mb-3 mx-3 overflow-hidden">
                         {/* Header */}
-                        <div className="flex items-start gap-3 px-4">
+                        <div className="flex items-center gap-3 p-3">
                           <Avatar 
-                            className="h-11 w-11 cursor-pointer ring-2 ring-border/50 hover:ring-primary/40 transition-all duration-200"
+                            className="h-10 w-10 cursor-pointer"
                             onClick={() => navigate(`/profile/${post.profiles.id}`)}
                           >
                             <AvatarImage src={post.profiles.avatar_url} className="object-cover" />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
+                            <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
                               {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
                             </AvatarFallback>
                           </Avatar>
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <div 
-                                className="flex items-center gap-1.5 cursor-pointer group"
-                                onClick={() => navigate(`/profile/${post.profiles.id}`)}
-                              >
-                                <span className="font-bold text-[15px] group-hover:text-primary transition-colors">
-                                  {post.profiles.username || post.profiles.first_name}
-                                </span>
-                                {(post.profiles.verified || hasSpecialBadgeEmoji(post.profiles.username) || hasSpecialBadgeEmoji(post.profiles.full_name)) && (
-                                  <VerificationBadge 
-                                    verified={post.profiles.verified} 
-                                    badgeType={post.profiles.badge_type} 
-                                    username={post.profiles.username}
-                                    fullName={post.profiles.full_name}
-                                    className="w-4 h-4" 
-                                  />
-                                )}
-                                <span className="text-muted-foreground/80 text-sm font-normal">
-                                  · {formatDistanceToNow(new Date(post.created_at), { addSuffix: false, locale: ptBR })}
-                                </span>
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 rounded-full -mr-2 hover:bg-muted/60"
-                                onClick={() => setOptionsSheet({ open: true, post })}
-                              >
-                                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                              </Button>
+                            <div 
+                              className="flex items-center gap-1.5 cursor-pointer"
+                              onClick={() => navigate(`/profile/${post.profiles.id}`)}
+                            >
+                              <span className="font-semibold text-sm hover:underline">
+                                {post.profiles.first_name || post.profiles.username}
+                              </span>
+                              {(post.profiles.verified || hasSpecialBadgeEmoji(post.profiles.username) || hasSpecialBadgeEmoji(post.profiles.full_name)) && (
+                                <VerificationBadge 
+                                  verified={post.profiles.verified} 
+                                  badgeType={post.profiles.badge_type} 
+                                  username={post.profiles.username}
+                                  fullName={post.profiles.full_name}
+                                  className="w-4 h-4" 
+                                />
+                              )}
                             </div>
-
-                            {/* Content */}
-                            {post.content && (
-                              <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.6] mt-2 text-foreground/90">
-                                {parseTextWithLinksAndMentions(post.content)}
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ptBR })}
+                            </p>
                           </div>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full hover:bg-muted"
+                            onClick={() => setOptionsSheet({ open: true, post })}
+                          >
+                            <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                          </Button>
                         </div>
 
-                        {/* Media - Enhanced */}
+                        {/* Content */}
+                        {post.content && (
+                          <p className="text-sm whitespace-pre-wrap break-words leading-relaxed px-3 py-2 text-foreground">
+                            {parseTextWithLinksAndMentions(post.content)}
+                          </p>
+                        )}
+
+                        {/* Media */}
                         {post.media_urls && post.media_urls.length > 0 && (
-                          <div className="relative mt-4 mx-3 rounded-2xl overflow-hidden shadow-sm border border-border/30">
+                          <div className="relative overflow-hidden">
                             {renderMediaGrid(post.media_urls, post.id)}
                             
-                            {/* Music overlay on media */}
                             {post.music_name && (
                               <div className="absolute bottom-3 left-3 right-3">
                                 <MusicPlayer 
@@ -530,7 +545,7 @@ export default function Feed() {
 
                         {/* Music without media */}
                         {post.music_name && (!post.media_urls || post.media_urls.length === 0) && (
-                          <div className="px-4 mt-3">
+                          <div className="px-3 py-2">
                             <MusicPlayer 
                               musicName={post.music_name}
                               musicArtist={post.music_artist}
@@ -539,70 +554,69 @@ export default function Feed() {
                           </div>
                         )}
 
-                        {/* Actions - Enhanced Instagram Style */}
-                        <div className="flex items-center gap-0.5 px-3 mt-4 ml-14">
-                          <motion.button
-                            whileTap={{ scale: 0.85 }}
-                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-all duration-200"
-                            onClick={() => handleLike(post.id)}
-                          >
-                            <Heart 
-                              className={`h-[22px] w-[22px] transition-all duration-200 ${userReaction ? 'text-red-500 fill-red-500 scale-110' : 'text-muted-foreground'}`} 
-                            />
-                            {totalReactions > 0 && (
-                              <span className={`text-sm font-semibold ${userReaction ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                {totalReactions}
+                        {/* Facebook Style Actions */}
+                        <div className="border-t border-border mx-3 mt-2">
+                          <div className="flex items-center justify-between py-1">
+                            <button
+                              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-muted transition-colors"
+                              onClick={() => handleLike(post.id)}
+                            >
+                              <Heart 
+                                className={`h-5 w-5 ${userReaction ? 'text-red-500 fill-red-500' : 'text-muted-foreground'}`} 
+                              />
+                              <span className={`text-sm font-medium ${userReaction ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                Gosto
                               </span>
-                            )}
-                          </motion.button>
+                            </button>
 
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-muted-foreground hover:bg-muted/60 transition-all duration-200"
-                            onClick={() => navigate(`/comments/${post.id}`)}
-                          >
-                            <MessageCircle className="h-[22px] w-[22px]" />
-                            {post.comments.length > 0 && (
-                              <span className="text-sm font-semibold">{post.comments.length}</span>
-                            )}
-                          </motion.button>
+                            <button
+                              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                              onClick={() => navigate(`/comments/${post.id}`)}
+                            >
+                              <MessageCircle className="h-5 w-5" />
+                              <span className="text-sm font-medium">Comentar</span>
+                            </button>
 
-                          <motion.button 
-                            whileTap={{ scale: 0.9 }}
-                            className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-muted-foreground hover:bg-muted/60 transition-all duration-200"
-                            onClick={() => {
-                              navigator.share?.({
-                                title: 'Publicação',
-                                text: post.content?.slice(0, 100),
-                                url: `${window.location.origin}/post/${post.id}`
-                              }).catch(() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                                toast.success("Link copiado!");
-                              });
-                            }}
-                          >
-                            <Share2 className="h-[22px] w-[22px]" />
-                          </motion.button>
-
-                          <div className="flex-1" />
-
-                          <motion.button 
-                            whileTap={{ scale: 0.9 }}
-                            className={`p-2.5 rounded-xl transition-all duration-200 ${isSaved ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted/60'}`}
-                            onClick={() => handleSave(post.id)}
-                          >
-                            <Bookmark className={`h-[22px] w-[22px] ${isSaved ? 'fill-current' : ''}`} />
-                          </motion.button>
+                            <button 
+                              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+                              onClick={() => {
+                                navigator.share?.({
+                                  title: 'Publicação',
+                                  text: post.content?.slice(0, 100),
+                                  url: `${window.location.origin}/post/${post.id}`
+                                }).catch(() => {
+                                  navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                                  toast.success("Link copiado!");
+                                });
+                              }}
+                            >
+                              <Share2 className="h-5 w-5" />
+                              <span className="text-sm font-medium">Partilhar</span>
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Likes count */}
-                        {totalReactions > 0 && (
-                          <button 
-                            className="px-4 mt-2 ml-12 text-sm text-muted-foreground hover:underline"
-                            onClick={() => navigate(`/post/${post.id}/likes`)}
-                          >
-                            {totalReactions} gosto{totalReactions !== 1 ? 's' : ''}
-                          </button>
+                        {/* Likes and comments count */}
+                        {(totalReactions > 0 || post.comments.length > 0) && (
+                          <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground">
+                            {totalReactions > 0 && (
+                              <button 
+                                className="flex items-center gap-1 hover:underline"
+                                onClick={() => navigate(`/post/${post.id}/likes`)}
+                              >
+                                <span className="text-red-500">❤️</span>
+                                {totalReactions}
+                              </button>
+                            )}
+                            {post.comments.length > 0 && (
+                              <button 
+                                className="hover:underline ml-auto"
+                                onClick={() => navigate(`/comments/${post.id}`)}
+                              >
+                                {post.comments.length} comentário{post.comments.length !== 1 ? 's' : ''}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </motion.div>

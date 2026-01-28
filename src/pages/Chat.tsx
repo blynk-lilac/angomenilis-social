@@ -194,12 +194,22 @@ export default function Chat() {
     }
   };
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // Also scroll to bottom on initial load
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  }, [loading]);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const loadFriend = async () => {
