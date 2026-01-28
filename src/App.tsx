@@ -507,7 +507,7 @@ const AppContent = () => {
         
         {/* CTF Hacking Route */}
         <Route
-          path="/ctf"
+          path="/ctf-hacking"
           element={
             <ProtectedRoute>
               <CTF />
