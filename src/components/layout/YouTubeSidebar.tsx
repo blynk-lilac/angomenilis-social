@@ -102,8 +102,8 @@ export default function YouTubeSidebar() {
   ];
 
   const ctfNavItems = [
-    { icon: Target, label: "CTF Hacking", path: "/ctf", highlight: true },
-    { icon: Trophy, label: "Ranking CTF", path: "/ctf?tab=leaderboard" },
+    { icon: Target, label: "CTF Hacking", path: "/ctf-hacking", highlight: true },
+    { icon: Trophy, label: "Ranking CTF", path: "/ctf-hacking?tab=leaderboard" },
   ];
 
   const creatorNavItems = [
