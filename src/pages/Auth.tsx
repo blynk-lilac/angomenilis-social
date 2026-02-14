@@ -63,15 +63,29 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
         password: formData.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Email ou senha incorretos');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Confirme seu email antes de fazer login');
+        } else {
+          toast.error(error.message || 'Erro ao fazer login');
+        }
+        return;
+      }
+      
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao fazer login');
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        toast.error('Erro de conexao. Verifique sua internet e tente novamente.');
+      } else {
+        toast.error(error.message || 'Erro ao fazer login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -97,21 +111,38 @@ export default function Auth() {
         }
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          first_name: formData.firstName,
-          username: formData.username,
-          email: formData.email,
-        });
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+          toast.error('Este email ja esta registrado. Tente fazer login.');
+        } else if (error.message.includes('password')) {
+          toast.error('A senha deve ter pelo menos 6 caracteres');
+        } else {
+          toast.error(error.message || 'Erro ao criar conta');
+        }
+        return;
       }
 
-      toast.success('Conta criada com sucesso!');
+      if (data.user) {
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            first_name: formData.firstName,
+            username: formData.username,
+            email: formData.email.trim(),
+          });
+        } catch (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+
+      toast.success('Conta criada com sucesso! Verifique seu email.');
       setMode('login');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar conta');
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        toast.error('Erro de conexao. Verifique sua internet e tente novamente.');
+      } else {
+        toast.error(error.message || 'Erro ao criar conta');
+      }
     } finally {
       setIsLoading(false);
     }

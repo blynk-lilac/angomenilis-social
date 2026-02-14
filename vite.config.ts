@@ -7,6 +7,18 @@ import { VitePWA } from 'vite-plugin-pwa';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: '/',
+  // Map Vercel integration env vars (NEXT_PUBLIC_*) to Vite-compatible (VITE_*) env vars
+  // Only override if VITE_* vars are not already set (e.g., from .env file)
+  define: {
+    ...((!process.env.VITE_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL) ? {
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    } : {}),
+    ...((!process.env.VITE_SUPABASE_PUBLISHABLE_KEY && (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)) ? {
+      'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+      ),
+    } : {}),
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
