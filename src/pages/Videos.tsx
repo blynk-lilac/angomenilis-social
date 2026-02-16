@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Send, Bookmark, Upload, MoreVertical, Play, Pause, Volume2, VolumeX, Eye, Music2 } from "lucide-react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { TopBar } from "@/components/TopBar";
+import BottomNav from "@/components/BottomNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -263,15 +263,17 @@ export default function Videos() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-black">
-        <TopBar />
-
-        <div className="fixed top-14 left-4 z-50 flex items-center gap-2">
+        {/* Instagram Reels Header */}
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-black/60 to-transparent">
           <span className="text-white font-bold text-xl">Reels</span>
+          <div className="flex items-center gap-3">
+            <span className="text-white text-sm font-medium">Amigos</span>
+          </div>
         </div>
 
         <div 
           ref={containerRef}
-          className="h-[calc(100vh-56px)] mt-14 overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+          className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
         >
           {loading ? (
             <VideosSkeleton />
@@ -297,7 +299,7 @@ export default function Videos() {
               return (
                 <motion.div 
                   key={video.id} 
-                  className="relative h-[calc(100vh-56px)] w-full bg-black snap-start snap-always flex items-center justify-center"
+                  className="relative h-screen w-full bg-black snap-start snap-always flex items-center justify-center"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
@@ -502,6 +504,7 @@ export default function Videos() {
           .scrollbar-hide::-webkit-scrollbar { display: none; }
           .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
+        <BottomNav />
       </div>
     </ProtectedRoute>
   );
