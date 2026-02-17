@@ -4,7 +4,8 @@ import {
   User, LogOut, Settings, Bookmark, Shield, Users, 
   Sun, Moon, Target, Trophy, Play, Compass, UserPlus,
   Video, TrendingUp, Award, Lock, Store, Calendar, Gamepad2,
-  Heart, Image, Flag, HelpCircle, FileText
+  Heart, Image, Flag, HelpCircle, FileText, DollarSign, BadgeCheck,
+  CreditCard
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,11 @@ export default function SidebarPage() {
     { icon: Target, label: "CTF Hacking", path: "/ctf-hacking", color: "text-green-500" },
     { icon: Trophy, label: "Ranking", path: "/ctf-hacking?tab=leaderboard", color: "text-yellow-500" },
     { icon: Award, label: "Recompensas", path: "/ctf-hacking?tab=rewards", color: "text-orange-500" },
+  ];
+
+  const premiumSection = [
+    { icon: DollarSign, label: "Monetização", path: "/monetization", color: "text-green-500" },
+    { icon: BadgeCheck, label: "Pagar Verificação", path: "/verification-checkout", color: "text-blue-500" },
   ];
 
   const createSection = [
@@ -286,12 +292,23 @@ export default function SidebarPage() {
 
           <div className="h-px bg-border mx-4 my-2" />
 
+          {/* Premium */}
+          <SectionHeader title="Premium" />
+          <nav className="px-2">
+            {premiumSection.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+          </nav>
+
+          <div className="h-px bg-border mx-4 my-2" />
+
           {/* Admin Panel */}
           {isAdmin && (
             <>
               <SectionHeader title="Administração" />
               <nav className="px-2">
                 <NavItem icon={Shield} label="Painel Admin" path="/admin" color="text-red-500" />
+                <NavItem icon={CreditCard} label="Pagamentos Verificação" path="/admin/verification" color="text-orange-500" />
               </nav>
               <div className="h-px bg-border mx-4 my-2" />
             </>
