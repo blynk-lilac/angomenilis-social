@@ -4,32 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Blynk - Clean White & Black Design System */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 5%;
+    --background: 0 0% 97%;
+    --foreground: 220 15% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 5%;
+    --card-foreground: 220 15% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 5%;
+    --popover-foreground: 220 15% 10%;
 
-    /* Facebook-inspired Blue Primary */
     --primary: 214 89% 52%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 214 100% 60%;
 
-    --secondary: 210 15% 96%;
-    --secondary-foreground: 0 0% 5%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 15% 10%;
 
-    --muted: 210 15% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
 
     --accent: 214 89% 52%;
     --accent-foreground: 0 0% 100%;
@@ -41,43 +35,39 @@ All colors MUST be HSL.
     --success-foreground: 0 0% 100%;
 
     --warning: 45 100% 50%;
-    --warning-foreground: 0 0% 5%;
+    --warning-foreground: 220 15% 10%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 96%;
+    --border: 220 13% 91%;
+    --input: 220 14% 96%;
     --ring: 214 89% 52%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Clean gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 89% 52%), hsl(214 89% 62%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 20% 98%));
-    
-    /* Shadows */
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.12);
   }
 
   .dark {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
+    --background: 220 15% 6%;
+    --foreground: 0 0% 96%;
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 15% 9%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 15% 9%;
+    --popover-foreground: 0 0% 96%;
 
     --primary: 214 89% 55%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 214 100% 65%;
 
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 15% 14%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 220 8% 56%;
 
     --accent: 214 89% 55%;
     --accent-foreground: 0 0% 100%;
@@ -89,16 +79,16 @@ All colors MUST be HSL.
     --success-foreground: 0 0% 100%;
 
     --warning: 45 100% 55%;
-    --warning-foreground: 0 0% 5%;
+    --warning-foreground: 220 15% 10%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 14%;
+    --border: 220 15% 16%;
+    --input: 220 15% 14%;
     --ring: 214 89% 55%;
 
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 5%));
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -111,6 +101,7 @@ All colors MUST be HSL.
     -ms-user-select: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   *::-webkit-scrollbar {
@@ -119,11 +110,20 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
+    overscroll-behavior: none;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -135,91 +135,116 @@ All colors MUST be HSL.
   img, video {
     pointer-events: auto;
     -webkit-user-drag: none;
-    -khtml-user-drag: none;
-    -moz-user-drag: none;
-    -o-user-drag: none;
     user-drag: none;
   }
 
-  /* Desabilitar menu de contexto */
   * {
     -webkit-touch-callout: none;
+  }
+
+  /* Native app overscroll behavior */
+  html, body {
+    overscroll-behavior-y: none;
   }
 }
 
 @layer utilities {
-  .hover-lift {
-    @apply transition-transform duration-200 ease-out hover:-translate-y-0.5;
+  /* Native app page transition */
+  .page-transition {
+    animation: pageSlideIn 0.28s cubic-bezier(0.2, 0, 0, 1);
   }
 
-  .smooth-transition {
-    @apply transition-all duration-300 ease-in-out;
-  }
-
-  .fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  @keyframes fadeIn {
+  @keyframes pageSlideIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateX(24px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(0);
     }
   }
 
-  /* Social media animations */
-  .animate-like {
-    animation: scale-in 0.3s ease-out, wiggle 0.5s ease-in-out 0.3s;
+  /* Material ripple effect */
+  .ripple-effect {
+    position: relative;
+    overflow: hidden;
   }
 
-  .animate-comment {
-    animation: slide-up 0.4s ease-out;
+  .ripple-effect::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), hsl(var(--foreground) / 0.08) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s;
   }
 
-  .animate-share {
-    animation: flip 0.6s ease-in-out;
+  .ripple-effect:active::after {
+    opacity: 1;
   }
 
-  .animate-notification {
-    animation: slide-in-left 0.3s ease-out, bounce-subtle 2s ease-in-out 0.3s infinite;
+  /* Native-like pressed state */
+  .press-effect {
+    @apply transition-transform duration-100 active:scale-[0.97];
   }
 
-  .animate-story-progress {
-    animation: slide-in-right 0.3s ease-out;
+  /* Smooth scroll container */
+  .native-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
   }
 
-  .hover-social {
-    @apply transition-all duration-200 hover:scale-110 hover:text-primary active:scale-95;
+  /* Safe area helpers */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
-  .active\:scale-98:active {
-    transform: scale(0.98);
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Native app header style */
+  .app-header {
+    @apply sticky top-0 z-50 bg-card/98 backdrop-blur-2xl border-b border-border/40;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  /* Native card */
+  .app-card {
+    @apply bg-card rounded-2xl shadow-[var(--shadow-card)] border border-border/40;
+  }
+
+  /* Material-style elevation */
+  .elevation-1 {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .elevation-2 {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  .elevation-3 {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.06);
   }
 
   /* iOS Emoji Style */
   .emoji-ios {
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   }
 
-  /* Facebook-style card */
-  .fb-card {
-    @apply bg-card rounded-none md:rounded-lg border-0 shadow-[var(--shadow-card)];
+  /* Fade in animation */
+  .fade-in {
+    animation: fadeIn 0.25s cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Facebook action button */
-  .fb-action-btn {
-    @apply flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-muted-foreground hover:bg-muted transition-colors font-medium text-sm;
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  .fb-action-btn:hover {
-    @apply text-foreground;
-  }
-
-  .fb-action-btn.active {
-    @apply text-primary;
+  /* Social interactions */
+  .hover-social {
+    @apply transition-all duration-150 hover:scale-110 active:scale-90;
   }
 }

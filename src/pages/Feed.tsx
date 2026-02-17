@@ -319,22 +319,22 @@ export default function Feed() {
     <ProtectedRoute>
       <MessageNotification />
       <div className="min-h-screen bg-background">
-        {/* Instagram-style Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
+        {/* Native App Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 app-header safe-area-top">
+          <div className="flex items-center justify-between h-11 px-4 max-w-lg mx-auto">
             <Logo2026 size="md" />
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => navigate("/notifications")}>
-                <Heart className="h-6 w-6" strokeWidth={1.5} />
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => navigate("/notifications")}>
+                <Heart className="h-[22px] w-[22px]" strokeWidth={1.5} />
               </Button>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => navigate("/messages")}>
-                <Send className="h-6 w-6" strokeWidth={1.5} />
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => navigate("/messages")}>
+                <Send className="h-[22px] w-[22px]" strokeWidth={1.5} />
               </Button>
             </div>
           </div>
         </header>
 
-        <div className="pt-12 pb-14">
+        <div className="pt-11 pb-[52px] h-screen overflow-y-auto native-scroll">
           <div className="max-w-lg mx-auto">
             {/* Stories Bar */}
             <StoriesBar onCreateStory={() => setCreateStoryOpen(true)} />

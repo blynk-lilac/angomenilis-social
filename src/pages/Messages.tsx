@@ -134,8 +134,8 @@ export default function Messages() {
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen bg-background overflow-hidden">
-        {/* Instagram DM Header */}
-        <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border">
+        {/* Native App DM Header */}
+        <header className="app-header safe-area-top">
           <div className="flex items-center justify-between h-12 px-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate(-1)}>
@@ -202,7 +202,7 @@ export default function Messages() {
         </header>
 
         {/* Conversations List */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 native-scroll">
           {filteredConversations.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -231,7 +231,7 @@ export default function Messages() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.02 }}
                     onClick={() => navigate(`/chat/${conv.id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors active:bg-muted/50"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors press-effect ripple-effect"
                   >
                     <div className="relative">
                       <Avatar className="h-14 w-14">

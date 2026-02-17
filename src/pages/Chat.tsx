@@ -664,15 +664,15 @@ export default function Chat() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      {/* Modern Header with gradient */}
-      <header className="flex-shrink-0 z-50 bg-gradient-to-r from-card via-card to-primary/5 border-b border-border/50 px-3 py-3 safe-area-top backdrop-blur-xl">
+      {/* Native App Chat Header */}
+      <header className="flex-shrink-0 z-50 app-header safe-area-top px-2 py-2">
         <div className="flex items-center gap-3 w-full">
           <motion.div whileTap={{ scale: 0.9 }}>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate('/messages')}
-              className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted"
+              className="h-9 w-9 rounded-full press-effect"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -684,7 +684,7 @@ export default function Chat() {
             onClick={() => navigate(`/profile/${friend.id}`)}
           >
             <div className="relative">
-              <Avatar className="h-11 w-11 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/20 ring-offset-1 ring-offset-background">
                 <AvatarImage src={friend.avatar_url || undefined} className="object-cover" />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-primary/50 text-primary-foreground text-base font-semibold">
                   {friend.first_name[0]}
@@ -742,7 +742,7 @@ export default function Chat() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors"
+                className="h-9 w-9 rounded-full press-effect"
                 onClick={() => startCall('video')}
               >
                 <Video className="h-5 w-5" />
@@ -752,7 +752,7 @@ export default function Chat() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors"
+                className="h-9 w-9 rounded-full press-effect"
                 onClick={() => startCall('voice')}
               >
                 <Phone className="h-5 w-5" />
@@ -762,8 +762,8 @@ export default function Chat() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <motion.div whileTap={{ scale: 0.9 }}>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted">
-                    <MoreVertical className="h-5 w-5" />
+                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect">
+                    <MoreVertical className="h-[18px] w-[18px]" />
                   </Button>
                 </motion.div>
               </DropdownMenuTrigger>
@@ -786,9 +786,9 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Messages Area with improved styling */}
+      {/* Messages Area */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        className="flex-1 overflow-y-auto overflow-x-hidden native-scroll"
         style={{
           backgroundImage: wallpaper ? `url(${wallpaper})` : 'none',
           backgroundSize: 'cover',
@@ -985,15 +985,15 @@ export default function Chat() {
         )}
       </AnimatePresence>
 
-      {/* Modern Input Area */}
-      <div className="flex-shrink-0 bg-gradient-to-t from-card via-card to-card/95 border-t border-border/50 px-3 py-3 safe-area-bottom backdrop-blur-xl">
+      {/* Native Input Area */}
+      <div className="flex-shrink-0 bg-card/98 border-t border-border/40 px-3 py-2 safe-area-bottom" style={{ backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}>
         <form onSubmit={editingMessage ? (e) => { e.preventDefault(); saveEditedMessage(); } : sendMessage} className="flex items-center gap-2.5 max-w-3xl mx-auto">
           <motion.div whileTap={{ scale: 0.9 }}>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-11 w-11 rounded-full bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+              className="h-10 w-10 rounded-full press-effect text-muted-foreground"
               onClick={() => setShowEmojiPicker(true)}
             >
               <Smile className="h-5 w-5" />
@@ -1006,7 +1006,7 @@ export default function Chat() {
               value={editingMessage ? editText : newMessage}
               onChange={(e) => editingMessage ? setEditText(e.target.value) : handleTyping(e.target.value)}
               placeholder="Escreva uma mensagem..."
-              className="h-12 rounded-full bg-muted/50 border-0 px-5 pr-14 text-base focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60"
+              className="h-11 rounded-full bg-muted/60 border-0 px-5 pr-14 text-[15px] focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/50"
             />
             <input
               ref={imageInputRef}
@@ -1033,7 +1033,7 @@ export default function Chat() {
               <Button
                 type="submit"
                 size="icon"
-                className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30"
+                className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90 shadow-md press-effect"
               >
                 <Send className="h-5 w-5" />
               </Button>
@@ -1045,10 +1045,10 @@ export default function Chat() {
                   if (isRecording) stopVoiceRecording();
                   else startVoiceRecording();
                 }}
-                className={`h-12 w-12 rounded-full shadow-lg ${
+                className={`h-11 w-11 rounded-full shadow-md press-effect ${
                   isRecording 
-                    ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/30 animate-pulse' 
-                    : 'bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-primary/30'
+                    ? 'bg-destructive hover:bg-destructive/90 animate-pulse' 
+                    : 'bg-primary hover:bg-primary/90'
                 }`}
               >
                 {isRecording ? (

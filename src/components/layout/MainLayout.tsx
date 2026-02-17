@@ -24,15 +24,15 @@ export const MainLayout = ({ children, title, showBackButton = false, action }: 
       
       <div className="flex flex-col flex-1 md:ml-[240px] h-screen transition-all duration-300">
         {title && (
-          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">
-            <div className="flex items-center justify-between h-14 px-4">
+          <header className="app-header safe-area-top">
+            <div className="flex items-center justify-between h-12 px-4">
               <div className="flex items-center gap-3">
                 {showBackButton && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => navigate(-1)}
-                    className="h-9 w-9 rounded-full hover:bg-accent"
+                    className="h-9 w-9 rounded-full press-effect"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
