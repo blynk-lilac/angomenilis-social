@@ -426,17 +426,17 @@ export default function Profile() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background pb-20">
-        {/* Facebook-style Header */}
+      <div className="h-screen bg-background overflow-y-auto native-scroll pb-[52px]">
+        {/* Native App Header */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b"
+          className="app-header safe-area-top"
         >
           <div className="flex items-center justify-between px-4 h-12">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full h-9 w-9">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full h-9 w-9 press-effect">
+                <ArrowLeft className="h-[18px] w-[18px]" />
               </Button>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-base font-bold">{profile.first_name}</h1>
