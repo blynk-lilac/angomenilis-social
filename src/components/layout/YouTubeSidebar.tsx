@@ -3,7 +3,7 @@ import {
   Home, Search, Film, MessageCircle, Heart, PlusSquare, 
   Menu, User, LogOut, Settings, Bookmark, Shield, Users, 
   Sun, Moon, Target, X, ChevronLeft, ChevronRight,
-  Trophy, TrendingUp, Play
+  Trophy, TrendingUp, Play, DollarSign, BadgeCheck, CreditCard
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,11 @@ export default function YouTubeSidebar() {
   const ctfNavItems = [
     { icon: Target, label: "CTF Hacking", path: "/ctf-hacking", highlight: true },
     { icon: Trophy, label: "Ranking CTF", path: "/ctf-hacking?tab=leaderboard" },
+  ];
+
+  const premiumNavItems = [
+    { icon: DollarSign, label: "Monetização", path: "/monetization" },
+    { icon: BadgeCheck, label: "Verificação", path: "/verification-checkout" },
   ];
 
   const creatorNavItems = [
@@ -247,6 +252,14 @@ export default function YouTubeSidebar() {
 
             <div className="h-px bg-border my-3" />
 
+            {/* Premium */}
+            <SectionTitle title="Premium" />
+            {premiumNavItems.map((item) => (
+              <NavItem key={item.path} {...item} />
+            ))}
+
+            <div className="h-px bg-border my-3" />
+
             {/* User */}
             <SectionTitle title="Você" />
             {userNavItems.map((item) => (
@@ -259,6 +272,7 @@ export default function YouTubeSidebar() {
                 <div className="h-px bg-border my-3" />
                 <SectionTitle title="Admin" />
                 <NavItem icon={Shield} label="Painel Admin" path="/admin" />
+                <NavItem icon={CreditCard} label="Pagamentos" path="/admin/verification" />
               </>
             )}
 
