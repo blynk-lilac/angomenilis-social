@@ -60,6 +60,9 @@ import OnlineFriends from "./pages/OnlineFriends";
 import VideoEditor from "./pages/VideoEditor";
 import CTF from "./pages/CTF";
 import SidebarPage from "./pages/SidebarPage";
+import VerificationCheckout from "./pages/VerificationCheckout";
+import AdminVerification from "./pages/AdminVerification";
+import Monetization from "./pages/Monetization";
 import { requestNotificationPermission } from "./utils/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -522,6 +525,36 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <SidebarPage />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Verification Checkout */}
+        <Route
+          path="/verification-checkout"
+          element={
+            <ProtectedRoute>
+              <VerificationCheckout />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Verification Payments */}
+        <Route
+          path="/admin/verification"
+          element={
+            <ProtectedRoute>
+              <AdminVerification />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Monetization */}
+        <Route
+          path="/monetization"
+          element={
+            <ProtectedRoute>
+              <Monetization />
             </ProtectedRoute>
           }
         />
