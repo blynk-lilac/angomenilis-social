@@ -125,6 +125,44 @@ export type Database = {
           },
         ]
       }
+      admin_payment_logs: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          payment_reference: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_payment_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "verification_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_accounts: {
         Row: {
           blocked_by: string | null
@@ -2383,6 +2421,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_earnings: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           is_online: boolean | null
@@ -2610,6 +2675,51 @@ export type Database = {
           },
         ]
       }
+      verification_subscriptions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          expires_at: string | null
+          external_id: string | null
+          id: string
+          paid_at: string | null
+          payment_reference: string | null
+          plan_type: string
+          status: string
+          transaction_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          plan_type?: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          plan_type?: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       verification_video_comments: {
         Row: {
           audio_url: string | null
@@ -2751,6 +2861,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      withdrawal_requests: {
+        Row: {
+          account_name: string | null
+          amount: number
+          created_at: string | null
+          iban: string | null
+          id: string
+          phone: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          amount: number
+          created_at?: string | null
+          iban?: string | null
+          id?: string
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          amount?: number
+          created_at?: string | null
+          iban?: string | null
+          id?: string
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

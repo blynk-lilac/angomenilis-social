@@ -207,7 +207,7 @@
 
   /* Native app header style */
   .app-header {
-    @apply sticky top-0 z-50 bg-card/98 backdrop-blur-2xl border-b border-border/40;
+    @apply sticky top-0 z-50 bg-card backdrop-blur-2xl border-b border-border;
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
