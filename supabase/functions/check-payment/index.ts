@@ -39,7 +39,7 @@ serve(async (req) => {
     // Check with PliqPay API
     if (sub.transaction_id) {
       try {
-        const checkResponse = await fetch(`https://pliqpag-api.onrender.com/v1/transaction/${sub.transaction_id}`, {
+        const checkResponse = await fetch(`https://api.plinqpay.com/v1/transaction/${sub.transaction_id}`, {
           headers: { 'api-key': PLIQPAY_API_KEY },
         });
 

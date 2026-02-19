@@ -115,15 +115,17 @@
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
     overscroll-behavior: none;
-    overflow: hidden;
-    position: fixed;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    position: fixed;
   }
 
   #root {
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   h1, h2, h3, h4, h5, h6 {
