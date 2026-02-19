@@ -5,26 +5,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { 
-  User, 
-  Mail, 
-  Lock, 
   Eye, 
   EyeOff, 
-  ArrowRight,
+  ArrowLeft,
   Loader2,
-  AtSign
+  Mail,
+  Lock,
+  User,
+  AtSign,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
+import InputOTP from '@/components/auth/AuthOTPInput';
 
-type AuthModeType = 'login' | 'signup' | 'forgotPassword';
+type AuthStep = 'welcome' | 'login' | 'signup-name' | 'signup-username' | 'signup-email' | 'signup-password' | 'verify-email' | 'forgot-password';
 
 export default function Auth() {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [mode, setMode] = useState<AuthModeType>('login');
+  const [step, setStep] = useState<AuthStep>('welcome');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -35,14 +39,21 @@ export default function Auth() {
 
   useEffect(() => {
     if (location.state?.mode === 'signup') {
-      setMode('signup');
+      setStep('signup-name');
     }
   }, [location]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
-        <Loader2 className="h-10 w-10 text-[#1877f2] animate-spin" />
+      <div className="h-full flex items-center justify-center bg-background">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <h1 className="text-4xl font-bold text-primary">blynk</h1>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </motion.div>
       </div>
     );
   }
@@ -71,7 +82,12 @@ export default function Auth() {
       if (error) throw error;
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao fazer login');
+      if (error.message?.includes('Email not confirmed')) {
+        toast.error('Confirma o teu email antes de iniciar sessão');
+        setStep('verify-email');
+      } else {
+        toast.error(error.message || 'Erro ao fazer login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +96,11 @@ export default function Auth() {
   const handleSignup = async () => {
     if (!formData.firstName || !formData.email || !formData.username || !formData.password) {
       toast.error('Preencha todos os campos');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('A palavra-passe deve ter pelo menos 6 caracteres');
       return;
     }
 
@@ -108,8 +129,8 @@ export default function Auth() {
         });
       }
 
-      toast.success('Conta criada com sucesso!');
-      setMode('login');
+      toast.success('Conta criada! Verifica o teu email.');
+      setStep('verify-email');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar conta');
     } finally {
@@ -131,7 +152,7 @@ export default function Auth() {
 
       if (error) throw error;
       toast.success('Email de recuperação enviado!');
-      setMode('login');
+      setStep('login');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar email');
     } finally {
@@ -139,227 +160,546 @@ export default function Auth() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f0f2f5] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo Section - Facebook Style */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6"
-        >
-          <h1 className="text-[#1877f2] text-5xl font-bold tracking-tight">blynk</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Conecta-te com amigos e o mundo à tua volta.
-          </p>
-        </motion.div>
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+      });
+      if (error) throw error;
+      toast.success('Email reenviado!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao reenviar');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  const handleVerifyOTP = async () => {
+    if (verificationCode.length < 6) {
+      toast.error('Insere o código completo');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: formData.email,
+        token: verificationCode,
+        type: 'signup',
+      });
+
+      if (error) throw error;
+      toast.success('Email verificado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Código inválido');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const goBack = () => {
+    const backMap: Record<AuthStep, AuthStep> = {
+      'welcome': 'welcome',
+      'login': 'welcome',
+      'signup-name': 'welcome',
+      'signup-username': 'signup-name',
+      'signup-email': 'signup-username',
+      'signup-password': 'signup-email',
+      'verify-email': 'login',
+      'forgot-password': 'login',
+    };
+    setStep(backMap[step]);
+  };
+
+  const slideVariants = {
+    enter: { x: 60, opacity: 0 },
+    center: { x: 0, opacity: 1 },
+    exit: { x: -60, opacity: 0 },
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-background overflow-y-auto">
+      {/* Header with back button */}
+      {step !== 'welcome' && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="sticky top-0 z-10 p-4"
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goBack}
+            className="rounded-full h-10 w-10"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </motion.div>
+      )}
+
+      <div className="flex-1 flex flex-col justify-center px-6 pb-8 max-w-md mx-auto w-full">
         <AnimatePresence mode="wait">
-          {/* Login Form */}
-          {mode === 'login' && (
+          {/* Welcome Screen */}
+          {step === 'welcome' && (
+            <motion.div
+              key="welcome"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="flex flex-col items-center text-center gap-8"
+            >
+              <div className="space-y-3">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
+                >
+                  <h1 className="text-6xl font-extrabold tracking-tight text-primary">blynk</h1>
+                </motion.div>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="text-muted-foreground text-lg leading-relaxed"
+                >
+                  Conecta-te com amigos e o mundo à tua volta.
+                </motion.p>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="w-full space-y-3"
+              >
+                <Button
+                  onClick={() => setStep('login')}
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+                >
+                  Iniciar sessão
+                </Button>
+
+                <Button
+                  onClick={() => setStep('signup-name')}
+                  variant="outline"
+                  className="w-full h-14 rounded-2xl text-base font-semibold border-2"
+                >
+                  Criar nova conta
+                </Button>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-xs text-muted-foreground"
+              >
+                © 2026/2027 Blynk
+              </motion.p>
+            </motion.div>
+          )}
+
+          {/* Login Screen */}
+          {step === 'login' && (
             <motion.div
               key="login"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-lg shadow-lg p-6 space-y-4"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
             >
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold">Bem-vindo de volta</h2>
+                <p className="text-muted-foreground">Inicia sessão na tua conta</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Mail className="h-4 w-4" /> Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="nome@email.com"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    className="h-14 rounded-xl text-base bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> Palavra-passe
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => updateFormData('password', e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      className="h-14 rounded-xl text-base pr-12 bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    variant="link"
+                    onClick={() => setStep('forgot-password')}
+                    className="text-primary text-sm font-medium h-auto p-0"
+                  >
+                    Esqueceste a palavra-passe?
+                  </Button>
+                </div>
+
+                <Button
+                  onClick={handleLogin}
+                  disabled={isLoading}
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+                >
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Entrar'}
+                </Button>
+              </div>
+
+              <div className="text-center pt-4">
+                <span className="text-muted-foreground text-sm">Não tens conta? </span>
+                <Button
+                  variant="link"
+                  onClick={() => setStep('signup-name')}
+                  className="text-primary font-semibold h-auto p-0 text-sm"
+                >
+                  Criar conta
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Signup Step 1: Name */}
+          {step === 'signup-name' && (
+            <motion.div
+              key="signup-name"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold">Como te chamas?</h2>
+                <p className="text-muted-foreground">Este será o teu nome visível na plataforma.</p>
+              </div>
+
+              <Input
+                placeholder="O teu nome"
+                value={formData.firstName}
+                onChange={(e) => updateFormData('firstName', e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && formData.firstName && setStep('signup-username')}
+                autoFocus
+                className="h-14 rounded-xl text-base bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+              />
+
+              <Button
+                onClick={() => setStep('signup-username')}
+                disabled={!formData.firstName.trim()}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                Continuar
+              </Button>
+
+              <div className="text-center">
+                <span className="text-muted-foreground text-sm">Já tens conta? </span>
+                <Button
+                  variant="link"
+                  onClick={() => setStep('login')}
+                  className="text-primary font-semibold h-auto p-0 text-sm"
+                >
+                  Iniciar sessão
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Signup Step 2: Username */}
+          {step === 'signup-username' && (
+            <motion.div
+              key="signup-username"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <AtSign className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold">Escolhe um username</h2>
+                <p className="text-muted-foreground">Usa letras, números e underscores. Podes alterá-lo depois.</p>
+              </div>
+
+              <Input
+                placeholder="nome_de_utilizador"
+                value={formData.username}
+                onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && formData.username && setStep('signup-email')}
+                autoFocus
+                className="h-14 rounded-xl text-base bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+              />
+
+              <Button
+                onClick={() => setStep('signup-email')}
+                disabled={!formData.username.trim() || formData.username.length < 3}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                Continuar
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Signup Step 3: Email */}
+          {step === 'signup-email' && (
+            <motion.div
+              key="signup-email"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Mail className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold">Qual é o teu email?</h2>
+                <p className="text-muted-foreground">Vamos enviar-te um código de verificação.</p>
+              </div>
+
               <Input
                 type="email"
-                placeholder="Email ou telemóvel"
+                placeholder="nome@email.com"
                 value={formData.email}
                 onChange={(e) => updateFormData('email', e.target.value)}
-                className="h-14 rounded-md border-gray-300 text-base focus:border-[#1877f2] focus:ring-[#1877f2]"
+                onKeyDown={(e) => e.key === 'Enter' && formData.email && setStep('signup-password')}
+                autoFocus
+                className="h-14 rounded-xl text-base bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
               />
+
+              <Button
+                onClick={() => setStep('signup-password')}
+                disabled={!formData.email.trim() || !formData.email.includes('@')}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                Continuar
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Signup Step 4: Password */}
+          {step === 'signup-password' && (
+            <motion.div
+              key="signup-password"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Lock className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold">Cria uma palavra-passe</h2>
+                <p className="text-muted-foreground">Mínimo de 6 caracteres. Mantém a tua conta segura.</p>
+              </div>
 
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Palavra-passe"
+                  placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => updateFormData('password', e.target.value)}
-                  className="h-14 rounded-md border-gray-300 text-base pr-12 focus:border-[#1877f2] focus:ring-[#1877f2]"
+                  onKeyDown={(e) => e.key === 'Enter' && formData.password.length >= 6 && handleSignup()}
+                  autoFocus
+                  className="h-14 rounded-xl text-base pr-12 bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+
+              {/* Password strength indicator */}
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full transition-colors ${
+                      formData.password.length >= i * 2
+                        ? formData.password.length >= 8
+                          ? 'bg-green-500'
+                          : 'bg-yellow-500'
+                        : 'bg-muted'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground px-1">
+                Ao registares-te, concordas com os nossos Termos de Serviço e Política de Privacidade.
+              </p>
+
+              <Button
+                onClick={handleSignup}
+                disabled={isLoading || formData.password.length < 6}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Criar conta'}
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Email Verification Screen */}
+          {step === 'verify-email' && (
+            <motion.div
+              key="verify-email"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6 text-center"
+            >
+              <div className="space-y-3">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto"
+                >
+                  <ShieldCheck className="h-10 w-10 text-primary" />
+                </motion.div>
+                <h2 className="text-3xl font-bold">Verifica o teu email</h2>
+                <p className="text-muted-foreground">
+                  Enviámos um código para{' '}
+                  <span className="font-semibold text-foreground">{formData.email}</span>
+                </p>
+              </div>
+
+              <div className="flex justify-center py-4">
+                <InputOTP
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                  length={6}
+                />
+              </div>
+
+              <Button
+                onClick={handleVerifyOTP}
+                disabled={isLoading || verificationCode.length < 6}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Verificar'}
+              </Button>
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Não recebeste o código?</p>
+                <Button
+                  variant="link"
+                  onClick={handleResendVerification}
+                  disabled={isLoading}
+                  className="text-primary font-semibold h-auto p-0"
+                >
+                  Reenviar código
                 </Button>
               </div>
 
               <Button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="w-full h-14 rounded-md text-xl font-bold bg-[#1877f2] hover:bg-[#166fe5] text-white"
+                variant="ghost"
+                onClick={() => setStep('login')}
+                className="text-muted-foreground text-sm"
               >
-                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'Iniciar sessão'}
+                Voltar ao login
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Forgot Password Screen */}
+          {step === 'forgot-password' && (
+            <motion.div
+              key="forgot-password"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold">Recuperar conta</h2>
+                <p className="text-muted-foreground">Introduz o teu email e vamos enviar-te um link de recuperação.</p>
+              </div>
+
+              <Input
+                type="email"
+                placeholder="nome@email.com"
+                value={formData.email}
+                onChange={(e) => updateFormData('email', e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && formData.email && handleForgotPassword()}
+                autoFocus
+                className="h-14 rounded-xl text-base bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+              />
+
+              <Button
+                onClick={handleForgotPassword}
+                disabled={isLoading || !formData.email}
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90"
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Enviar link'}
               </Button>
 
               <div className="text-center">
                 <Button
                   variant="link"
-                  onClick={() => setMode('forgotPassword')}
-                  className="text-[#1877f2] text-sm font-medium h-auto p-0"
+                  onClick={() => setStep('login')}
+                  className="text-primary font-semibold h-auto p-0 text-sm"
                 >
-                  Esqueceste-te da palavra-passe?
-                </Button>
-              </div>
-
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-gray-500">ou</span>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => setMode('signup')}
-                  className="h-12 px-8 rounded-md text-lg font-bold bg-[#42b72a] hover:bg-[#36a420] text-white"
-                >
-                  Criar nova conta
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Signup Form */}
-          {mode === 'signup' && (
-            <motion.div
-              key="signup"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-lg shadow-lg p-6"
-            >
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Criar uma conta nova</h2>
-                <p className="text-gray-600 text-sm mt-1">É rápido e fácil.</p>
-              </div>
-
-              <div className="space-y-3">
-                <Input
-                  placeholder="Nome"
-                  value={formData.firstName}
-                  onChange={(e) => updateFormData('firstName', e.target.value)}
-                  className="h-12 rounded-md border-gray-300 focus:border-[#1877f2] focus:ring-[#1877f2]"
-                />
-
-                <Input
-                  placeholder="Nome de utilizador"
-                  value={formData.username}
-                  onChange={(e) => updateFormData('username', e.target.value)}
-                  className="h-12 rounded-md border-gray-300 focus:border-[#1877f2] focus:ring-[#1877f2]"
-                />
-
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={(e) => updateFormData('email', e.target.value)}
-                  className="h-12 rounded-md border-gray-300 focus:border-[#1877f2] focus:ring-[#1877f2]"
-                />
-
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Palavra-passe nova"
-                    value={formData.password}
-                    onChange={(e) => updateFormData('password', e.target.value)}
-                    className="h-12 rounded-md border-gray-300 pr-12 focus:border-[#1877f2] focus:ring-[#1877f2]"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
-                  </Button>
-                </div>
-
-                <p className="text-xs text-gray-500 px-1">
-                  Ao clicares em Registar, concordas com os nossos Termos, Política de Privacidade e Política de Cookies.
-                </p>
-
-                <Button
-                  onClick={handleSignup}
-                  disabled={isLoading}
-                  className="w-full h-12 rounded-md text-lg font-bold bg-[#42b72a] hover:bg-[#36a420] text-white mt-4"
-                >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Registar'}
-                </Button>
-
-                <div className="text-center pt-2">
-                  <Button
-                    variant="link"
-                    onClick={() => setMode('login')}
-                    className="text-[#1877f2] font-medium h-auto p-0"
-                  >
-                    Já tens uma conta?
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Forgot Password Form */}
-          {mode === 'forgotPassword' && (
-            <motion.div
-              key="forgot"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-lg shadow-lg p-6"
-            >
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Encontra a tua conta</h2>
-                <p className="text-gray-600 text-sm mt-2">
-                  Introduz o teu email para procurar a tua conta.
-                </p>
-              </div>
-
-              <Input
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                className="h-12 rounded-md border-gray-300 mb-4 focus:border-[#1877f2] focus:ring-[#1877f2]"
-              />
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setMode('login')}
-                  className="flex-1 h-11 rounded-md font-semibold"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleForgotPassword}
-                  disabled={isLoading}
-                  className="flex-1 h-11 rounded-md font-semibold bg-[#1877f2] hover:bg-[#166fe5] text-white"
-                >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Procurar'}
+                  Voltar ao login
                 </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-xs text-gray-500">
-            © 2026/2027 Blynk
-          </p>
-        </div>
       </div>
     </div>
   );
