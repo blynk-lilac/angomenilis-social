@@ -51,7 +51,7 @@ serve(async (req) => {
     const callbackUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
 
     // Create PliqPay transaction
-    const pliqResponse = await fetch('https://pliqpag-api.onrender.com/v1/transaction', {
+    const pliqResponse = await fetch('https://api.plinqpay.com/v1/transaction', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
