@@ -87,8 +87,12 @@ export default function VerificationCheckout() {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
+      const ref = data.reference || data.subscription?.payment_reference || data.payment?.reference || data.payment?.data?.reference;
+      const entity = data.entity || data.payment?.entity || data.payment?.data?.entity || '01055';
+
       setPaymentData({
-        reference: data.subscription?.payment_reference || data.payment?.reference || data.payment?.data?.reference,
+        reference: ref,
+        entity: entity,
         amount: plan.price,
         subscriptionId: data.subscription?.id,
       });
@@ -197,8 +201,8 @@ export default function VerificationCheckout() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Entidade</span>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg">01055</span>
-                <Button variant="ghost" size="sm" onClick={() => handleCopy("01055", "Entidade")} className="text-primary">
+                <span className="font-mono font-bold text-lg">{paymentData.entity || '01055'}</span>
+                <Button variant="ghost" size="sm" onClick={() => handleCopy(paymentData.entity || "01055", "Entidade")} className="text-primary">
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>

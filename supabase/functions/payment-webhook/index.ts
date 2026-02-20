@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -19,10 +19,14 @@ serve(async (req) => {
     const body = await req.json();
     console.log('Webhook received:', JSON.stringify(body));
 
-    const { externalId, status, reference, transactionId } = body;
+    // PlinqPay callback structure based on docs
+    const externId = body.externId || body.externalId;
+    const status = body.status;
+    const reference = body.reference;
+    const transactionId = body.id;
 
-    if (!externalId) {
-      return new Response(JSON.stringify({ error: 'Missing externalId' }), {
+    if (!externId) {
+      return new Response(JSON.stringify({ error: 'Missing externId' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -32,19 +36,20 @@ serve(async (req) => {
     const { data: subscription, error: findError } = await supabase
       .from('verification_subscriptions')
       .select('*')
-      .eq('external_id', externalId)
+      .eq('external_id', externId)
       .single();
 
     if (findError || !subscription) {
-      console.error('Subscription not found for:', externalId);
+      console.error('Subscription not found for:', externId);
       return new Response(JSON.stringify({ error: 'Subscription not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Check if payment was successful
-    const isPaid = status === 'PAID' || status === 'SUCCESS' || status === 'COMPLETED';
+    // Check payment status - PlinqPay uses SUCCESS status
+    const isPaid = status === 'SUCCESS' || status === 'PAID' || status === 'COMPLETED';
+    const isFailed = status === 'FAILED' || status === 'CANCELLED';
 
     if (isPaid) {
       // Update subscription to paid
@@ -88,8 +93,9 @@ serve(async (req) => {
           title: 'Selo Verificado!',
           message: 'O seu pagamento foi confirmado. O selo de verificação foi ativado na sua conta!',
         });
-    } else {
-      // Update as failed
+
+      console.log('Payment confirmed for user:', subscription.user_id);
+    } else if (isFailed) {
       await supabase
         .from('verification_subscriptions')
         .update({
@@ -97,6 +103,8 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', subscription.id);
+      
+      console.log('Payment failed for user:', subscription.user_id);
     }
 
     return new Response(JSON.stringify({ success: true }), {

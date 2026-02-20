@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -36,49 +36,67 @@ serve(async (req) => {
 
     if (!sub) throw new Error('Subscription not found');
 
-    // Check with PliqPay API
+    // If already paid, return immediately
+    if (sub.status === 'paid') {
+      return new Response(JSON.stringify({ success: true, status: 'paid' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check with PlinqPay API if we have a transaction ID
     if (sub.transaction_id) {
       try {
         const checkResponse = await fetch(`https://api.plinqpay.com/v1/transaction/${sub.transaction_id}`, {
-          headers: { 'api-key': PLIQPAY_API_KEY },
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': PLIQPAY_API_KEY,
+          },
         });
 
+        const responseText = await checkResponse.text();
+        console.log('Check payment response:', checkResponse.status, responseText);
+
         if (checkResponse.ok) {
-          const txData = await checkResponse.json();
-          const isPaid = txData.status === 'PAID' || txData.status === 'SUCCESS' || txData.status === 'COMPLETED';
+          let txData;
+          try { txData = JSON.parse(responseText); } catch { txData = null; }
+          
+          if (txData) {
+            const isPaid = txData.status === 'SUCCESS' || txData.status === 'PAID' || txData.status === 'COMPLETED';
 
-          if (isPaid && sub.status !== 'paid') {
-            await supabase
-              .from('verification_subscriptions')
-              .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-              .eq('id', sub.id);
+            if (isPaid && sub.status !== 'paid') {
+              await supabase
+                .from('verification_subscriptions')
+                .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+                .eq('id', sub.id);
 
-            await supabase
-              .from('profiles')
-              .update({ verified: true, badge_type: 'blue' })
-              .eq('id', user.id);
+              await supabase
+                .from('profiles')
+                .update({ verified: true, badge_type: 'blue' })
+                .eq('id', user.id);
 
-            await supabase
-              .from('admin_payment_logs')
-              .insert({
-                subscription_id: sub.id,
-                user_id: user.id,
-                amount: sub.amount,
-                payment_reference: sub.payment_reference,
-                status: 'received',
+              await supabase
+                .from('admin_payment_logs')
+                .insert({
+                  subscription_id: sub.id,
+                  user_id: user.id,
+                  amount: sub.amount,
+                  payment_reference: sub.payment_reference,
+                  status: 'received',
+                });
+
+              return new Response(JSON.stringify({ success: true, status: 'paid' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               });
+            }
 
-            return new Response(JSON.stringify({ success: true, status: 'paid' }), {
+            return new Response(JSON.stringify({ success: true, status: txData.status?.toLowerCase() || sub.status }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
-
-          return new Response(JSON.stringify({ success: true, status: txData.status?.toLowerCase() || sub.status }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
         }
       } catch (e) {
-        console.error('PliqPay check error:', e);
+        console.error('PlinqPay check error:', e);
       }
     }
 

@@ -40,16 +40,7 @@ export default function BottomNav() {
   if (location.pathname.startsWith("/chat/")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom"
-      style={{
-        background: isDarkMode 
-          ? 'rgba(15, 17, 22, 0.85)' 
-          : 'rgba(255, 255, 255, 0.85)',
-        backdropFilter: 'saturate(180%) blur(20px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-        borderTop: `0.5px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-      }}
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom liquid-glass-bottom">
       <div className="flex items-center justify-around h-[50px] max-w-lg mx-auto px-1">
         {navItems.map(({ to, icon: Icon, label }) => (
           <Link
