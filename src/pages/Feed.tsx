@@ -5,7 +5,7 @@ import { MessageNotification } from "@/components/MessageNotification";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Heart, Send } from "lucide-react";
+import { MessageCircle, Share2, Bookmark, Play, Volume2, VolumeX, MoreHorizontal, Heart, Send, Menu } from "lucide-react";
 import { MusicPlayer, pauseAllAudio } from "@/components/MusicPlayer";
 import { useNavigate } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -319,10 +319,15 @@ export default function Feed() {
     <ProtectedRoute>
       <MessageNotification />
       <div className="min-h-screen bg-background">
-        {/* Native App Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 app-header safe-area-top">
+        {/* Liquid Glass iOS Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 liquid-glass safe-area-top">
           <div className="flex items-center justify-between h-11 px-4 max-w-lg mx-auto">
-            <Logo2026 size="md" />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => navigate("/sidebar")}>
+                <Menu className="h-[22px] w-[22px]" strokeWidth={1.5} />
+              </Button>
+              <Logo2026 size="md" />
+            </div>
             <div className="flex items-center gap-0.5">
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => navigate("/notifications")}>
                 <Heart className="h-[22px] w-[22px]" strokeWidth={1.5} />

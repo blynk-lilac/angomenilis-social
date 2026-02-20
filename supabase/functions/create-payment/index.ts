@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -50,7 +50,14 @@ serve(async (req) => {
     const externalId = `verify_${user.id}_${Date.now()}`;
     const callbackUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
 
-    // Create PliqPay transaction
+    console.log('Creating PlinqPay transaction:', {
+      externalId,
+      callbackUrl,
+      amount,
+      plan_type,
+    });
+
+    // Create PlinqPay transaction - following exact API docs
     const pliqResponse = await fetch('https://api.plinqpay.com/v1/transaction', {
       method: 'POST',
       headers: {
@@ -77,12 +84,27 @@ serve(async (req) => {
       }),
     });
 
+    const responseText = await pliqResponse.text();
+    console.log('PlinqPay response status:', pliqResponse.status);
+    console.log('PlinqPay response body:', responseText);
+
     if (!pliqResponse.ok) {
-      const errorData = await pliqResponse.text();
-      throw new Error(`PliqPay error [${pliqResponse.status}]: ${errorData}`);
+      throw new Error(`PlinqPay error [${pliqResponse.status}]: ${responseText}`);
     }
 
-    const pliqData = await pliqResponse.json();
+    let pliqData;
+    try {
+      pliqData = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Invalid JSON response from PlinqPay: ${responseText}`);
+    }
+
+    console.log('PlinqPay parsed data:', JSON.stringify(pliqData));
+
+    // Extract reference and entity from response
+    const paymentReference = pliqData.reference || pliqData.data?.reference || null;
+    const paymentEntity = pliqData.entity || pliqData.data?.entity || '01055';
+    const transactionId = pliqData.id || pliqData.data?.id || null;
 
     // Save subscription record
     const { data: subscription, error: dbError } = await supabase
@@ -92,10 +114,10 @@ serve(async (req) => {
         plan_type,
         amount,
         status: 'pending',
-        payment_reference: pliqData.reference || pliqData.data?.reference,
+        payment_reference: paymentReference,
         external_id: externalId,
-        transaction_id: pliqData.id || pliqData.data?.id,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        transaction_id: transactionId,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       })
       .select()
       .single();
@@ -106,6 +128,8 @@ serve(async (req) => {
       success: true,
       subscription,
       payment: pliqData,
+      reference: paymentReference,
+      entity: paymentEntity,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
