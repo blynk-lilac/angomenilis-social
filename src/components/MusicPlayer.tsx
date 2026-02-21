@@ -37,6 +37,7 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, coverUrl, overla
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const retryCountRef = useRef(0);
   const instanceId = useId();
 
   const gradientClass = generateCoverGradient(musicName);
@@ -66,8 +67,14 @@ export function MusicPlayer({ musicName, musicArtist, musicUrl, coverUrl, overla
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleError = () => {
-      setHasError(true);
-      setIsLoaded(false);
+      console.log('Music load error for:', musicUrl);
+      retryCountRef.current++;
+      if (retryCountRef.current <= 2 && audio) {
+        setTimeout(() => { audio.load(); }, 1500);
+      } else {
+        setHasError(true);
+        setIsLoaded(false);
+      }
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
