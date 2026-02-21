@@ -3,13 +3,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, Bookmark, Upload, MoreVertical, Play, Pause, Volume2, VolumeX, Eye, Music2 } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Play, Pause, Volume2, VolumeX, Eye, Music2 } from "lucide-react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import VerificationBadge from "@/components/VerificationBadge";
 import { VideosSkeleton } from "@/components/loading/VideosSkeleton";
+import { MusicPlayer } from "@/components/MusicPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Video {
@@ -27,6 +25,9 @@ interface Video {
   caption: string;
   created_at: string;
   share_code: string;
+  music_name?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
   profiles: {
     username: string;
     avatar_url: string;
@@ -38,20 +39,38 @@ interface Video {
   video_views?: { user_id: string }[];
 }
 
+interface FeedVideo {
+  id: string;
+  user_id: string;
+  video_url: string;
+  caption: string;
+  created_at: string;
+  music_name?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
+  source: 'reels' | 'feed';
+  profiles: {
+    username: string;
+    avatar_url: string;
+    verified: boolean;
+    badge_type?: string | null;
+  };
+  likes_count: number;
+  comments_count: number;
+  has_liked: boolean;
+  views: number;
+  original_id: string;
+  share_code?: string;
+}
+
 export default function Videos() {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [allVideos, setAllVideos] = useState<FeedVideo[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [expandedCaptions, setExpandedCaptions] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [playingStates, setPlayingStates] = useState<{ [key: string]: boolean }>({});
   const [mutedStates, setMutedStates] = useState<{ [key: string]: boolean }>({});
-  const [viewCounts, setViewCounts] = useState<{ [key: string]: number }>({});
   const { shareCode } = useParams();
   const navigate = useNavigate();
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
@@ -59,34 +78,27 @@ export default function Videos() {
 
   useEffect(() => {
     loadCurrentUser();
-    loadVideos();
+    loadAllVideos();
 
     const channel = supabase
-      .channel("videos-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "verification_videos" }, () => loadVideos())
-      .on("postgres_changes", { event: "*", schema: "public", table: "video_views" }, (payload: any) => {
-        if (payload.new?.video_id) {
-          updateViewCount(payload.new.video_id);
-        }
-      })
+      .channel("videos-all-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "verification_videos" }, () => loadAllVideos())
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => loadAllVideos())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [shareCode]);
 
   useEffect(() => {
-    if (videos.length > 0 && videos[currentVideoIndex]) {
-      const currentVideo = videoRefs.current[videos[currentVideoIndex].id];
+    if (allVideos.length > 0 && allVideos[currentVideoIndex]) {
+      const currentVideo = videoRefs.current[allVideos[currentVideoIndex].id];
       if (currentVideo) {
-        currentVideo.muted = mutedStates[videos[currentVideoIndex].id] ?? false;
+        currentVideo.muted = mutedStates[allVideos[currentVideoIndex].id] ?? false;
         currentVideo.play().catch(() => {});
-        setPlayingStates(prev => ({ ...prev, [videos[currentVideoIndex].id]: true }));
-        recordView(videos[currentVideoIndex].id);
+        setPlayingStates(prev => ({ ...prev, [allVideos[currentVideoIndex].id]: true }));
       }
       
-      videos.forEach((video, index) => {
+      allVideos.forEach((video, index) => {
         if (index !== currentVideoIndex) {
           const vid = videoRefs.current[video.id];
           if (vid) {
@@ -96,7 +108,7 @@ export default function Videos() {
         }
       });
     }
-  }, [currentVideoIndex, videos]);
+  }, [currentVideoIndex, allVideos]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -104,7 +116,7 @@ export default function Videos() {
       const scrollTop = containerRef.current.scrollTop;
       const videoHeight = window.innerHeight - 56;
       const newIndex = Math.round(scrollTop / videoHeight);
-      if (newIndex !== currentVideoIndex && newIndex >= 0 && newIndex < videos.length) {
+      if (newIndex !== currentVideoIndex && newIndex >= 0 && newIndex < allVideos.length) {
         setCurrentVideoIndex(newIndex);
       }
     };
@@ -114,73 +126,98 @@ export default function Videos() {
       container.addEventListener('scroll', handleScroll);
       return () => container.removeEventListener('scroll', handleScroll);
     }
-  }, [currentVideoIndex, videos.length]);
+  }, [currentVideoIndex, allVideos.length]);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
   };
 
-  const recordView = async (videoId: string) => {
-    if (!currentUserId) return;
-    try {
-      await supabase.from("video_views").upsert({ 
-        video_id: videoId, 
-        user_id: currentUserId 
-      }, { onConflict: 'video_id,user_id' });
-    } catch (e) {
-      // Silent fail
-    }
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const l = url.toLowerCase();
+    return l.includes(".mp4") || l.includes(".webm") || l.includes(".mov") || l.includes(".avi") || l.includes(".mkv");
   };
 
-  const updateViewCount = async (videoId: string) => {
-    const { count } = await supabase
-      .from("video_views")
-      .select("*", { count: "exact", head: true })
-      .eq("video_id", videoId);
-    setViewCounts(prev => ({ ...prev, [videoId]: count || 0 }));
-  };
-
-  const loadVideos = async () => {
+  const loadAllVideos = async () => {
     try {
-      let query = supabase
+      const combined: FeedVideo[] = [];
+
+      // Load verification_videos (reels)
+      const { data: reelsData } = await supabase
         .from("verification_videos")
-        .select(`
-          *,
-          profiles (username, avatar_url, verified, badge_type),
-          verification_video_likes (user_id),
-          verification_video_comments (id),
-          video_views (user_id)
-        `)
+        .select(`*, profiles (username, avatar_url, verified, badge_type), verification_video_likes (user_id), verification_video_comments (id), video_views (user_id)`)
         .order("created_at", { ascending: false })
-        .limit(20); // Limit for faster initial load
+        .limit(30);
 
-      if (shareCode) query = query.eq("share_code", shareCode);
-
-      const { data, error } = await query;
-      if (error) {
-        toast.error("Erro ao carregar vídeos");
-        return;
+      if (reelsData) {
+        for (const v of reelsData) {
+          combined.push({
+            id: `reel_${v.id}`,
+            original_id: v.id,
+            user_id: v.user_id,
+            video_url: v.video_url,
+            caption: v.caption || '',
+            created_at: v.created_at,
+            music_name: null,
+            music_artist: null,
+            music_url: null,
+            source: 'reels',
+            profiles: v.profiles,
+            likes_count: v.verification_video_likes?.length || 0,
+            comments_count: v.verification_video_comments?.length || 0,
+            has_liked: v.verification_video_likes?.some((l: any) => l.user_id === currentUserId) || false,
+            views: v.video_views?.length || 0,
+            share_code: v.share_code,
+          });
+        }
       }
 
-      setVideos(data || []);
-      
-      // Initialize view counts
-      const counts: { [key: string]: number } = {};
-      (data || []).forEach(v => { counts[v.id] = v.video_views?.length || 0; });
-      setViewCounts(counts);
+      // Load feed posts with videos
+      const { data: postsData } = await supabase
+        .from("posts")
+        .select(`*, profiles (id, username, avatar_url, verified, badge_type, full_name, first_name), post_reactions (user_id), comments (id)`)
+        .not('media_urls', 'is', null)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (postsData) {
+        for (const p of postsData) {
+          const videoUrls = (p.media_urls || []).filter((url: string) => isVideoUrl(url));
+          if (videoUrls.length > 0) {
+            combined.push({
+              id: `post_${p.id}`,
+              original_id: p.id,
+              user_id: p.user_id,
+              video_url: videoUrls[0],
+              caption: p.content || '',
+              created_at: p.created_at,
+              music_name: p.music_name,
+              music_artist: p.music_artist,
+              music_url: p.music_url,
+              source: 'feed',
+              profiles: {
+                username: p.profiles?.username || 'user',
+                avatar_url: p.profiles?.avatar_url || '',
+                verified: p.profiles?.verified || false,
+                badge_type: p.profiles?.badge_type,
+              },
+              likes_count: p.post_reactions?.length || 0,
+              comments_count: p.comments?.length || 0,
+              has_liked: p.post_reactions?.some((r: any) => r.user_id === currentUserId) || false,
+              views: 0,
+              share_code: undefined,
+            });
+          }
+        }
+      }
+
+      // Sort by date
+      combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setAllVideos(combined);
     } finally {
-      // Fast loading - show content immediately
       setLoading(false);
     }
-  };
-
-  const handleVideoFileChange = (file: File | null) => {
-    if (!file) { setVideoFile(null); setVideoPreview(null); return; }
-    const ok = ["video/mp4", "video/webm"].includes(file.type);
-    if (!ok) { toast.error("Formato não suportado. Use MP4 ou WebM."); return; }
-    setVideoFile(file);
-    setVideoPreview(URL.createObjectURL(file));
   };
 
   const togglePlayPause = (videoId: string) => {
@@ -200,58 +237,31 @@ export default function Videos() {
     }
   };
 
-  const handleLike = async (videoId: string) => {
-    const video = videos.find(v => v.id === videoId);
-    const hasLiked = video?.verification_video_likes?.some(l => l.user_id === currentUserId);
-    if (hasLiked) {
-      await supabase.from("verification_video_likes").delete().eq("video_id", videoId).eq("user_id", currentUserId);
+  const handleLike = async (fv: FeedVideo) => {
+    if (!currentUserId) return;
+    if (fv.source === 'reels') {
+      if (fv.has_liked) {
+        await supabase.from("verification_video_likes").delete().eq("video_id", fv.original_id).eq("user_id", currentUserId);
+      } else {
+        await supabase.from("verification_video_likes").insert({ video_id: fv.original_id, user_id: currentUserId });
+      }
     } else {
-      await supabase.from("verification_video_likes").insert({ video_id: videoId, user_id: currentUserId });
+      const { data: existing } = await supabase.from("post_reactions").select("id").eq("post_id", fv.original_id).eq("user_id", currentUserId).maybeSingle();
+      if (existing) {
+        await supabase.from("post_reactions").delete().eq("id", existing.id);
+      } else {
+        await supabase.from("post_reactions").insert({ post_id: fv.original_id, user_id: currentUserId, reaction_type: "heart" });
+      }
     }
-    loadVideos();
+    loadAllVideos();
   };
 
-  const handleShare = async (video: Video) => {
-    const shareUrl = `${window.location.origin}/videos/${video.share_code}`;
-    await navigator.clipboard.writeText(shareUrl);
+  const handleShare = async (fv: FeedVideo) => {
+    const url = fv.share_code
+      ? `${window.location.origin}/videos/${fv.share_code}`
+      : `${window.location.origin}/post/${fv.original_id}`;
+    await navigator.clipboard.writeText(url);
     toast.success("Link copiado!");
-  };
-
-  const handleUpload = async () => {
-    if (!videoFile) { toast.error("Selecione um vídeo"); return; }
-    setUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const fileExt = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
-      if (!['mp4', 'webm'].includes(fileExt)) { toast.error("Formato não suportado."); return; }
-
-      const fileName = `videos/${user.id}/${Date.now()}.${fileExt}`;
-      const contentType = fileExt === "webm" ? "video/webm" : "video/mp4";
-      const arrayBuffer = await videoFile.arrayBuffer();
-
-      const { error: uploadError } = await supabase.storage
-        .from('post-images')
-        .upload(fileName, arrayBuffer, { cacheControl: '3600', upsert: false, contentType });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(fileName);
-
-      await supabase.from("verification_videos").insert({ user_id: user.id, video_url: publicUrl, caption });
-
-      toast.success("Vídeo publicado!");
-      setUploadOpen(false);
-      setVideoFile(null);
-      setVideoPreview(null);
-      setCaption("");
-      loadVideos();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao publicar vídeo");
-    } finally {
-      setUploading(false);
-    }
   };
 
   const formatViewCount = (count: number) => {
@@ -263,12 +273,8 @@ export default function Videos() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-black">
-        {/* Instagram Reels Header */}
         <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-black/60 to-transparent">
           <span className="text-white font-bold text-xl">Reels</span>
-          <div className="flex items-center gap-3">
-            <span className="text-white text-sm font-medium">Amigos</span>
-          </div>
         </div>
 
         <div 
@@ -277,24 +283,19 @@ export default function Videos() {
         >
           {loading ? (
             <VideosSkeleton />
-          ) : videos.length === 0 ? (
+          ) : allVideos.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-white gap-4">
-              <Upload className="h-16 w-16 text-muted-foreground" />
+              <Play className="h-16 w-16 text-muted-foreground" />
               <p className="text-lg">Nenhum vídeo disponível</p>
-              <Button onClick={() => setUploadOpen(true)} variant="outline" className="gap-2">
-                <Upload className="h-4 w-4" />
-                Publicar primeiro vídeo
-              </Button>
+              <p className="text-sm text-muted-foreground">Publique vídeos no feed para aparecerem aqui</p>
             </div>
           ) : (
-            videos.map((video, index) => {
+            allVideos.map((video, index) => {
               const isExpanded = expandedCaptions.has(video.id);
               const captionPreview = video.caption?.slice(0, 60);
               const needsExpand = video.caption && video.caption.length > 60;
               const isPlaying = playingStates[video.id];
               const isMuted = mutedStates[video.id] ?? false;
-              const hasLiked = video.verification_video_likes?.some(l => l.user_id === currentUserId);
-              const views = viewCounts[video.id] || 0;
 
               return (
                 <motion.div 
@@ -311,11 +312,10 @@ export default function Videos() {
                       muted={isMuted}
                       playsInline
                       autoPlay={index === currentVideoIndex}
-                      preload={index <= 2 ? "auto" : "metadata"} // Preload first 3 videos
+                      preload={index <= 2 ? "auto" : "metadata"}
                       className="w-full h-full object-contain"
                       onPlay={() => setPlayingStates(prev => ({ ...prev, [video.id]: true }))}
                       onPause={() => setPlayingStates(prev => ({ ...prev, [video.id]: false }))}
-                      // Fast loading attributes
                       disablePictureInPicture
                       disableRemotePlayback
                     />
@@ -346,14 +346,14 @@ export default function Videos() {
                     {isMuted ? <VolumeX className="h-5 w-5 text-white" /> : <Volume2 className="h-5 w-5 text-white" />}
                   </Button>
 
-                  {/* User Info - Instagram Style */}
+                  {/* User Info */}
                   <div className="absolute bottom-4 left-4 right-20 text-white z-10">
                     <div className="flex items-center gap-3 mb-3">
                       <Link to={`/profile/${video.user_id}`}>
                         <Avatar className="h-10 w-10 ring-2 ring-white/50">
                           <AvatarImage src={video.profiles.avatar_url} />
                           <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-500 text-white font-bold">
-                            {video.profiles.username[0].toUpperCase()}
+                            {video.profiles.username[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </Link>
@@ -376,43 +376,52 @@ export default function Videos() {
                       <p className="text-sm leading-relaxed mb-2">
                         {isExpanded ? video.caption : captionPreview}
                         {needsExpand && (
-                          <button onClick={() => setExpandedCaptions(prev => {
+                          <button onClick={(e) => { e.stopPropagation(); setExpandedCaptions(prev => {
                             const newSet = new Set(prev);
                             if (newSet.has(video.id)) newSet.delete(video.id);
                             else newSet.add(video.id);
                             return newSet;
-                          })} className="ml-1 text-gray-300 font-medium">
+                          }); }} className="ml-1 text-gray-300 font-medium">
                             {isExpanded ? 'menos' : '... mais'}
                           </button>
                         )}
                       </p>
                     )}
 
-                    {/* Audio Info */}
-                    <div className="flex items-center gap-2 text-xs text-white/70">
-                      <Music2 className="h-3 w-3" />
-                      <span className="truncate">Áudio original • {video.profiles.username}</span>
-                    </div>
+                    {/* Music info */}
+                    {video.music_name ? (
+                      <div className="mb-2">
+                        <MusicPlayer musicName={video.music_name} musicArtist={video.music_artist} musicUrl={video.music_url} overlay />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-white/70">
+                        <Music2 className="h-3 w-3" />
+                        <span className="truncate">Áudio original • {video.profiles.username}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Action Buttons - Instagram Style */}
+                  {/* Action Buttons */}
                   <div className="absolute bottom-24 right-3 flex flex-col items-center gap-4 z-10">
                     <motion.button 
                       className="flex flex-col items-center"
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => handleLike(video.id)}
+                      onClick={() => handleLike(video)}
                     >
-                      <Heart className={`h-7 w-7 ${hasLiked ? "fill-red-500 text-red-500" : "text-white"}`} />
-                      <span className="text-white text-xs font-medium mt-1">{video.verification_video_likes?.length || 0}</span>
+                      <Heart className={`h-7 w-7 ${video.has_liked ? "fill-red-500 text-red-500" : "text-white"}`} />
+                      <span className="text-white text-xs font-medium mt-1">{video.likes_count}</span>
                     </motion.button>
 
                     <motion.button 
                       className="flex flex-col items-center"
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => navigate(`/comments-video/${video.id}`)}
+                      onClick={() => {
+                        if (video.source === 'reels') navigate(`/comments-video/${video.original_id}`);
+                        else navigate(`/comments/${video.original_id}`);
+                      }}
                     >
                       <MessageCircle className="h-7 w-7 text-white" />
-                      <span className="text-white text-xs font-medium mt-1">{video.verification_video_comments?.length || 0}</span>
+                      <span className="text-white text-xs font-medium mt-1">{video.comments_count}</span>
                     </motion.button>
 
                     <motion.button 
@@ -423,18 +432,16 @@ export default function Videos() {
                       <Send className="h-7 w-7 text-white" />
                     </motion.button>
 
-                    <motion.button 
-                      className="flex flex-col items-center"
-                      whileTap={{ scale: 0.9 }}
-                    >
+                    <motion.button className="flex flex-col items-center" whileTap={{ scale: 0.9 }}>
                       <Bookmark className="h-7 w-7 text-white" />
                     </motion.button>
 
-                    {/* Views Count */}
-                    <div className="flex flex-col items-center mt-2">
-                      <Eye className="h-5 w-5 text-white/70" />
-                      <span className="text-white/70 text-xs font-medium mt-0.5">{formatViewCount(views)}</span>
-                    </div>
+                    {video.views > 0 && (
+                      <div className="flex flex-col items-center mt-2">
+                        <Eye className="h-5 w-5 text-white/70" />
+                        <span className="text-white/70 text-xs font-medium mt-0.5">{formatViewCount(video.views)}</span>
+                      </div>
+                    )}
 
                     {video.user_id === currentUserId && (
                       <DropdownMenu>
@@ -446,9 +453,13 @@ export default function Videos() {
                         <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur">
                           <DropdownMenuItem
                             onClick={async () => {
-                              await supabase.from("verification_videos").delete().eq("id", video.id);
+                              if (video.source === 'reels') {
+                                await supabase.from("verification_videos").delete().eq("id", video.original_id);
+                              } else {
+                                await supabase.from("posts").delete().eq("id", video.original_id);
+                              }
                               toast.success("Vídeo eliminado");
-                              loadVideos();
+                              loadAllVideos();
                             }}
                             className="text-destructive focus:text-destructive"
                           >
@@ -463,42 +474,6 @@ export default function Videos() {
             })
           )}
         </div>
-
-        {/* Mobile Upload Button */}
-        <div className="fixed bottom-20 right-4 z-50 md:hidden">
-          <Button onClick={() => setUploadOpen(true)} size="icon" className="h-14 w-14 rounded-full shadow-lg">
-            <Upload className="h-6 w-6" />
-          </Button>
-        </div>
-
-        {/* Upload Dialog */}
-        <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Publicar Vídeo</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {videoPreview ? (
-                <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                  <video src={videoPreview} controls className="w-full h-full object-contain" />
-                  <Button variant="ghost" size="sm" className="absolute top-2 right-2" onClick={() => { setVideoFile(null); setVideoPreview(null); }}>
-                    Trocar
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/30">
-                  <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">Clique para selecionar</span>
-                  <Input type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => handleVideoFileChange(e.target.files?.[0] || null)} />
-                </label>
-              )}
-              <Textarea placeholder="Adicione uma legenda..." value={caption} onChange={(e) => setCaption(e.target.value)} className="min-h-24 resize-none" />
-              <Button onClick={handleUpload} disabled={uploading || !videoFile} className="w-full">
-                {uploading ? "Publicando..." : "Publicar"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         <style>{`
           .scrollbar-hide::-webkit-scrollbar { display: none; }

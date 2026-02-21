@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, Star, Crown, Check, Copy, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Shield, Star, Crown, Check, Copy, Clock, CheckCircle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,8 @@ const plans = [
   },
 ];
 
+const REFERENCE_EXPIRY_MINUTES = 15;
+
 export default function VerificationCheckout() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -44,12 +46,47 @@ export default function VerificationCheckout() {
   const [paymentData, setPaymentData] = useState<any>(null);
   const [checking, setChecking] = useState(false);
   const [existingSub, setExistingSub] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [checkCount, setCheckCount] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (user) {
-      checkExistingSubscription();
-    }
+    if (user) checkExistingSubscription();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [user]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!paymentData?.createdAt) return;
+    const expiresAt = new Date(paymentData.createdAt).getTime() + REFERENCE_EXPIRY_MINUTES * 60 * 1000;
+    
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        toast.error("Referência expirada. Gere uma nova.");
+        setPaymentData(null);
+        setSelectedPlan(null);
+      }
+    };
+    tick();
+    timerRef.current = setInterval(tick, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [paymentData?.createdAt]);
+
+  // Auto-poll payment status every 15s
+  useEffect(() => {
+    if (!paymentData?.subscriptionId && !existingSub?.id) return;
+    pollRef.current = setInterval(() => {
+      handleCheckPayment(true);
+    }, 15000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [paymentData?.subscriptionId, existingSub?.id]);
 
   const checkExistingSubscription = async () => {
     const { data } = await supabase
@@ -65,7 +102,10 @@ export default function VerificationCheckout() {
       if (data[0].status === "pending") {
         setPaymentData({
           reference: data[0].payment_reference,
+          entity: '01055',
           amount: data[0].amount,
+          subscriptionId: data[0].id,
+          createdAt: data[0].created_at,
         });
         setSelectedPlan(data[0].plan_type);
       }
@@ -95,9 +135,10 @@ export default function VerificationCheckout() {
         entity: entity,
         amount: plan.price,
         subscriptionId: data.subscription?.id,
+        createdAt: new Date().toISOString(),
       });
 
-      toast.success("Referência de pagamento gerada!");
+      toast.success("Referência gerada com sucesso!");
     } catch (err: any) {
       console.error("Payment error:", err);
       toast.error(err.message || "Erro ao gerar pagamento");
@@ -112,9 +153,9 @@ export default function VerificationCheckout() {
     toast.success(`${label} copiado!`);
   };
 
-  const handleCheckPayment = async () => {
+  const handleCheckPayment = async (silent = false) => {
     if (!existingSub && !paymentData?.subscriptionId) return;
-    setChecking(true);
+    if (!silent) setChecking(true);
 
     try {
       const subId = existingSub?.id || paymentData.subscriptionId;
@@ -123,18 +164,26 @@ export default function VerificationCheckout() {
       });
 
       if (error) throw error;
+      setCheckCount(prev => prev + 1);
 
       if (data.status === "paid") {
+        if (pollRef.current) clearInterval(pollRef.current);
         toast.success("Pagamento confirmado! Selo ativado!");
         navigate("/profile");
-      } else {
-        toast.info("Pagamento ainda pendente. Tente novamente em alguns minutos.");
+      } else if (!silent) {
+        toast.info("Pagamento ainda pendente. Monitorando automaticamente...");
       }
     } catch (err: any) {
-      toast.error("Erro ao verificar pagamento");
+      if (!silent) toast.error("Erro ao verificar pagamento");
     } finally {
-      setChecking(false);
+      if (!silent) setChecking(false);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   if (existingSub?.status === "paid") {
@@ -172,59 +221,139 @@ export default function VerificationCheckout() {
           </div>
         </div>
 
-        <div className="p-6 max-w-md mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <p className="text-muted-foreground">Pagamento pela referência</p>
-            <div className="w-16 h-16 mx-auto bg-orange-500 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xs">express</span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-muted-foreground">Valor:</p>
-            <p className="text-3xl font-bold">{paymentData.amount} <span className="text-lg">kz</span></p>
-          </div>
-
-          <Card className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Referência</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg">{paymentData.reference || "Gerando..."}</span>
-                {paymentData.reference && (
-                  <Button variant="ghost" size="sm" onClick={() => handleCopy(paymentData.reference, "Referência")} className="text-primary">
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                )}
+        <div className="p-4 max-w-md mx-auto space-y-5">
+          {/* Method Selection - Like screenshot */}
+          <Card className="p-4">
+            <p className="text-sm font-semibold mb-3">Método de Pagamento</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="border rounded-xl p-4 flex flex-col items-center gap-2 opacity-50">
+                <div className="h-12 w-12 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-[8px]">express</span>
+                </div>
+                <span className="text-xs font-medium">Express</span>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Entidade</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg">{paymentData.entity || '01055'}</span>
-                <Button variant="ghost" size="sm" onClick={() => handleCopy(paymentData.entity || "01055", "Entidade")} className="text-primary">
-                  <Copy className="h-4 w-4" />
-                </Button>
+              <div className="border-2 border-orange-500 rounded-xl p-4 flex flex-col items-center gap-2 relative">
+                <div className="absolute top-2 right-2">
+                  <CheckCircle className="h-5 w-5 text-orange-500 fill-orange-500" />
+                </div>
+                <div className="h-12 w-12 rounded-lg bg-gray-900 flex items-center justify-center">
+                  <span className="text-white font-bold text-[8px]">multicaixa</span>
+                </div>
+                <span className="text-xs font-medium">Referência</span>
               </div>
             </div>
           </Card>
 
-          <div className="bg-muted rounded-xl p-4 text-sm text-muted-foreground space-y-2">
-            <p>Abra o aplicativo Multicaixa Express, acesse a interface de pagamento por referência, insira a referência e a entidade acima para concluir o pagamento.</p>
-            <p className="flex items-center gap-1 text-xs">
-              <Clock className="h-3 w-3" />
-              Referência expira em 24 horas
-            </p>
+          {/* Monitoring Status */}
+          <Card className="p-4 border-2 border-orange-400/50 bg-orange-50/5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-500" />
+                <span className="font-bold text-orange-500">Aguardando Pagamento</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <RefreshCw className={`h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} />
+                <span>Monitorando</span>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-xl p-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <RefreshCw className="h-5 w-5 text-orange-500" />
+                  </div>
+                  {checkCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center font-bold">
+                      {checkCount}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Buscando confirmação do pagamento</p>
+                  <p className="text-xs text-muted-foreground">A PlinqPay notificará assim que o pagamento for processado</p>
+                </div>
+                <div className="flex gap-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Entity / Reference / Value Cards */}
+            <div className="space-y-3">
+              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Entidade</p>
+                  <p className="text-2xl font-bold mt-0.5">{paymentData.entity || '01055'}</p>
+                </div>
+                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(paymentData.entity || '01055', 'Entidade')}>
+                  <Copy className="h-5 w-5 text-muted-foreground" />
+                </Button>
+              </div>
+
+              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Referência</p>
+                  <p className="text-2xl font-bold mt-0.5">{paymentData.reference || "Gerando..."}</p>
+                </div>
+                {paymentData.reference && (
+                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(paymentData.reference, 'Referência')}>
+                    <Copy className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Valor</p>
+                  <p className="text-2xl font-bold text-orange-500 mt-0.5">{paymentData.amount} AOA</p>
+                </div>
+                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(`${paymentData.amount}`, 'Valor')}>
+                  <Copy className="h-5 w-5 text-muted-foreground" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Important Notice */}
+            <div className="mt-4 bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
+              <p className="text-sm">
+                <span className="font-bold text-orange-500">Importante:</span>{" "}
+                <span className="text-muted-foreground">
+                  Efetue o pagamento no seu banco ou ATM.
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Esta página atualizará automaticamente quando receber a confirmação.
+              </p>
+            </div>
+          </Card>
+
+          {/* Timer */}
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-orange-500" />
+            <span className="text-muted-foreground">Expira em</span>
+            <span className={`font-bold ${timeLeft < 120 ? 'text-red-500' : 'text-orange-500'}`}>
+              {formatTime(timeLeft)}
+            </span>
           </div>
 
+          {/* Manual Check Button */}
           <Button
-            onClick={handleCheckPayment}
+            onClick={() => handleCheckPayment(false)}
             disabled={checking}
-            className="w-full h-12 text-base font-semibold"
+            variant="outline"
+            className="w-full h-12 text-base font-semibold border-orange-500/50 text-orange-500 hover:bg-orange-500/10"
           >
-            {checking ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-            Verificar Resultados
+            {checking ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
+            Verificar Pagamento
           </Button>
+
+          {/* Security Badge */}
+          <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+            ✅ Pagamentos seguros sem roubos
+          </p>
         </div>
       </div>
     );
