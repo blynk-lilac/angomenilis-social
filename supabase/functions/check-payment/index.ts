@@ -12,8 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const PLIQPAY_API_KEY = Deno.env.get('PLIQPAY_API_KEY');
-    if (!PLIQPAY_API_KEY) throw new Error('PLIQPAY_API_KEY not configured');
+    // Usa chave PÚBLICA para consultar status
+    const PLIQPAY_PUBLIC_KEY = Deno.env.get('PLIQPAY_API_KEY');
+    // Usa chave SECRETA para aprovar pagamentos
+    const PLIQPAY_SECRET_KEY = Deno.env.get('PLIQPAY_SECRET_KEY');
+    
+    if (!PLIQPAY_PUBLIC_KEY) throw new Error('PLIQPAY_API_KEY not configured');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -36,21 +40,20 @@ serve(async (req) => {
 
     if (!sub) throw new Error('Subscription not found');
 
-    // If already paid, return immediately
     if (sub.status === 'paid') {
       return new Response(JSON.stringify({ success: true, status: 'paid' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Check with PlinqPay API if we have a transaction ID
+    // Check with PlinqPay using PUBLIC key
     if (sub.transaction_id) {
       try {
         const checkResponse = await fetch(`https://api.plinqpay.com/v1/transaction/${sub.transaction_id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'api-key': PLIQPAY_API_KEY,
+            'api-key': PLIQPAY_PUBLIC_KEY,
           },
         });
 
@@ -65,6 +68,7 @@ serve(async (req) => {
             const isPaid = txData.status === 'SUCCESS' || txData.status === 'PAID' || txData.status === 'COMPLETED';
 
             if (isPaid && sub.status !== 'paid') {
+              // Approve using SECRET key logic
               await supabase
                 .from('verification_subscriptions')
                 .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
