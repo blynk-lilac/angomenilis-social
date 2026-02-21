@@ -12,14 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const PLIQPAY_API_KEY = Deno.env.get('PLIQPAY_API_KEY');
-    if (!PLIQPAY_API_KEY) throw new Error('PLIQPAY_API_KEY not configured');
+    // Chave PÚBLICA para criar transações
+    const PLIQPAY_PUBLIC_KEY = Deno.env.get('PLIQPAY_API_KEY');
+    if (!PLIQPAY_PUBLIC_KEY) throw new Error('PLIQPAY_API_KEY (public) not configured');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get auth user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Not authenticated');
     
@@ -29,7 +29,6 @@ serve(async (req) => {
 
     const { plan_type, amount } = await req.json();
 
-    // Validate plan
     const validPlans: Record<string, number> = {
       basic: 500,
       premium: 2000,
@@ -40,7 +39,6 @@ serve(async (req) => {
       throw new Error('Invalid plan');
     }
 
-    // Get user profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('first_name, full_name, email, phone')
@@ -50,19 +48,18 @@ serve(async (req) => {
     const externalId = `verify_${user.id}_${Date.now()}`;
     const callbackUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
 
-    console.log('Creating PlinqPay transaction:', {
+    console.log('Creating PlinqPay transaction with PUBLIC key:', {
       externalId,
       callbackUrl,
       amount,
       plan_type,
     });
 
-    // Create PlinqPay transaction - following exact API docs
     const pliqResponse = await fetch('https://api.plinqpay.com/v1/transaction', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-key': PLIQPAY_API_KEY,
+        'api-key': PLIQPAY_PUBLIC_KEY,
       },
       body: JSON.stringify({
         externalId,
@@ -85,8 +82,7 @@ serve(async (req) => {
     });
 
     const responseText = await pliqResponse.text();
-    console.log('PlinqPay response status:', pliqResponse.status);
-    console.log('PlinqPay response body:', responseText);
+    console.log('PlinqPay response:', pliqResponse.status, responseText);
 
     if (!pliqResponse.ok) {
       throw new Error(`PlinqPay error [${pliqResponse.status}]: ${responseText}`);
@@ -96,17 +92,13 @@ serve(async (req) => {
     try {
       pliqData = JSON.parse(responseText);
     } catch {
-      throw new Error(`Invalid JSON response from PlinqPay: ${responseText}`);
+      throw new Error(`Invalid JSON from PlinqPay: ${responseText}`);
     }
 
-    console.log('PlinqPay parsed data:', JSON.stringify(pliqData));
-
-    // Extract reference and entity from response
     const paymentReference = pliqData.reference || pliqData.data?.reference || null;
     const paymentEntity = pliqData.entity || pliqData.data?.entity || '01055';
     const transactionId = pliqData.id || pliqData.data?.id || null;
 
-    // Save subscription record
     const { data: subscription, error: dbError } = await supabase
       .from('verification_subscriptions')
       .insert({
