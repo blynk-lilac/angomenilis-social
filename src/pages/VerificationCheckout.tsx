@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, Star, Crown, Check, Copy, Clock, CheckCircle, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Shield, Star, Crown, Check, Copy, Clock, CheckCircle, Loader2, RefreshCw, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -15,7 +16,8 @@ const plans = [
     price: 500,
     icon: Shield,
     features: ["Selo de verificação azul", "Proteção de conta básica", "Prioridade no suporte"],
-    color: "from-blue-500 to-blue-600",
+    color: "from-sky-400 to-blue-600",
+    bg: "bg-sky-500/5 border-sky-500/20",
   },
   {
     id: "premium",
@@ -24,7 +26,8 @@ const plans = [
     icon: Star,
     popular: true,
     features: ["Selo de verificação azul", "Proteção avançada", "Monetização por visualizações", "Prioridade no feed", "Suporte prioritário"],
-    color: "from-purple-500 to-purple-600",
+    color: "from-violet-500 to-purple-700",
+    bg: "bg-violet-500/5 border-violet-500/20",
   },
   {
     id: "elite",
@@ -32,7 +35,8 @@ const plans = [
     price: 5000,
     icon: Crown,
     features: ["Selo de verificação azul", "Proteção máxima", "Monetização completa", "Monetização por curtidas", "Destaque nos resultados", "Badge exclusiva", "100+ funções premium"],
-    color: "from-amber-500 to-orange-600",
+    color: "from-amber-400 to-orange-600",
+    bg: "bg-amber-500/5 border-amber-500/20",
   },
 ];
 
@@ -51,19 +55,38 @@ export default function VerificationCheckout() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
+  // User profile data for payment
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+
   useEffect(() => {
-    if (user) checkExistingSubscription();
+    if (user) {
+      checkExistingSubscription();
+      loadProfile();
+    }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [user]);
 
-  // Countdown timer
+  const loadProfile = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, first_name, email, phone")
+      .eq("id", user!.id)
+      .single();
+    if (data) {
+      setUserName(data.full_name || data.first_name || "");
+      setUserEmail(data.email || user!.email || "");
+      setUserPhone(data.phone || "");
+    }
+  };
+
   useEffect(() => {
     if (!paymentData?.createdAt) return;
     const expiresAt = new Date(paymentData.createdAt).getTime() + REFERENCE_EXPIRY_MINUTES * 60 * 1000;
-    
     const tick = () => {
       const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
       setTimeLeft(remaining);
@@ -79,7 +102,6 @@ export default function VerificationCheckout() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [paymentData?.createdAt]);
 
-  // Auto-poll payment status every 15s
   useEffect(() => {
     if (!paymentData?.subscriptionId && !existingSub?.id) return;
     pollRef.current = setInterval(() => {
@@ -116,10 +138,22 @@ export default function VerificationCheckout() {
     const plan = plans.find((p) => p.id === planId);
     if (!plan || !user) return;
 
+    if (!userName.trim()) {
+      toast.error("Por favor, preencha o seu nome");
+      return;
+    }
+
     setSelectedPlan(planId);
     setLoading(true);
 
     try {
+      // Update profile with user data before payment
+      await supabase.from("profiles").update({
+        full_name: userName.trim(),
+        email: userEmail.trim(),
+        phone: userPhone.trim(),
+      }).eq("id", user.id);
+
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: { plan_type: planId, amount: plan.price },
       });
@@ -198,7 +232,7 @@ export default function VerificationCheckout() {
           </div>
         </div>
         <div className="p-6 flex flex-col items-center gap-4 mt-12">
-          <div className="p-4 rounded-full bg-green-500/10">
+          <div className="p-5 rounded-full bg-green-500/10 animate-pulse">
             <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
           <h2 className="text-2xl font-bold">Conta Verificada!</h2>
@@ -222,110 +256,42 @@ export default function VerificationCheckout() {
         </div>
 
         <div className="p-4 max-w-md mx-auto space-y-5">
-          {/* Method Selection - Like screenshot */}
-          <Card className="p-4">
-            <p className="text-sm font-semibold mb-3">Método de Pagamento</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="border rounded-xl p-4 flex flex-col items-center gap-2 opacity-50">
-                <div className="h-12 w-12 rounded-lg bg-orange-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-[8px]">express</span>
-                </div>
-                <span className="text-xs font-medium">Express</span>
-              </div>
-              <div className="border-2 border-orange-500 rounded-xl p-4 flex flex-col items-center gap-2 relative">
-                <div className="absolute top-2 right-2">
-                  <CheckCircle className="h-5 w-5 text-orange-500 fill-orange-500" />
-                </div>
-                <div className="h-12 w-12 rounded-lg bg-gray-900 flex items-center justify-center">
-                  <span className="text-white font-bold text-[8px]">multicaixa</span>
-                </div>
-                <span className="text-xs font-medium">Referência</span>
-              </div>
-            </div>
-          </Card>
-
           {/* Monitoring Status */}
-          <Card className="p-4 border-2 border-orange-400/50 bg-orange-50/5">
-            <div className="flex items-center justify-between mb-3">
+          <Card className="p-5 border-2 border-orange-400/40 bg-gradient-to-br from-orange-500/5 to-amber-500/5">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-500" />
+                <div className="h-3 w-3 rounded-full bg-orange-500 animate-pulse" />
                 <span className="font-bold text-orange-500">Aguardando Pagamento</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <RefreshCw className={`h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} />
-                <span>Monitorando</span>
+                <span>Auto-check</span>
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-xl p-3 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                    <RefreshCw className="h-5 w-5 text-orange-500" />
-                  </div>
-                  {checkCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-orange-500 text-white text-[10px] flex items-center justify-center font-bold">
-                      {checkCount}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">Buscando confirmação do pagamento</p>
-                  <p className="text-xs text-muted-foreground">A PlinqPay notificará assim que o pagamento for processado</p>
-                </div>
-                <div className="flex gap-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.4s' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Entity / Reference / Value Cards */}
+            {/* Entity / Reference / Value */}
             <div className="space-y-3">
-              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Entidade</p>
-                  <p className="text-2xl font-bold mt-0.5">{paymentData.entity || '01055'}</p>
-                </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(paymentData.entity || '01055', 'Entidade')}>
-                  <Copy className="h-5 w-5 text-muted-foreground" />
-                </Button>
-              </div>
-
-              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Referência</p>
-                  <p className="text-2xl font-bold mt-0.5">{paymentData.reference || "Gerando..."}</p>
-                </div>
-                {paymentData.reference && (
-                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(paymentData.reference, 'Referência')}>
-                    <Copy className="h-5 w-5 text-muted-foreground" />
+              {[
+                { label: "Entidade", value: paymentData.entity || '01055' },
+                { label: "Referência", value: paymentData.reference || "Gerando..." },
+                { label: "Valor", value: `${paymentData.amount} AOA`, highlight: true },
+              ].map((item) => (
+                <div key={item.label} className="bg-background rounded-xl p-4 flex items-center justify-between border">
+                  <div>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-medium">{item.label}</p>
+                    <p className={`text-xl font-bold mt-0.5 ${item.highlight ? 'text-orange-500' : ''}`}>{item.value}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-orange-500/10" onClick={() => handleCopy(item.highlight ? `${paymentData.amount}` : (item.value), item.label)}>
+                    <Copy className="h-4 w-4 text-muted-foreground" />
                   </Button>
-                )}
-              </div>
-
-              <div className="bg-muted/30 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Valor</p>
-                  <p className="text-2xl font-bold text-orange-500 mt-0.5">{paymentData.amount} AOA</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => handleCopy(`${paymentData.amount}`, 'Valor')}>
-                  <Copy className="h-5 w-5 text-muted-foreground" />
-                </Button>
-              </div>
+              ))}
             </div>
 
-            {/* Important Notice */}
-            <div className="mt-4 bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
-              <p className="text-sm">
-                <span className="font-bold text-orange-500">Importante:</span>{" "}
-                <span className="text-muted-foreground">
-                  Efetue o pagamento no seu banco ou ATM.
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Esta página atualizará automaticamente quando receber a confirmação.
+            {/* Notice */}
+            <div className="mt-4 bg-orange-500/10 rounded-xl p-3 text-center border border-orange-500/20">
+              <p className="text-sm text-muted-foreground">
+                Efetue o pagamento no <span className="font-semibold text-foreground">Multicaixa Express</span>, banco ou ATM com os dados acima.
               </p>
             </div>
           </Card>
@@ -334,25 +300,23 @@ export default function VerificationCheckout() {
           <div className="flex items-center justify-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-orange-500" />
             <span className="text-muted-foreground">Expira em</span>
-            <span className={`font-bold ${timeLeft < 120 ? 'text-red-500' : 'text-orange-500'}`}>
+            <span className={`font-mono font-bold text-lg ${timeLeft < 120 ? 'text-red-500' : 'text-orange-500'}`}>
               {formatTime(timeLeft)}
             </span>
           </div>
 
-          {/* Manual Check Button */}
+          {/* Check Button */}
           <Button
             onClick={() => handleCheckPayment(false)}
             disabled={checking}
-            variant="outline"
-            className="w-full h-12 text-base font-semibold border-orange-500/50 text-orange-500 hover:bg-orange-500/10"
+            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0"
           >
             {checking ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
             Verificar Pagamento
           </Button>
 
-          {/* Security Badge */}
           <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-            ✅ Pagamentos seguros sem roubos
+            🔒 Pagamentos seguros via PlinqPay
           </p>
         </div>
       </div>
@@ -371,36 +335,55 @@ export default function VerificationCheckout() {
       </div>
 
       <div className="p-4 max-w-lg mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Escolha o seu plano</h2>
-          <p className="text-muted-foreground">Obtém o selo de verificação e desbloqueia funcionalidades premium</p>
+        {/* Hero */}
+        <div className="text-center space-y-3 py-4">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium">
+            <Sparkles className="h-4 w-4" />
+            Verificação Oficial
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight">Escolha o seu plano</h2>
+          <p className="text-muted-foreground max-w-sm mx-auto">Obtém o selo verificado e desbloqueia funcionalidades premium do Blynk</p>
         </div>
 
+        {/* User Data Section */}
+        <Card className="p-4 space-y-3 border-dashed">
+          <p className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            Dados para pagamento
+          </p>
+          <Input placeholder="Nome completo *" value={userName} onChange={(e) => setUserName(e.target.value)} />
+          <Input placeholder="Email" type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
+          <Input placeholder="Telefone" value={userPhone} onChange={(e) => setUserPhone(e.target.value)} />
+        </Card>
+
+        {/* Plans */}
         <div className="space-y-4">
           {plans.map((plan) => (
             <Card
               key={plan.id}
-              className={`p-5 cursor-pointer transition-all press-effect relative overflow-hidden ${
-                selectedPlan === plan.id ? "ring-2 ring-primary" : "hover:shadow-lg"
+              className={`p-5 cursor-pointer transition-all duration-300 relative overflow-hidden border-2 hover:shadow-xl active:scale-[0.98] ${plan.bg} ${
+                selectedPlan === plan.id ? "ring-2 ring-primary shadow-lg" : ""
               }`}
               onClick={() => !loading && handleSelectPlan(plan.id)}
             >
               {plan.popular && (
-                <Badge className="absolute top-3 right-3 bg-primary">Popular</Badge>
+                <Badge className="absolute top-3 right-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white border-0 shadow-md">
+                  ⭐ Popular
+                </Badge>
               )}
 
               <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${plan.color} text-white`}>
-                  <plan.icon className="h-6 w-6" />
+                <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${plan.color} text-white shadow-lg`}>
+                  <plan.icon className="h-7 w-7" />
                 </div>
 
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">{plan.name}</h3>
-                  <p className="text-2xl font-bold mt-1">
-                    {plan.price.toLocaleString()} <span className="text-sm text-muted-foreground">kz/mês</span>
+                  <p className="text-3xl font-extrabold mt-1 tracking-tight">
+                    {plan.price.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">kz/mês</span>
                   </p>
 
-                  <ul className="mt-3 space-y-1.5">
+                  <ul className="mt-3 space-y-2">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Check className="h-4 w-4 text-green-500 shrink-0" />
@@ -408,20 +391,23 @@ export default function VerificationCheckout() {
                       </li>
                     ))}
                   </ul>
+
+                  <Button
+                    className={`mt-4 w-full font-semibold bg-gradient-to-r ${plan.color} text-white border-0 shadow-md hover:shadow-lg`}
+                    disabled={loading}
+                    onClick={(e) => { e.stopPropagation(); handleSelectPlan(plan.id); }}
+                  >
+                    {loading && selectedPlan === plan.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Pagar {plan.price.toLocaleString()} kz
+                  </Button>
                 </div>
               </div>
-
-              {loading && selectedPlan === plan.id && (
-                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              )}
             </Card>
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">
-          Pagamento mensal por Multicaixa Express. O selo é removido automaticamente se o pagamento não for renovado.
+        <p className="text-xs text-muted-foreground text-center pb-4">
+          Pagamento por referência Multicaixa Express (Entidade 01055). O selo é ativado automaticamente após confirmação.
         </p>
       </div>
     </div>
