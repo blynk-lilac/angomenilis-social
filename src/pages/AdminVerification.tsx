@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, CheckCircle, Clock, XCircle, Wallet, Users, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, DollarSign, CheckCircle, Clock, XCircle, Wallet, Users, Send, Loader2, ShieldCheck, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface PaymentLog {
-  id: string;
-  user_id: string;
-  amount: number;
-  payment_reference: string;
-  status: string;
-  created_at: string;
-  subscription_id: string;
-}
-
 interface Subscription {
   id: string;
   user_id: string;
@@ -26,6 +16,8 @@ interface Subscription {
   amount: number;
   status: string;
   payment_reference: string;
+  external_id: string;
+  transaction_id: string;
   paid_at: string | null;
   created_at: string;
 }
@@ -44,12 +36,12 @@ interface WithdrawalRequest {
 export default function AdminVerification() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [payments, setPayments] = useState<PaymentLog[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"payments" | "subscriptions" | "withdrawals">("payments");
+  const [tab, setTab] = useState<"subscriptions" | "payments" | "withdrawals">("subscriptions");
   const [totalReceived, setTotalReceived] = useState(0);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -79,13 +71,13 @@ export default function AdminVerification() {
       setSubscriptions(subsData);
       setWithdrawals(withdrawData);
 
-      const total = paymentData.filter(p => p.status === "received").reduce((sum, p) => sum + p.amount, 0);
+      const total = paymentData.filter(p => p.status === "received").reduce((sum: number, p: any) => sum + p.amount, 0);
       setTotalReceived(total);
 
       const userIds = [...new Set([
-        ...paymentData.map(p => p.user_id),
-        ...subsData.map(s => s.user_id),
-        ...withdrawData.map(w => w.user_id),
+        ...paymentData.map((p: any) => p.user_id),
+        ...subsData.map((s: any) => s.user_id),
+        ...withdrawData.map((w: any) => w.user_id),
       ])];
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -101,6 +93,70 @@ export default function AdminVerification() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Admin manually approves a pending subscription
+  const handleApprovePayment = async (sub: Subscription) => {
+    setProcessingId(sub.id);
+    try {
+      // 1. Mark subscription as paid
+      const { error: subError } = await supabase
+        .from("verification_subscriptions")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sub.id);
+
+      if (subError) throw subError;
+
+      // 2. Verify the user's profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ verified: true, badge_type: "blue" })
+        .eq("id", sub.user_id);
+
+      if (profileError) throw profileError;
+
+      // 3. Log the payment
+      const { error: logError } = await supabase
+        .from("admin_payment_logs")
+        .insert({
+          subscription_id: sub.id,
+          user_id: sub.user_id,
+          amount: sub.amount,
+          payment_reference: sub.payment_reference || "MANUAL",
+          status: "received",
+        });
+
+      if (logError) throw logError;
+
+      toast.success("Pagamento aprovado! Selo ativado para o usuário.");
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao aprovar pagamento");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRejectPayment = async (sub: Subscription) => {
+    setProcessingId(sub.id);
+    try {
+      const { error } = await supabase
+        .from("verification_subscriptions")
+        .update({ status: "failed", updated_at: new Date().toISOString() })
+        .eq("id", sub.id);
+
+      if (error) throw error;
+      toast.success("Pagamento rejeitado.");
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Erro");
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -170,12 +226,14 @@ export default function AdminVerification() {
       case "withdrawn":
         return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/30">💸 Sacado</Badge>;
       case "rejected":
-        return <Badge className="bg-red-500/10 text-red-500 border-red-500/30">✗ Rejeitado</Badge>;
+      case "failed":
+        return <Badge className="bg-red-500/10 text-red-500 border-red-500/30">✗ {status === "failed" ? "Falhado" : "Rejeitado"}</Badge>;
       default:
         return <Badge variant="destructive">{status}</Badge>;
     }
   };
 
+  const pendingSubscriptions = subscriptions.filter(s => s.status === "pending");
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
 
   return (
@@ -186,6 +244,9 @@ export default function AdminVerification() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-bold">Pagamentos & Saques</h1>
+          <Button variant="ghost" size="icon" onClick={loadData} className="ml-auto rounded-full">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 
@@ -203,8 +264,8 @@ export default function AdminVerification() {
         </Card>
         <Card className="p-3 text-center">
           <Clock className="h-5 w-5 mx-auto text-yellow-500 mb-1" />
-          <p className="text-lg font-bold">{pendingWithdrawals.length}</p>
-          <p className="text-[10px] text-muted-foreground">Saques Pend.</p>
+          <p className="text-lg font-bold">{pendingSubscriptions.length}</p>
+          <p className="text-[10px] text-muted-foreground">Pend. Aprovação</p>
         </Card>
       </div>
 
@@ -221,16 +282,16 @@ export default function AdminVerification() {
         </div>
         <Button onClick={handleAdminWithdraw} disabled={withdrawing} className="w-full">
           {withdrawing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-          Realizar Saque
+          Realizar Saque Instantâneo
         </Button>
       </Card>
 
       {/* Tabs */}
       <div className="flex border-b border-border mt-4">
         {([
-          { key: "payments" as const, label: "Pagamentos" },
-          { key: "subscriptions" as const, label: "Assinaturas" },
-          { key: "withdrawals" as const, label: "Saques" },
+          { key: "subscriptions" as const, label: "Assinaturas", badge: pendingSubscriptions.length },
+          { key: "payments" as const, label: "Pagamentos", badge: 0 },
+          { key: "withdrawals" as const, label: "Saques", badge: pendingWithdrawals.length },
         ]).map((t) => (
           <button
             key={t.key}
@@ -240,8 +301,10 @@ export default function AdminVerification() {
             }`}
           >
             {t.label}
-            {t.key === "withdrawals" && pendingWithdrawals.length > 0 && (
-              <span className="absolute top-2 right-4 h-2 w-2 rounded-full bg-red-500" />
+            {t.badge > 0 && (
+              <span className="absolute top-2 right-4 h-5 w-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                {t.badge}
+              </span>
             )}
             {tab === t.key && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
@@ -252,9 +315,58 @@ export default function AdminVerification() {
       <div className="p-4 space-y-3">
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        ) : tab === "subscriptions" ? (
+          subscriptions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Nenhuma assinatura</div>
+          ) : (
+            subscriptions.map((s) => {
+              const profile = profiles[s.user_id];
+              return (
+                <Card key={s.id} className={`p-4 ${s.status === "pending" ? "border-yellow-500/30 bg-yellow-500/5" : ""}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">{profile?.full_name || profile?.first_name || "Usuário"}</p>
+                      <p className="text-sm text-muted-foreground">@{profile?.username} · {s.plan_type}</p>
+                      <p className="text-xs text-muted-foreground">Ref: {s.payment_reference || "N/A"}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{s.amount} kz</p>
+                      {getStatusBadge(s.status)}
+                    </div>
+                  </div>
+
+                  {/* Admin actions for pending payments */}
+                  {s.status === "pending" && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                        disabled={processingId === s.id}
+                        onClick={() => handleApprovePayment(s)}
+                      >
+                        {processingId === s.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ShieldCheck className="h-3 w-3 mr-1" />}
+                        Aprovar & Verificar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={processingId === s.id}
+                        onClick={() => handleRejectPayment(s)}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Rejeitar
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })
+          )
         ) : tab === "payments" ? (
           payments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhum pagamento registrado</div>
+            <div className="text-center py-8 text-muted-foreground">Nenhum pagamento registrado. Aprove assinaturas pendentes para ver aqui.</div>
           ) : (
             payments.map((p) => {
               const profile = profiles[p.user_id];
@@ -264,7 +376,7 @@ export default function AdminVerification() {
                     <div>
                       <p className="font-semibold">{profile?.full_name || profile?.first_name || "Usuário"}</p>
                       <p className="text-sm text-muted-foreground">@{profile?.username}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Ref: {p.payment_reference}</p>
+                      <p className="text-xs text-muted-foreground">Ref: {p.payment_reference}</p>
                       <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</p>
                     </div>
                     <div className="text-right">
@@ -272,30 +384,6 @@ export default function AdminVerification() {
                         {p.amount < 0 ? '' : '+'}{p.amount} kz
                       </p>
                       {getStatusBadge(p.status)}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })
-          )
-        ) : tab === "subscriptions" ? (
-          subscriptions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhuma assinatura</div>
-          ) : (
-            subscriptions.map((s) => {
-              const profile = profiles[s.user_id];
-              return (
-                <Card key={s.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">{profile?.full_name || profile?.first_name || "Usuário"}</p>
-                      <p className="text-sm text-muted-foreground">@{profile?.username} · {s.plan_type}</p>
-                      <p className="text-xs text-muted-foreground">Ref: {s.payment_reference || "N/A"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString("pt-BR")}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-lg">{s.amount} kz</p>
-                      {getStatusBadge(s.status)}
                     </div>
                   </div>
                 </Card>

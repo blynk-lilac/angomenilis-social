@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, Eye, Heart, DollarSign, Wallet, Loader2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Eye, Heart, DollarSign, Wallet, Loader2, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,27 +14,41 @@ export default function Monetization() {
   const { user } = useAuth();
   const [earnings, setEarnings] = useState<any[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
+  const [withdrawnTotal, setWithdrawnTotal] = useState(0);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [iban, setIban] = useState("");
   const [accountName, setAccountName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) loadData();
   }, [user]);
 
   const loadData = async () => {
-    const [earningsRes, profileRes] = await Promise.all([
+    const [earningsRes, profileRes, withdrawRes] = await Promise.all([
       supabase.from("user_earnings").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
-      supabase.from("profiles").select("verified").eq("id", user!.id).single(),
+      supabase.from("profiles").select("verified, full_name, phone").eq("id", user!.id).single(),
+      supabase.from("withdrawal_requests").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
     ]);
 
-    setEarnings(earningsRes.data || []);
-    setTotalEarnings((earningsRes.data || []).reduce((sum, e) => sum + e.amount, 0));
+    const earningsData = earningsRes.data || [];
+    setEarnings(earningsData);
+    setTotalEarnings(earningsData.reduce((sum, e) => sum + e.amount, 0));
     setIsVerified(profileRes.data?.verified || false);
+    
+    if (profileRes.data?.full_name) setAccountName(profileRes.data.full_name);
+    if (profileRes.data?.phone) setPhone(profileRes.data.phone);
+
+    const withdrawData = withdrawRes.data || [];
+    setWithdrawals(withdrawData);
+    const approved = withdrawData.filter((w: any) => w.status === "approved").reduce((sum: number, w: any) => sum + w.amount, 0);
+    setWithdrawnTotal(approved);
   };
+
+  const availableBalance = totalEarnings - withdrawnTotal;
 
   const handleWithdraw = async () => {
     const amount = parseInt(withdrawAmount);
@@ -41,12 +56,12 @@ export default function Monetization() {
       toast.error("Valor mínimo de saque: 200 kz");
       return;
     }
-    if (amount > totalEarnings) {
+    if (amount > availableBalance) {
       toast.error("Saldo insuficiente");
       return;
     }
     if (!iban.trim() || !accountName.trim()) {
-      toast.error("Preencha todos os campos");
+      toast.error("Preencha IBAN e nome do titular");
       return;
     }
 
@@ -61,12 +76,26 @@ export default function Monetization() {
       });
 
       if (error) throw error;
-      toast.success("Pedido de saque enviado!");
+      toast.success("Pedido de saque enviado! Será processado por IBAN instantâneo.");
       setWithdrawAmount("");
+      loadData();
     } catch (err: any) {
       toast.error(err.message || "Erro ao solicitar saque");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge className="bg-green-500/10 text-green-500 border-green-500/30"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-500/10 text-red-500 border-red-500/30"><XCircle className="h-3 w-3 mr-1" />Rejeitado</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
@@ -107,7 +136,8 @@ export default function Monetization() {
         <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Saldo Disponível</p>
-            <p className="text-4xl font-bold mt-1">{totalEarnings.toLocaleString()} <span className="text-lg">kz</span></p>
+            <p className="text-4xl font-bold mt-1">{availableBalance.toLocaleString()} <span className="text-lg">kz</span></p>
+            <p className="text-xs text-muted-foreground mt-1">Total ganho: {totalEarnings.toLocaleString()} kz · Sacado: {withdrawnTotal.toLocaleString()} kz</p>
           </div>
         </Card>
 
@@ -134,20 +164,36 @@ export default function Monetization() {
         <Card className="p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Solicitar Saque</h3>
+            <h3 className="font-semibold">Solicitar Saque (IBAN Instantâneo)</h3>
           </div>
-          <p className="text-xs text-muted-foreground">Mínimo: 200 kz</p>
+          <p className="text-xs text-muted-foreground">Mínimo: 200 kz · Processamento instantâneo por IBAN</p>
 
           <Input placeholder="Valor (kz)" type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
-          <Input placeholder="IBAN" value={iban} onChange={(e) => setIban(e.target.value)} />
-          <Input placeholder="Nome do titular" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
+          <Input placeholder="IBAN *" value={iban} onChange={(e) => setIban(e.target.value)} />
+          <Input placeholder="Nome do titular *" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
           <Input placeholder="Telefone" value={phone} onChange={(e) => setPhone(e.target.value)} />
 
           <Button onClick={handleWithdraw} disabled={loading} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
             Solicitar Saque
           </Button>
         </Card>
+
+        {/* Withdrawal History */}
+        {withdrawals.length > 0 && (
+          <>
+            <h3 className="font-semibold">Histórico de Saques</h3>
+            {withdrawals.map((w) => (
+              <Card key={w.id} className="p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{w.amount} kz → {w.iban}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleDateString("pt-BR")}</p>
+                </div>
+                {getStatusBadge(w.status)}
+              </Card>
+            ))}
+          </>
+        )}
 
         {/* Earnings History */}
         <h3 className="font-semibold">Histórico de Ganhos</h3>
@@ -166,5 +212,11 @@ export default function Monetization() {
         )}
       </div>
     </div>
+  );
+}
+
+function Send(props: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
   );
 }
