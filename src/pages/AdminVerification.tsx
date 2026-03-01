@@ -31,6 +31,10 @@ interface WithdrawalRequest {
   phone: string;
   status: string;
   created_at: string;
+  payout_status?: string;
+  payout_reference?: string;
+  bank_name?: string;
+  error_message?: string;
 }
 
 export default function AdminVerification() {
@@ -160,20 +164,28 @@ export default function AdminVerification() {
     }
   };
 
-  const handleProcessWithdrawal = async (id: string, action: "approved" | "rejected") => {
+  const handleProcessWithdrawal = async (id: string, action: "approve" | "reject") => {
     setProcessingId(id);
     try {
-      const { error } = await supabase.from("withdrawal_requests").update({
-        status: action,
-        processed_by: user!.id,
-        processed_at: new Date().toISOString(),
-      }).eq("id", id);
+      const { data, error } = await supabase.functions.invoke("process-payout", {
+        body: { withdrawal_id: id, action },
+      });
 
       if (error) throw error;
-      toast.success(action === "approved" ? "Saque aprovado!" : "Saque rejeitado");
+      if (!data?.success) throw new Error(data?.error || "Erro desconhecido");
+
+      if (action === "approve") {
+        if (data.payout_method === "automatic") {
+          toast.success(`✅ Payout automático! Ref: ${data.payout_reference}`);
+        } else {
+          toast.success(`📋 Aprovado! Transfira ${data.amount} kz para IBAN ${data.iban} (${data.account_name})`, { duration: 10000 });
+        }
+      } else {
+        toast.success("Saque rejeitado");
+      }
       loadData();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao processar");
+      toast.error(err.message || "Erro ao processar saque");
     } finally {
       setProcessingId(null);
     }
@@ -196,15 +208,25 @@ export default function AdminVerification() {
 
     setWithdrawing(true);
     try {
-      const { error } = await supabase.from("admin_payment_logs").insert({
+      // Create a withdrawal request for admin and immediately process it
+      const { data: wr, error: insertErr } = await supabase.from("withdrawal_requests").insert({
         user_id: user!.id,
-        amount: -amount,
-        payment_reference: `SAQUE_ADMIN_${Date.now()}`,
-        status: "withdrawn",
+        amount,
+        iban: withdrawIban.trim(),
+        account_name: "ISAAC CUNHA PINTO",
+        phone: "943443400",
+        bank_name: withdrawBank || null,
+      }).select().single();
+
+      if (insertErr) throw insertErr;
+
+      // Process via edge function
+      const { data, error } = await supabase.functions.invoke("process-payout", {
+        body: { withdrawal_id: wr.id, action: "approve" },
       });
 
       if (error) throw error;
-      toast.success(`Saque de ${amount} kz registrado para IBAN ${withdrawIban}`);
+      toast.success(`Saque de ${amount} kz processado! Ref: ${data?.payout_reference || "N/A"}`);
       setWithdrawAmount("");
       setWithdrawBank("");
       loadData();
@@ -420,19 +442,27 @@ export default function AdminVerification() {
                         size="sm"
                         className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                         disabled={processingId === w.id}
-                        onClick={() => handleProcessWithdrawal(w.id, "approved")}
+                        onClick={() => handleProcessWithdrawal(w.id, "approve")}
                       >
-                        {processingId === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar"}
+                        {processingId === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "✅ Aprovar & Transferir"}
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         className="flex-1"
                         disabled={processingId === w.id}
-                        onClick={() => handleProcessWithdrawal(w.id, "rejected")}
+                        onClick={() => handleProcessWithdrawal(w.id, "reject")}
                       >
                         Rejeitar
                       </Button>
+                    </div>
+                  )}
+                  {w.payout_status === "manual_transfer" && (
+                    <div className="mt-2 p-2 bg-yellow-500/10 rounded text-xs">
+                      <p className="font-semibold text-yellow-600">⚠️ Transferência manual necessária:</p>
+                      <p>IBAN: <span className="font-mono">{w.iban}</span></p>
+                      <p>Titular: {w.account_name} · Valor: {w.amount} kz</p>
+                      {w.payout_reference && <p>Ref: {w.payout_reference}</p>}
                     </div>
                   )}
                 </Card>
