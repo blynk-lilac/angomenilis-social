@@ -2866,9 +2866,13 @@ export type Database = {
         Row: {
           account_name: string | null
           amount: number
+          bank_name: string | null
           created_at: string | null
+          error_message: string | null
           iban: string | null
           id: string
+          payout_reference: string | null
+          payout_status: string | null
           phone: string | null
           processed_at: string | null
           processed_by: string | null
@@ -2878,9 +2882,13 @@ export type Database = {
         Insert: {
           account_name?: string | null
           amount: number
+          bank_name?: string | null
           created_at?: string | null
+          error_message?: string | null
           iban?: string | null
           id?: string
+          payout_reference?: string | null
+          payout_status?: string | null
           phone?: string | null
           processed_at?: string | null
           processed_by?: string | null
@@ -2890,9 +2898,13 @@ export type Database = {
         Update: {
           account_name?: string | null
           amount?: number
+          bank_name?: string | null
           created_at?: string | null
+          error_message?: string | null
           iban?: string | null
           id?: string
+          payout_reference?: string | null
+          payout_status?: string | null
           phone?: string | null
           processed_at?: string | null
           processed_by?: string | null
