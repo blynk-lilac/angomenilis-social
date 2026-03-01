@@ -65,6 +65,7 @@ export default function Feed() {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [optionsSheet, setOptionsSheet] = useState<{ open: boolean; post: Post | null }>({ open: false, post: null });
   const [mutedVideos, setMutedVideos] = useState<{ [key: string]: boolean }>({});
+  const [likeAnimations, setLikeAnimations] = useState<{ [key: string]: boolean }>({});
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
   const observedVideosRef = useRef<Set<HTMLVideoElement>>(new Set());
@@ -160,8 +161,22 @@ export default function Feed() {
       if (!allowed) return;
       await supabase.from("post_reactions").insert({ post_id: postId, user_id: currentUserId, reaction_type: "heart" });
       playLikeSound();
+      // Trigger heart animation
+      setLikeAnimations(prev => ({ ...prev, [postId]: true }));
+      setTimeout(() => setLikeAnimations(prev => ({ ...prev, [postId]: false })), 1000);
     }
     loadPosts();
+  };
+
+  const handleDoubleTapLike = async (postId: string) => {
+    const userReaction = posts.find(p => p.id === postId)?.post_reactions?.find(r => r.user_id === currentUserId);
+    if (!userReaction) {
+      await handleLike(postId);
+    } else {
+      // Show animation only
+      setLikeAnimations(prev => ({ ...prev, [postId]: true }));
+      setTimeout(() => setLikeAnimations(prev => ({ ...prev, [postId]: false })), 1000);
+    }
   };
 
   const handleSave = async (postId: string) => {
@@ -252,7 +267,7 @@ export default function Feed() {
           </div>
         )}
         <button
-          className="absolute bottom-4 right-4 h-8 w-8 rounded-full bg-black/60 flex items-center justify-center"
+          className="absolute bottom-4 right-4 h-9 w-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10"
           onClick={(e) => { e.stopPropagation(); toggleVideoMute(postId); }}
         >
           {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
@@ -267,18 +282,32 @@ export default function Feed() {
     if (mediaUrls.length === 1) {
       const url = mediaUrls[0];
       return (
-        <div className="relative">
+        <div className="relative" onDoubleClick={() => handleDoubleTapLike(postId)}>
           {isVideo(url) ? (
             <VideoPlayer url={url} postId={postId} />
           ) : (
             <img src={url} alt="Post" className="w-full object-cover cursor-pointer" onClick={() => setGalleryImages(mediaUrls)} />
           )}
+          {/* Double tap heart animation */}
+          <AnimatePresence>
+            {likeAnimations[postId] && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <Heart className="h-24 w-24 text-white fill-white drop-shadow-2xl" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       );
     }
 
     return (
-      <div className={`grid gap-0.5 ${mediaUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+      <div className={`grid gap-0.5 ${mediaUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`} onDoubleClick={() => handleDoubleTapLike(postId)}>
         {mediaUrls.slice(0, 4).map((url, idx) => (
           <div key={idx} className={`relative cursor-pointer ${mediaUrls.length === 3 && idx === 0 ? 'row-span-2' : ''}`}
             onClick={() => { if (!isVideo(url)) { setGalleryImages(mediaUrls.filter(u => !isVideo(u))); setGalleryIndex(idx); } }}>
@@ -300,6 +329,18 @@ export default function Feed() {
             )}
           </div>
         ))}
+        <AnimatePresence>
+          {likeAnimations[posts.find(p => p.media_urls === mediaUrls)?.id || ''] && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none col-span-2"
+            >
+              <Heart className="h-24 w-24 text-white fill-white drop-shadow-2xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   };
@@ -319,8 +360,13 @@ export default function Feed() {
     <ProtectedRoute>
       <MessageNotification />
       <div className="min-h-screen bg-background">
-        {/* Liquid Glass iOS Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 liquid-glass safe-area-top">
+        {/* Instagram iOS Header - Liquid Glass */}
+        <header className="fixed top-0 left-0 right-0 z-50 safe-area-top" style={{
+          background: 'rgba(var(--background-rgb, 255,255,255), 0.72)',
+          backdropFilter: 'blur(40px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          borderBottom: '0.5px solid rgba(var(--foreground-rgb, 0,0,0), 0.08)',
+        }}>
           <div className="flex items-center justify-between h-11 px-4 max-w-lg mx-auto">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full press-effect" onClick={() => navigate("/sidebar")}>
@@ -350,7 +396,7 @@ export default function Feed() {
             </div>
 
             {/* Posts Feed - Instagram Style */}
-            <div className="space-y-0">
+            <div className="divide-y divide-border/50">
               {posts.map((post, index) => {
                 const userReaction = getUserReaction(post);
                 const totalReactions = post.post_reactions?.length || 0;
@@ -364,39 +410,42 @@ export default function Feed() {
                       <SponsoredAd ad={sponsoredAds[adIndex]} likesCount={0} isLiked={false} userId={currentUserId} />
                     )}
                     
-                    <article className="border-b border-border">
+                    <article className="bg-card">
                       {/* Post Header - Instagram style */}
-                      <div className="flex items-center gap-3 px-3 py-2">
-                        <Avatar
-                          className="h-8 w-8 cursor-pointer ring-2 ring-pink-500/50"
-                          onClick={() => navigate(`/profile/${post.profiles.id}`)}
-                        >
-                          <AvatarImage src={post.profiles.avatar_url} className="object-cover" />
-                          <AvatarFallback className="bg-muted text-xs font-semibold">
-                            {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600">
+                          <Avatar
+                            className="h-8 w-8 cursor-pointer border-2 border-background"
+                            onClick={() => navigate(`/profile/${post.profiles.id}`)}
+                          >
+                            <AvatarImage src={post.profiles.avatar_url} className="object-cover" />
+                            <AvatarFallback className="bg-muted text-xs font-semibold">
+                              {post.profiles.first_name?.[0] || post.profiles.username?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => navigate(`/profile/${post.profiles.id}`)}>
-                            <span className="font-semibold text-sm">
+                            <span className="font-semibold text-[13px] text-foreground">
                               {post.profiles.username}
                             </span>
                             {(post.profiles.verified || hasSpecialBadgeEmoji(post.profiles.username) || hasSpecialBadgeEmoji(post.profiles.full_name)) && (
-                              <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} username={post.profiles.username} fullName={post.profiles.full_name} className="w-4 h-4" />
+                              <VerificationBadge verified={post.profiles.verified} badgeType={post.profiles.badge_type} username={post.profiles.username} fullName={post.profiles.full_name} className="w-3.5 h-3.5" />
                             )}
                             <span className="text-muted-foreground text-xs">
                               · {formatDistanceToNow(new Date(post.created_at), { locale: ptBR, addSuffix: false })}
                             </span>
                           </div>
                           {post.music_name && (
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                              <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
                               {post.music_artist} · {post.music_name}
                             </p>
                           )}
                         </div>
                         
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOptionsSheet({ open: true, post })}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-1" onClick={() => setOptionsSheet({ open: true, post })}>
                           <MoreHorizontal className="h-5 w-5" />
                         </Button>
                       </div>
@@ -423,11 +472,15 @@ export default function Feed() {
                       {/* Instagram-style Action Buttons */}
                       <div className="flex items-center justify-between px-3 py-2">
                         <div className="flex items-center gap-4">
-                          <button onClick={() => handleLike(post.id)}>
-                            <Heart className={`h-6 w-6 ${userReaction ? 'text-red-500 fill-red-500' : ''}`} strokeWidth={1.5} />
-                          </button>
+                          <motion.button 
+                            onClick={() => handleLike(post.id)}
+                            whileTap={{ scale: 0.8 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                          >
+                            <Heart className={`h-[26px] w-[26px] transition-colors ${userReaction ? 'text-red-500 fill-red-500' : 'text-foreground'}`} strokeWidth={1.5} />
+                          </motion.button>
                           <button onClick={() => navigate(`/comments/${post.id}`)}>
-                            <MessageCircle className="h-6 w-6" strokeWidth={1.5} />
+                            <MessageCircle className="h-[26px] w-[26px] text-foreground" strokeWidth={1.5} />
                           </button>
                           <button onClick={() => {
                             navigator.share?.({
@@ -439,25 +492,28 @@ export default function Feed() {
                               toast.success("Link copiado!");
                             });
                           }}>
-                            <Send className="h-6 w-6" strokeWidth={1.5} />
+                            <Send className="h-[24px] w-[24px] text-foreground" strokeWidth={1.5} />
                           </button>
                         </div>
-                        <button onClick={() => handleSave(post.id)}>
-                          <Bookmark className={`h-6 w-6 ${isSaved ? 'fill-foreground' : ''}`} strokeWidth={1.5} />
-                        </button>
+                        <motion.button 
+                          onClick={() => handleSave(post.id)}
+                          whileTap={{ scale: 0.8 }}
+                        >
+                          <Bookmark className={`h-[26px] w-[26px] transition-colors ${isSaved ? 'fill-foreground text-foreground' : 'text-foreground'}`} strokeWidth={1.5} />
+                        </motion.button>
                       </div>
 
                       {/* Likes count */}
                       {totalReactions > 0 && (
                         <button className="px-3 pb-1" onClick={() => navigate(`/post/${post.id}/likes`)}>
-                          <span className="text-sm font-semibold">{totalReactions.toLocaleString()} gosto{totalReactions !== 1 ? 's' : ''}</span>
+                          <span className="text-[13px] font-semibold">{totalReactions.toLocaleString()} gosto{totalReactions !== 1 ? 's' : ''}</span>
                         </button>
                       )}
 
                       {/* Content */}
                       {post.content && (
                         <div className="px-3 pb-1">
-                          <p className="text-sm">
+                          <p className="text-[13px] leading-[18px]">
                             <span className="font-semibold mr-1 cursor-pointer" onClick={() => navigate(`/profile/${post.profiles.id}`)}>
                               {post.profiles.username}
                             </span>
@@ -468,14 +524,21 @@ export default function Feed() {
 
                       {/* Comments count */}
                       {post.comments.length > 0 && (
-                        <button className="px-3 pb-2" onClick={() => navigate(`/comments/${post.id}`)}>
-                          <span className="text-sm text-muted-foreground">Ver {post.comments.length} comentário{post.comments.length !== 1 ? 's' : ''}</span>
+                        <button className="px-3 pb-3" onClick={() => navigate(`/comments/${post.id}`)}>
+                          <span className="text-[13px] text-muted-foreground">Ver {post.comments.length} comentário{post.comments.length !== 1 ? 's' : ''}</span>
                         </button>
                       )}
                     </article>
                   </div>
                 );
               })}
+
+              {/* End of feed */}
+              {posts.length > 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">✓ Estás atualizado</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
