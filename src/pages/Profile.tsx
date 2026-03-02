@@ -60,6 +60,7 @@ import AssociatedAccounts from "@/components/AssociatedAccounts";
 import { motion, AnimatePresence } from "framer-motion";
 import { OnlineIndicator } from "@/components/OnlineIndicator";
 import { useOnlineUsers } from "@/hooks/useOnlineUsers";
+import { useContentProtection } from "@/hooks/useContentProtection";
 
 interface Profile {
   id: string;
@@ -118,6 +119,7 @@ interface Story {
 export default function Profile() {
   const navigate = useNavigate();
   const { userId } = useParams();
+  useContentProtection();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState("");
   const [isOwnProfile, setIsOwnProfile] = useState(false);
