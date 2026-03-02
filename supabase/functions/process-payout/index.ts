@@ -63,63 +63,124 @@ serve(async (req) => {
       });
     }
 
-    // Try PlinqPay payout API (if supported)
+    // Try PlinqPay payout via multiple endpoints
     let payoutSuccess = false;
     let payoutReference = `MANUAL_${Date.now()}`;
     let errorMsg = null;
 
-    if (PLIQPAY_SECRET_KEY) {
-      try {
-        // Attempt PlinqPay transfer/payout endpoint
-        const payoutResponse = await fetch('https://api.plinqpay.com/v1/transfer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'api-key': PLIQPAY_SECRET_KEY,
-          },
-          body: JSON.stringify({
+    if (PLIQPAY_SECRET_KEY && PLIQPAY_PUBLIC_KEY) {
+      // Try transfer endpoint
+      const endpoints = [
+        'https://api.plinqpay.com/v1/transfer',
+        'https://api.plinqpay.com/v1/payout',
+        'https://api.plinqpay.com/v1/disbursement',
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying payout endpoint: ${endpoint}`);
+          
+          const payoutBody = {
             amount: withdrawal.amount,
+            currency: 'AOA',
             recipient: {
               iban: withdrawal.iban,
               name: withdrawal.account_name,
               phone: withdrawal.phone || '',
+              bank_code: withdrawal.iban?.substring(4, 8) || '',
             },
             description: `Blynk Payout - ${withdrawal.id}`,
             reference: `PAYOUT_${withdrawal.id}_${Date.now()}`,
-          }),
-        });
+            callback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
+          };
 
-        const responseText = await payoutResponse.text();
-        console.log('PlinqPay payout response:', payoutResponse.status, responseText);
+          const payoutResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': PLIQPAY_SECRET_KEY,
+              'Authorization': `Bearer ${PLIQPAY_SECRET_KEY}`,
+              'X-API-Key': PLIQPAY_PUBLIC_KEY,
+            },
+            body: JSON.stringify(payoutBody),
+          });
 
-        if (payoutResponse.ok) {
-          try {
-            const payoutData = JSON.parse(responseText);
-            payoutReference = payoutData.reference || payoutData.id || payoutReference;
-            payoutSuccess = true;
-          } catch {
-            // JSON parse failed but request was OK
-            payoutSuccess = true;
+          const responseText = await payoutResponse.text();
+          console.log(`PlinqPay ${endpoint} response:`, payoutResponse.status, responseText);
+
+          if (payoutResponse.ok) {
+            try {
+              const payoutData = JSON.parse(responseText);
+              payoutReference = payoutData.reference || payoutData.id || payoutData.transaction_id || payoutReference;
+              payoutSuccess = true;
+              errorMsg = null;
+              console.log('Payout successful via', endpoint);
+              break;
+            } catch {
+              payoutSuccess = true;
+              errorMsg = null;
+              break;
+            }
+          } else if (payoutResponse.status === 404) {
+            // Endpoint not available, try next
+            errorMsg = `${endpoint}: 404 - Not available`;
+            continue;
+          } else {
+            errorMsg = `${endpoint}: ${payoutResponse.status} - ${responseText.substring(0, 200)}`;
           }
-        } else {
-          errorMsg = `PlinqPay: ${payoutResponse.status} - ${responseText}`;
-          console.log('PlinqPay payout not supported or failed, using manual processing');
+        } catch (e) {
+          errorMsg = `${endpoint}: Connection error - ${e.message}`;
+          console.error(`Payout error at ${endpoint}:`, e.message);
         }
-      } catch (e) {
-        errorMsg = `PlinqPay connection error: ${e.message}`;
-        console.error('PlinqPay payout error:', e);
       }
+
+      // If all transfer endpoints failed, try creating a payment request to the user's account
+      if (!payoutSuccess) {
+        try {
+          console.log('Attempting payment creation as fallback...');
+          const paymentResponse = await fetch('https://api.plinqpay.com/v1/payment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': PLIQPAY_PUBLIC_KEY,
+            },
+            body: JSON.stringify({
+              amount: withdrawal.amount,
+              entity: '01055',
+              description: `Blynk Saque - ${withdrawal.account_name}`,
+              reference: `SAQUE_${withdrawal.id}`,
+              callback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
+            }),
+          });
+
+          const paymentText = await paymentResponse.text();
+          console.log('Payment fallback response:', paymentResponse.status, paymentText);
+          
+          if (paymentResponse.ok) {
+            try {
+              const paymentData = JSON.parse(paymentText);
+              payoutReference = paymentData.reference || paymentData.id || `PAYMENT_${Date.now()}`;
+            } catch {}
+          }
+        } catch (e) {
+          console.error('Payment fallback error:', e.message);
+        }
+      }
+    } else {
+      errorMsg = 'PlinqPay API keys not configured';
     }
 
-    // Update withdrawal as approved (manual or automatic)
-    await supabase.from('withdrawal_requests').update({
+    // Update withdrawal status
+    const updateData: any = {
       status: 'approved',
       payout_status: payoutSuccess ? 'completed' : 'manual_transfer',
       payout_reference: payoutReference,
       processed_by: user.id,
       processed_at: new Date().toISOString(),
-      error_message: errorMsg,
-    }).eq('id', withdrawal_id);
+    };
+    if (errorMsg) updateData.error_message = errorMsg;
+
+    await supabase.from('withdrawal_requests').update(updateData).eq('id', withdrawal_id);
 
     // Log the payout
     await supabase.from('admin_payment_logs').insert({
@@ -130,6 +191,17 @@ serve(async (req) => {
       subscription_id: null,
     });
 
+    // Notify user
+    await supabase.from('notifications').insert({
+      user_id: withdrawal.user_id,
+      type: 'payment',
+      title: 'Saque processado',
+      message: payoutSuccess
+        ? `O teu saque de ${withdrawal.amount} kz foi processado automaticamente via PlinqPay.`
+        : `O teu saque de ${withdrawal.amount} kz foi aprovado e será transferido manualmente para ${withdrawal.iban}.`,
+      related_id: withdrawal_id,
+    });
+
     return new Response(JSON.stringify({
       success: true,
       status: 'approved',
@@ -138,6 +210,7 @@ serve(async (req) => {
       iban: withdrawal.iban,
       account_name: withdrawal.account_name,
       amount: withdrawal.amount,
+      error_details: errorMsg,
       message: payoutSuccess
         ? 'Payout processado automaticamente via PlinqPay'
         : `Transfira manualmente ${withdrawal.amount} kz para IBAN ${withdrawal.iban} (${withdrawal.account_name})`,
