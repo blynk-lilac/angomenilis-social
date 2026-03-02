@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Play, Pause, Volume2, VolumeX, Eye, Music2 } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Play, Pause, Volume2, VolumeX, Eye, Music2, Search, Disc3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -71,6 +72,13 @@ export default function Videos() {
   const [loading, setLoading] = useState(true);
   const [playingStates, setPlayingStates] = useState<{ [key: string]: boolean }>({});
   const [mutedStates, setMutedStates] = useState<{ [key: string]: boolean }>({});
+  const [activeTab, setActiveTab] = useState<"reels" | "music">("reels");
+  const [trendingMusic, setTrendingMusic] = useState<any[]>([]);
+  const [musicSearch, setMusicSearch] = useState("");
+  const [musicResults, setMusicResults] = useState<any[]>([]);
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [playingMusicId, setPlayingMusicId] = useState<string | null>(null);
+  const [musicAudio, setMusicAudio] = useState<HTMLAudioElement | null>(null);
   const { shareCode } = useParams();
   const navigate = useNavigate();
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
@@ -79,6 +87,7 @@ export default function Videos() {
   useEffect(() => {
     loadCurrentUser();
     loadAllVideos();
+    loadTrendingMusic();
 
     const channel = supabase
       .channel("videos-all-changes")
@@ -86,7 +95,10 @@ export default function Videos() {
       .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => loadAllVideos())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      supabase.removeChannel(channel);
+      if (musicAudio) { musicAudio.pause(); musicAudio.src = ''; }
+    };
   }, [shareCode]);
 
   useEffect(() => {
@@ -131,6 +143,38 @@ export default function Videos() {
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
+  };
+
+  const loadTrendingMusic = async () => {
+    const { data } = await supabase.from("trending_music").select("*").eq("is_trending", true).order("play_count", { ascending: false }).limit(30);
+    if (data) setTrendingMusic(data);
+  };
+
+  const searchMusic = async () => {
+    if (!musicSearch.trim()) return;
+    setMusicLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/music-search?query=${encodeURIComponent(musicSearch)}`,
+        { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
+      );
+      const data = await response.json();
+      if (data.tracks) setMusicResults(data.tracks);
+    } catch { toast.error("Erro ao pesquisar música"); }
+    finally { setMusicLoading(false); }
+  };
+
+  const playMusicTrack = (track: any) => {
+    const previewUrl = track.preview || track.audio_url;
+    if (!previewUrl) { toast.error("Preview não disponível"); return; }
+    if (musicAudio) { musicAudio.pause(); musicAudio.src = ''; }
+    if (playingMusicId === track.id) { setPlayingMusicId(null); setMusicAudio(null); return; }
+    const audio = new Audio(previewUrl);
+    audio.volume = 0.8;
+    audio.play().catch(() => toast.error("Erro ao reproduzir"));
+    audio.onended = () => { setPlayingMusicId(null); setMusicAudio(null); };
+    setMusicAudio(audio);
+    setPlayingMusicId(track.id);
   };
 
   const isVideoUrl = (url: string) => {
@@ -273,10 +317,90 @@ export default function Videos() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-black">
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-black/60 to-transparent">
-          <span className="text-white font-bold text-xl">Reels</span>
+        {/* Header with tabs */}
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-black/80 to-transparent">
+          <div className="flex items-center gap-4">
+            <button onClick={() => { setActiveTab("reels"); if (musicAudio) { musicAudio.pause(); setPlayingMusicId(null); } }}
+              className={`font-bold text-lg transition-colors ${activeTab === "reels" ? "text-white" : "text-white/40"}`}>Reels</button>
+            <button onClick={() => setActiveTab("music")}
+              className={`font-bold text-lg transition-colors ${activeTab === "music" ? "text-white" : "text-white/40"}`}>Música</button>
+          </div>
         </div>
 
+        {activeTab === "music" ? (
+          <div className="pt-14 pb-20 px-4 min-h-screen bg-background">
+            {/* Music Search */}
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Pesquisar música..." value={musicSearch}
+                  onChange={(e) => setMusicSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && searchMusic()}
+                  className="pl-10 bg-muted/50 border-0 rounded-xl" />
+              </div>
+              <Button onClick={searchMusic} disabled={musicLoading} size="icon" className="rounded-xl h-10 w-10">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Search Results */}
+            {musicResults.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">Resultados</h3>
+                <div className="space-y-2">
+                  {musicResults.map((track: any) => (
+                    <motion.div key={track.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      onClick={() => playMusicTrack(track)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {track.cover ? <img src={track.cover} className="w-full h-full object-cover" /> : <Disc3 className="h-6 w-6 text-muted-foreground m-auto mt-3" />}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          {playingMusicId === track.id ? <Pause className="h-5 w-5 text-white fill-white" /> : <Play className="h-5 w-5 text-white fill-white ml-0.5" />}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{track.title || track.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{track.duration ? `${Math.floor(track.duration / 60)}:${String(track.duration % 60).padStart(2, '0')}` : ''}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Trending Music */}
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Em destaque</h3>
+            <div className="space-y-2">
+              {trendingMusic.length === 0 ? (
+                <div className="text-center py-12">
+                  <Music2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Nenhuma música em destaque</p>
+                </div>
+              ) : trendingMusic.map((track, idx) => (
+                <motion.div key={track.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  onClick={() => playMusicTrack(track)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-card hover:bg-muted/50 cursor-pointer transition-colors">
+                  <span className="text-sm font-bold text-muted-foreground w-6 text-center">{idx + 1}</span>
+                  <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    {track.cover_url ? <img src={track.cover_url} className="w-full h-full object-cover" /> : <Disc3 className="h-6 w-6 text-muted-foreground m-auto mt-3" />}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      {playingMusicId === track.id ? <Pause className="h-5 w-5 text-white fill-white" /> : <Play className="h-5 w-5 text-white fill-white ml-0.5" />}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{track.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{track.duration ? `${Math.floor(track.duration / 60)}:${String(track.duration % 60).padStart(2, '0')}` : ''}</span>
+                </motion.div>
+              ))}
+            </div>
+            <BottomNav />
+          </div>
+        ) : (
+          <>
         <div 
           ref={containerRef}
           className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
@@ -480,6 +604,7 @@ export default function Videos() {
           .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
         <BottomNav />
+        )}
       </div>
     </ProtectedRoute>
   );
