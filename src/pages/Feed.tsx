@@ -25,6 +25,7 @@ import { playLikeSound, playClickSound } from "@/utils/soundEffects";
 import { useRateLimiting } from "@/hooks/useRateLimiting";
 import { Logo2026 } from "@/components/Logo2026";
 import BottomNav from "@/components/BottomNav";
+import { useContentProtection } from "@/hooks/useContentProtection";
 
 
 interface Post {
@@ -54,6 +55,7 @@ export default function Feed() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { checkLikeLimit } = useRateLimiting();
+  useContentProtection();
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [createStoryOpen, setCreateStoryOpen] = useState(false);

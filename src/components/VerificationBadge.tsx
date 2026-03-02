@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import badgeVerified from "@/assets/badge-verified-blue.svg";
 import badgeEffectBlack from "@/assets/badge-effect-black.png";
 import { cn } from "@/lib/utils";
@@ -8,8 +9,9 @@ interface VerificationBadgeProps {
   type?: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
-  username?: string; // To check for special emoji
-  fullName?: string; // Also check full name for special emoji
+  username?: string;
+  fullName?: string;
+  clickable?: boolean;
 }
 
 const sizeClasses = {
@@ -18,7 +20,6 @@ const sizeClasses = {
   lg: "w-6 h-6"
 };
 
-// Special emoji that shows black badge effect
 const SPECIAL_EMOJI = '󱢏';
 
 export function hasSpecialBadgeEmoji(text?: string | null): boolean {
@@ -33,34 +34,45 @@ export default function VerificationBadge({
   size = "md",
   className,
   username,
-  fullName
+  fullName,
+  clickable = true
 }: VerificationBadgeProps) {
-  // Check if username or fullName has special emoji for effect badge
+  const navigate = useNavigate();
   const hasEffectBadge = hasSpecialBadgeEmoji(username) || hasSpecialBadgeEmoji(fullName);
-  
   const effectiveType = type || badgeType;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!clickable) return;
+    e.stopPropagation();
+    e.preventDefault();
+    navigate('/request-verification');
+  };
   
-  // Always show effect badge if user has special emoji (even if not verified)
   if (hasEffectBadge) {
     return (
       <img 
         src={badgeEffectBlack} 
         alt="Badge Effect" 
-        className={cn(sizeClasses[size], className)}
+        className={cn(sizeClasses[size], clickable && "cursor-pointer", className)}
         title="Badge Effect"
+        onClick={handleClick}
+        draggable={false}
+        onContextMenu={(e) => e.preventDefault()}
       />
     );
   }
   
-  // Show verified badge only if actually verified
   if (!verified && !effectiveType) return null;
 
   return (
     <img 
       src={badgeVerified} 
       alt="Verificado" 
-      className={cn(sizeClasses[size], className)}
+      className={cn(sizeClasses[size], clickable && "cursor-pointer", className)}
       title="Conta verificada e protegida"
+      onClick={handleClick}
+      draggable={false}
+      onContextMenu={(e) => e.preventDefault()}
     />
   );
 }
